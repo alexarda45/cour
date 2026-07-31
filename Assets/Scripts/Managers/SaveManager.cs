@@ -1,0 +1,1128 @@
+using System;
+using System.Globalization;
+using System.IO;
+using UnityEngine;
+
+namespace ChromaBlast
+{
+    public enum DailyQuestType
+    {
+        PlayMoves,
+        ClearLines,
+        MakePure,
+        UsePop,
+        ScorePoints
+    }
+
+    [Serializable]
+    public class DailyQuestState
+    {
+        public DailyQuestType type;
+        public int target;
+        public int progress;
+        public int rewardCoins;
+        public bool claimed;
+    }
+
+    [Serializable]
+    public class SaveData
+    {
+        public int schemaVersion = 7;
+        public bool soundMuted;
+        public bool hapticsMuted;
+        public int performanceMode;
+        public bool removeAds;
+        public int classicHighScore;
+        public int blitzHighScore;
+        public int dailyHighScore;
+        public int rankPoints;
+        public int coins;
+        public long achievementMask;
+        public int gamesPlayed;
+        public int totalMoves;
+        public int totalLinesCleared;
+        public int totalPureLines;
+        public int totalPops;
+        public int totalPopCells;
+        public int bestChain;
+        public int bestMoveScore;
+        public string dailyDateKey;
+        public int dailyBestScore;
+        public int dailyAttempts;
+        public int dailyStreak;
+        public int dailyClaimedMedalIndex;
+        public string dailyQuestDateKey;
+        public DailyQuestState[] dailyQuests;
+        public string lastDailyPlayedDateKey;
+        public string lastDailyGiftDateKey;
+        public int dailyRewardDayIndex;
+        public string lastDailyRewardedAdDate;
+        public int dailyRewardedAdCount;
+        public int gameOversSinceInterstitial;
+        public long lastInterstitialUnix;
+        public bool tutorialSeen;
+        public int selectedTheme;
+        public int unlockedThemeMask = 1;
+        public bool cosmeticPackOwned;
+        public ClassicRunState classicRun;
+    }
+
+    [Serializable]
+    public class ClassicRunState
+    {
+        public bool active;
+        public BoardSnapshot board;
+        public ScoreSnapshot score;
+        public PieceInstance[] trayPieces;
+        public bool undoAvailable;
+        public UndoSnapshot undoSnapshot;
+        public RoundMission roundMission;
+        public int roundLinesCleared;
+        public int roundPureLines;
+        public int roundPops;
+        public int roundBestChain;
+        public int movesSinceClear;
+        public int nextScoreMilestone;
+        public bool revivedThisRound;
+        public bool oceanRescueConsumedThisRound;
+        public long savedUnix;
+    }
+
+    public class SaveManager : MonoBehaviour
+    {
+        public const int DailyRewardDayCount = 7;
+        public const int DailyRewardedAdLimit = 3;
+        public const int DailyRewardedAdCoins = 25;
+
+        private static readonly int[] DailyRewardCoins =
+        {
+            25,
+            35,
+            45,
+            60,
+            75,
+            100,
+            150
+        };
+
+        public static SaveManager Instance { get; private set; }
+
+        public SaveData Data { get; private set; } = new SaveData();
+
+        private const string SaveFileName = "chroma_blast_save.json";
+        private const string TemporarySaveFileName = "chroma_blast_save.tmp";
+        private const string BackupSaveFileName = "chroma_blast_save.backup.json";
+
+        private string SavePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+        private string TemporarySavePath => Path.Combine(Application.persistentDataPath, TemporarySaveFileName);
+        private string BackupSavePath => Path.Combine(Application.persistentDataPath, BackupSaveFileName);
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            Load();
+        }
+
+        public void Load()
+        {
+            bool saveMigratedData = false;
+            bool mainSaveExists = File.Exists(SavePath);
+            bool backupSaveExists = File.Exists(BackupSavePath);
+
+            if (TryReadSaveFile(SavePath, out SaveData mainData, out string mainFailure))
+            {
+                Data = mainData;
+            }
+            else if (TryReadSaveFile(BackupSavePath, out SaveData backupData, out string backupFailure))
+            {
+                Data = backupData;
+                saveMigratedData = true;
+                Debug.LogWarning(
+                    $"[SaveManager] Main save unavailable or invalid ({mainFailure}). " +
+                    "Player progress was recovered from the backup.");
+            }
+            else
+            {
+                Data = new SaveData();
+                saveMigratedData = true;
+
+                if (mainSaveExists || backupSaveExists)
+                {
+                    Debug.LogError(
+                        $"[SaveManager] Main and backup saves are unavailable or invalid " +
+                        $"(main: {mainFailure}; backup: {backupFailure}). A new default save will be created.");
+                }
+            }
+
+            TryDeleteTemporarySave();
+
+            if (Data.schemaVersion < 7)
+            {
+                // Only a legacy gift claimed today counts as Day 1 claimed.
+                // Empty or older legacy dates begin the new sequence at Day 1 without granting coins.
+                Data.dailyRewardDayIndex = Data.lastDailyGiftDateKey == GetDailyDateKey() ? 1 : 0;
+                Data.schemaVersion = 7;
+                saveMigratedData = true;
+            }
+
+            int clampedRewardDay = Mathf.Clamp(Data.dailyRewardDayIndex, 0, DailyRewardDayCount - 1);
+            if (Data.dailyRewardDayIndex != clampedRewardDay)
+            {
+                Data.dailyRewardDayIndex = clampedRewardDay;
+                saveMigratedData = true;
+            }
+
+            string currentDailyAdDate = GetDailyDateKey();
+            if (Data.lastDailyRewardedAdDate != currentDailyAdDate)
+            {
+                Data.lastDailyRewardedAdDate = currentDailyAdDate;
+                Data.dailyRewardedAdCount = 0;
+                saveMigratedData = true;
+            }
+            else
+            {
+                int clampedDailyAdCount = Mathf.Clamp(Data.dailyRewardedAdCount, 0, DailyRewardedAdLimit);
+                if (Data.dailyRewardedAdCount != clampedDailyAdCount)
+                {
+                    Data.dailyRewardedAdCount = clampedDailyAdCount;
+                    saveMigratedData = true;
+                }
+            }
+
+            if (PlayerPrefs.HasKey("VibrationEnabled"))
+            {
+                Data.hapticsMuted = PlayerPrefs.GetInt("VibrationEnabled", 1) == 0;
+            }
+            else
+            {
+                PlayerPrefs.SetInt("VibrationEnabled", Data.hapticsMuted ? 0 : 1);
+                PlayerPrefs.Save();
+            }
+
+            if (saveMigratedData)
+            {
+                Save();
+            }
+        }
+
+        public void Save()
+        {
+            try
+            {
+                string json = JsonUtility.ToJson(Data, true);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    throw new InvalidDataException("Serialized save data was empty.");
+                }
+
+                File.WriteAllText(TemporarySavePath, json);
+
+                if (!TryReadSaveFile(TemporarySavePath, out _, out string temporaryFailure))
+                {
+                    throw new InvalidDataException($"Temporary save validation failed: {temporaryFailure}");
+                }
+
+                bool mainSaveIsValid = TryReadSaveFile(SavePath, out _, out _);
+                ReplaceMainSave(mainSaveIsValid);
+                TryDeleteTemporarySave();
+            }
+            catch (Exception exception)
+            {
+                TryDeleteTemporarySave();
+                Debug.LogError($"[SaveManager] Could not save player progress safely: {exception.Message}");
+            }
+        }
+
+        private void ReplaceMainSave(bool mainSaveIsValid)
+        {
+            if (!File.Exists(SavePath))
+            {
+                File.Move(TemporarySavePath, SavePath);
+                return;
+            }
+
+            ReplaceFileAtomically(
+                TemporarySavePath,
+                SavePath,
+                mainSaveIsValid ? BackupSavePath : null);
+        }
+
+        private void ReplaceFileAtomically(string sourcePath, string destinationPath, string backupPath)
+        {
+            try
+            {
+                File.Replace(sourcePath, destinationPath, backupPath);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                ReplaceFileWithMoveFallback(sourcePath, destinationPath, backupPath);
+            }
+            catch (NotSupportedException)
+            {
+                ReplaceFileWithMoveFallback(sourcePath, destinationPath, backupPath);
+            }
+        }
+
+        private void ReplaceFileWithMoveFallback(string sourcePath, string destinationPath, string backupPath)
+        {
+            bool validBackupCreated = false;
+            if (!string.IsNullOrEmpty(backupPath))
+            {
+                File.Copy(destinationPath, backupPath, true);
+                if (!TryReadSaveFile(backupPath, out _, out string backupFailure))
+                {
+                    throw new InvalidDataException($"Backup validation failed: {backupFailure}");
+                }
+
+                validBackupCreated = true;
+            }
+
+            try
+            {
+                File.Delete(destinationPath);
+                File.Move(sourcePath, destinationPath);
+            }
+            catch
+            {
+                if (!File.Exists(destinationPath) && validBackupCreated)
+                {
+                    File.Copy(backupPath, destinationPath);
+                }
+
+                throw;
+            }
+        }
+
+        private bool TryReadSaveFile(string path, out SaveData saveData, out string failure)
+        {
+            saveData = null;
+            failure = null;
+
+            if (!File.Exists(path))
+            {
+                failure = "file does not exist";
+                return false;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(path);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    failure = "file is empty";
+                    return false;
+                }
+
+                string trimmedJson = json.Trim();
+                if (trimmedJson.Length < 2 || trimmedJson[0] != '{' || trimmedJson[trimmedJson.Length - 1] != '}')
+                {
+                    failure = "JSON object is incomplete";
+                    return false;
+                }
+
+                SaveData parsedData = JsonUtility.FromJson<SaveData>(json);
+                if (parsedData == null)
+                {
+                    failure = "JSON did not contain save data";
+                    return false;
+                }
+
+                saveData = parsedData;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                failure = exception.Message;
+                return false;
+            }
+        }
+
+        private void TryDeleteTemporarySave()
+        {
+            try
+            {
+                if (File.Exists(TemporarySavePath))
+                {
+                    File.Delete(TemporarySavePath);
+                }
+            }
+            catch
+            {
+                // A stale temporary file is ignored and will be overwritten by the next save.
+            }
+        }
+
+        public int GetHighScore(GameMode mode)
+        {
+            switch (mode)
+            {
+                case GameMode.Blitz:
+                    return Data.blitzHighScore;
+                case GameMode.Daily:
+                    return Data.dailyHighScore;
+                default:
+                    return Data.classicHighScore;
+            }
+        }
+
+        public bool TrySetHighScore(GameMode mode, int score)
+        {
+            if (score <= GetHighScore(mode))
+            {
+                return false;
+            }
+
+            switch (mode)
+            {
+                case GameMode.Blitz:
+                    Data.blitzHighScore = score;
+                    break;
+                case GameMode.Daily:
+                    Data.dailyHighScore = score;
+                    break;
+                default:
+                    Data.classicHighScore = score;
+                    break;
+            }
+
+            return true;
+        }
+
+        public int RegisterGameOver(GameMode mode, int score)
+        {
+            bool newRecord = score > GetHighScore(mode) && score > 0;
+            return RegisterGameOver(mode, score, newRecord);
+        }
+
+        public int RegisterGameOver(GameMode mode, int score, bool newRecordThisRun)
+        {
+            bool newRecord = newRecordThisRun && score > 0;
+            TrySetHighScore(mode, score);
+            Data.gamesPlayed++;
+            Data.rankPoints += Mathf.Max(12, score / 8);
+            int coinsEarned = CalculateGameOverCoins(mode, score, newRecord);
+            Data.coins = Mathf.Max(0, Data.coins) + coinsEarned;
+            Data.gameOversSinceInterstitial++;
+
+            if (mode == GameMode.Daily)
+            {
+                EnsureDailyState();
+                Data.dailyBestScore = Mathf.Max(Data.dailyBestScore, score);
+            }
+
+            Save();
+            return coinsEarned;
+        }
+
+        public void RegisterMoveStats(ClearResult result, int chain, int scoreAdded)
+        {
+            Data.totalMoves++;
+            Data.bestChain = Mathf.Max(Data.bestChain, chain);
+            Data.bestMoveScore = Mathf.Max(Data.bestMoveScore, Mathf.Max(0, scoreAdded));
+
+            if (result != null)
+            {
+                Data.totalLinesCleared += Mathf.Max(0, result.linesCleared);
+                Data.totalPureLines += Mathf.Max(0, result.pureLines);
+            }
+        }
+
+        public void RegisterPopStats(int poppedCells)
+        {
+            if (poppedCells <= 0)
+            {
+                return;
+            }
+
+            Data.totalPops++;
+            Data.totalPopCells += poppedCells;
+        }
+
+        public int RegisterDailyQuestMove(ClearResult result, int score, out string completedQuestName)
+        {
+            completedQuestName = string.Empty;
+            EnsureDailyState();
+
+            int totalCoins = 0;
+            bool changed = false;
+            for (int i = 0; i < Data.dailyQuests.Length; i++)
+            {
+                DailyQuestState quest = Data.dailyQuests[i];
+                int before = quest.progress;
+                switch (quest.type)
+                {
+                    case DailyQuestType.PlayMoves:
+                        quest.progress++;
+                        break;
+                    case DailyQuestType.ClearLines:
+                        quest.progress += result == null ? 0 : Mathf.Max(0, result.linesCleared);
+                        break;
+                    case DailyQuestType.MakePure:
+                        quest.progress += result == null ? 0 : Mathf.Max(0, result.pureLines);
+                        break;
+                    case DailyQuestType.ScorePoints:
+                        quest.progress = Mathf.Max(quest.progress, score);
+                        break;
+                }
+
+                quest.progress = Mathf.Clamp(quest.progress, 0, quest.target);
+                changed |= before != quest.progress;
+                totalCoins += TryClaimCompletedDailyQuest(quest, ref completedQuestName);
+            }
+
+            if (changed || totalCoins > 0)
+            {
+                Save();
+            }
+
+            return totalCoins;
+        }
+
+        public int RegisterDailyQuestPop(int poppedCells, int score, out string completedQuestName)
+        {
+            completedQuestName = string.Empty;
+            EnsureDailyState();
+
+            int totalCoins = 0;
+            bool changed = false;
+            for (int i = 0; i < Data.dailyQuests.Length; i++)
+            {
+                DailyQuestState quest = Data.dailyQuests[i];
+                int before = quest.progress;
+                if (quest.type == DailyQuestType.UsePop && poppedCells > 0)
+                {
+                    quest.progress++;
+                }
+                else if (quest.type == DailyQuestType.ScorePoints)
+                {
+                    quest.progress = Mathf.Max(quest.progress, score);
+                }
+
+                quest.progress = Mathf.Clamp(quest.progress, 0, quest.target);
+                changed |= before != quest.progress;
+                totalCoins += TryClaimCompletedDailyQuest(quest, ref completedQuestName);
+            }
+
+            if (changed || totalCoins > 0)
+            {
+                Save();
+            }
+
+            return totalCoins;
+        }
+
+        public string GetDailyQuestSummary()
+        {
+            EnsureDailyState();
+            if (Data.dailyQuests == null || Data.dailyQuests.Length == 0)
+            {
+                return "OBIECTIVE: se pregatesc";
+            }
+
+            string[] parts = new string[Data.dailyQuests.Length];
+            for (int i = 0; i < Data.dailyQuests.Length; i++)
+            {
+                DailyQuestState quest = Data.dailyQuests[i];
+                string status = quest.claimed ? "OK" : $"{Mathf.Min(quest.progress, quest.target)}/{quest.target}";
+                parts[i] = $"{GetDailyQuestShortLabel(quest.type)} {status}";
+            }
+
+            return "OBIECTIVE: " + string.Join("   ", parts);
+        }
+
+        public void AddCoins(int amount)
+        {
+            int coinsToAdd = Mathf.Max(0, amount);
+            if (coinsToAdd <= 0)
+            {
+                return;
+            }
+
+            AddCoinsToBalance(coinsToAdd);
+            Save();
+        }
+
+        private void AddCoinsToBalance(int amount)
+        {
+            Data.coins = Mathf.Max(0, Data.coins) + Mathf.Max(0, amount);
+        }
+
+        public bool HasClassicRun()
+        {
+            ClassicRunState run = Data.classicRun;
+            return run != null
+                && run.active
+                && run.board != null
+                && run.score != null
+                && run.trayPieces != null;
+        }
+
+        public ClassicRunState GetClassicRun()
+        {
+            return HasClassicRun() ? Data.classicRun : null;
+        }
+
+        public void SaveClassicRun(ClassicRunState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            state.active = true;
+            state.savedUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Data.classicRun = state;
+            Save();
+        }
+
+        public void ClearClassicRun()
+        {
+            if (Data.classicRun == null)
+            {
+                return;
+            }
+
+            Data.classicRun = null;
+            Save();
+        }
+
+        public void SetMuted(bool muted)
+        {
+            Data.soundMuted = muted;
+            Save();
+        }
+
+        public void SetHapticsMuted(bool muted)
+        {
+            Data.hapticsMuted = muted;
+            PlayerPrefs.SetInt("VibrationEnabled", muted ? 0 : 1);
+            PlayerPrefs.Save();
+            Save();
+        }
+
+        public void SetPerformanceMode(int mode)
+        {
+            Data.performanceMode = Mathf.Clamp(mode, MobilePerformance.PerformanceAuto, MobilePerformance.PerformanceEco);
+            Save();
+            MobilePerformance.ApplyDefaults();
+        }
+
+        public int CyclePerformanceMode()
+        {
+            int next = Data.performanceMode + 1;
+            if (next > MobilePerformance.PerformanceEco)
+            {
+                next = MobilePerformance.PerformanceAuto;
+            }
+
+            SetPerformanceMode(next);
+            return next;
+        }
+
+        public void SetRemoveAds(bool removeAds)
+        {
+            Data.removeAds = removeAds;
+            Save();
+        }
+
+        public void SetCosmeticPackOwned(bool owned)
+        {
+            Data.cosmeticPackOwned = owned;
+            Save();
+        }
+
+        public bool CanShowInterstitial(float cooldownSeconds, int gameOverInterval)
+        {
+            if (Data.removeAds || Data.gameOversSinceInterstitial < gameOverInterval)
+            {
+                return false;
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            return now - Data.lastInterstitialUnix >= cooldownSeconds;
+        }
+
+        public void MarkInterstitialShown()
+        {
+            Data.gameOversSinceInterstitial = 0;
+            Data.lastInterstitialUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Save();
+        }
+
+        public void MarkTutorialSeen()
+        {
+            Data.tutorialSeen = true;
+            Save();
+        }
+
+        public void ResetTutorial()
+        {
+            Data.tutorialSeen = false;
+            Save();
+        }
+
+        public void SetTheme(int themeIndex)
+        {
+            int clampedTheme = Mathf.Clamp(themeIndex, 0, ChromaPalette.ThemeCount - 1);
+            if (!IsThemeUnlocked((ThemeType)clampedTheme))
+            {
+                clampedTheme = 0;
+            }
+
+            Data.selectedTheme = clampedTheme;
+            Save();
+            RefreshThemeBackdrops();
+        }
+
+        public bool IsThemeUnlocked(ThemeType theme)
+        {
+            int themeIndex = Mathf.Clamp((int)theme, 0, ChromaPalette.ThemeCount - 1);
+            int mask = Data.unlockedThemeMask == 0 ? 1 : Data.unlockedThemeMask;
+            bool boughtWithCoins = (mask & (1 << themeIndex)) != 0;
+            return boughtWithCoins || ChromaPalette.IsThemeUnlocked(theme, Data.rankPoints, Data.cosmeticPackOwned);
+        }
+
+        public ThemeType GetNextLockedTheme()
+        {
+            for (int i = 0; i < ChromaPalette.ThemeCount; i++)
+            {
+                ThemeType theme = (ThemeType)i;
+                if (!IsThemeUnlocked(theme))
+                {
+                    return theme;
+                }
+            }
+
+            return ThemeType.Neon;
+        }
+
+        public bool CanBuyTheme(ThemeType theme)
+        {
+            return !IsThemeUnlocked(theme) && GetCoins() >= ChromaPalette.GetThemeCoinCost(theme);
+        }
+
+        public bool TryBuyTheme(ThemeType theme)
+        {
+            if (!CanBuyTheme(theme))
+            {
+                return false;
+            }
+
+            int themeIndex = Mathf.Clamp((int)theme, 0, ChromaPalette.ThemeCount - 1);
+            Data.coins = Mathf.Max(0, Data.coins - ChromaPalette.GetThemeCoinCost(theme));
+            Data.unlockedThemeMask = (Data.unlockedThemeMask == 0 ? 1 : Data.unlockedThemeMask) | (1 << themeIndex);
+            Save();
+            return true;
+        }
+
+        private void RefreshThemeBackdrops()
+        {
+            NeonBackdrop[] backdrops = FindObjectsByType<NeonBackdrop>(FindObjectsInactive.Include);
+            for (int i = 0; i < backdrops.Length; i++)
+            {
+                if (backdrops[i] != null)
+                {
+                    backdrops[i].Apply();
+                }
+            }
+        }
+
+        public bool IsAchievementUnlocked(AchievementId achievement)
+        {
+            long bit = 1L << (int)achievement;
+            return (Data.achievementMask & bit) != 0;
+        }
+
+        public int GetAchievementCount()
+        {
+            return AchievementSystem.CountUnlocked(Data.achievementMask);
+        }
+
+        public bool TryUnlockAchievement(AchievementId achievement, out AchievementReward reward)
+        {
+            reward = AchievementSystem.Get(achievement);
+            if (IsAchievementUnlocked(achievement))
+            {
+                return false;
+            }
+
+            Data.achievementMask |= 1L << (int)achievement;
+            Data.coins = Mathf.Max(0, Data.coins) + Mathf.Max(0, reward.coins);
+            Save();
+            return true;
+        }
+
+        public void RegisterDailyAttempt()
+        {
+            EnsureDailyState();
+
+            string today = GetDailyDateKey();
+            if (Data.lastDailyPlayedDateKey != today)
+            {
+                string yesterday = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+                Data.dailyStreak = Data.lastDailyPlayedDateKey == yesterday
+                    ? Mathf.Max(0, Data.dailyStreak) + 1
+                    : 1;
+                Data.lastDailyPlayedDateKey = today;
+            }
+
+            Data.dailyAttempts++;
+            Save();
+        }
+
+        public bool CanClaimDailyGift()
+        {
+            return Data.lastDailyGiftDateKey != GetDailyDateKey();
+        }
+
+        public int GetDailyGiftAmount()
+        {
+            return GetDailyRewardAmount(GetDailyRewardDayIndex());
+        }
+
+        public int GetDailyRewardAmount(int dayIndex)
+        {
+            return GetDailyRewardAmountForDay(dayIndex);
+        }
+
+        public static int GetDailyRewardAmountForDay(int dayIndex)
+        {
+            int index = Mathf.Clamp(dayIndex, 0, DailyRewardDayCount - 1);
+            return DailyRewardCoins[index];
+        }
+
+        public int GetDailyRewardDayIndex()
+        {
+            string today = GetDailyDateKey();
+            int nextDayIndex = Mathf.Clamp(Data.dailyRewardDayIndex, 0, DailyRewardDayCount - 1);
+
+            if (Data.lastDailyGiftDateKey == today)
+            {
+                return (nextDayIndex + DailyRewardDayCount - 1) % DailyRewardDayCount;
+            }
+
+            return IsPreviousCalendarDay(Data.lastDailyGiftDateKey, today) ? nextDayIndex : 0;
+        }
+
+        public bool TryClaimDailyGift(out int coinsClaimed)
+        {
+            coinsClaimed = 0;
+            string today = GetDailyDateKey();
+            if (Data.lastDailyGiftDateKey == today)
+            {
+                return false;
+            }
+
+            int claimedDayIndex = GetDailyRewardDayIndex();
+            coinsClaimed = GetDailyRewardAmount(claimedDayIndex);
+            Data.lastDailyGiftDateKey = today;
+            Data.dailyRewardDayIndex = (claimedDayIndex + 1) % DailyRewardDayCount;
+            AddCoinsToBalance(coinsClaimed);
+            Save();
+            return true;
+        }
+
+        public int GetDailyRewardedAdCount()
+        {
+            EnsureDailyRewardedAdState();
+            return Data.dailyRewardedAdCount;
+        }
+
+        public bool CanClaimDailyRewardedAd()
+        {
+            return GetDailyRewardedAdCount() < DailyRewardedAdLimit;
+        }
+
+        public bool TryClaimDailyRewardedAd(out int coinsClaimed)
+        {
+            coinsClaimed = 0;
+            EnsureDailyRewardedAdState();
+            if (Data.dailyRewardedAdCount >= DailyRewardedAdLimit)
+            {
+                return false;
+            }
+
+            Data.dailyRewardedAdCount++;
+            coinsClaimed = DailyRewardedAdCoins;
+            AddCoinsToBalance(coinsClaimed);
+            Save();
+            return true;
+        }
+
+        private void EnsureDailyRewardedAdState()
+        {
+            string today = GetDailyDateKey();
+            int clampedCount = Mathf.Clamp(Data.dailyRewardedAdCount, 0, DailyRewardedAdLimit);
+            bool changed = Data.dailyRewardedAdCount != clampedCount;
+            Data.dailyRewardedAdCount = clampedCount;
+
+            if (Data.lastDailyRewardedAdDate != today)
+            {
+                Data.lastDailyRewardedAdDate = today;
+                Data.dailyRewardedAdCount = 0;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                Save();
+            }
+        }
+
+        private bool IsPreviousCalendarDay(string candidateDateKey, string currentDateKey)
+        {
+            if (!DateTime.TryParseExact(
+                    candidateDateKey,
+                    "yyyyMMdd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime candidateDate)
+                || !DateTime.TryParseExact(
+                    currentDateKey,
+                    "yyyyMMdd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out DateTime currentDate))
+            {
+                return false;
+            }
+
+            return candidateDate.Date == currentDate.Date.AddDays(-1);
+        }
+
+        public bool TryClaimDailyMedalReward(int score, out DailyMedalInfo medal, out int coinsClaimed)
+        {
+            EnsureDailyState();
+            medal = DailyMedalSystem.GetInfo(score);
+            coinsClaimed = 0;
+
+            if (medal.index <= 0 || medal.index <= Data.dailyClaimedMedalIndex)
+            {
+                return false;
+            }
+
+            int previousReward = DailyMedalSystem.GetRewardCoins(Data.dailyClaimedMedalIndex);
+            int currentReward = DailyMedalSystem.GetRewardCoins(medal.index);
+            coinsClaimed = Mathf.Max(0, currentReward - previousReward);
+            Data.dailyClaimedMedalIndex = medal.index;
+            Data.coins = Mathf.Max(0, Data.coins) + coinsClaimed;
+            Save();
+            return coinsClaimed > 0;
+        }
+
+        public void EnsureDailyState()
+        {
+            string today = GetDailyDateKey();
+            if (Data.dailyDateKey == today)
+            {
+                EnsureDailyQuests(today);
+                return;
+            }
+
+            Data.dailyDateKey = today;
+            Data.dailyBestScore = 0;
+            Data.dailyAttempts = 0;
+            Data.dailyClaimedMedalIndex = 0;
+            GenerateDailyQuests(today);
+            Save();
+        }
+
+        public string GetDailyDisplayDate()
+        {
+            return DateTime.Now.ToString("dd.MM");
+        }
+
+        public int GetDailyStreak()
+        {
+            return Mathf.Max(0, Data.dailyStreak);
+        }
+
+        public int GetCoins()
+        {
+            return Mathf.Max(0, Data.coins);
+        }
+
+        private int CalculateGameOverCoins(GameMode mode, int score, bool newRecord)
+        {
+            int coinsEarned = Mathf.Max(2, score / 260);
+            if (newRecord)
+            {
+                coinsEarned += 12;
+            }
+
+            if (mode == GameMode.Daily)
+            {
+                coinsEarned += Mathf.Min(20, Mathf.Max(0, Data.dailyStreak) * 2);
+            }
+            else if (mode == GameMode.Blitz)
+            {
+                coinsEarned += 3;
+            }
+
+            return Mathf.Clamp(coinsEarned, 2, 140);
+        }
+
+        public string GetDailyDateKey()
+        {
+            return DateTime.Now.ToString("yyyyMMdd");
+        }
+
+        public int GetDailySeed()
+        {
+            return int.Parse(GetDailyDateKey()) ^ 0x5C0A;
+        }
+
+        private void EnsureDailyQuests(string today)
+        {
+            bool questsReady = Data.dailyQuestDateKey == today && Data.dailyQuests != null && Data.dailyQuests.Length == 3;
+            if (questsReady)
+            {
+                for (int i = 0; i < Data.dailyQuests.Length; i++)
+                {
+                    if (Data.dailyQuests[i] == null)
+                    {
+                        questsReady = false;
+                        break;
+                    }
+                }
+            }
+
+            if (questsReady)
+            {
+                return;
+            }
+
+            GenerateDailyQuests(today);
+            Save();
+        }
+
+        private void GenerateDailyQuests(string today)
+        {
+            System.Random questRandom = new System.Random((int.Parse(today) ^ 0x24D7) + 37);
+            DailyQuestType[] pool = new[]
+            {
+                DailyQuestType.ClearLines,
+                DailyQuestType.PlayMoves,
+                DailyQuestType.MakePure,
+                DailyQuestType.UsePop,
+                DailyQuestType.ScorePoints
+            };
+
+            for (int i = 0; i < pool.Length; i++)
+            {
+                int swap = questRandom.Next(i, pool.Length);
+                DailyQuestType temp = pool[i];
+                pool[i] = pool[swap];
+                pool[swap] = temp;
+            }
+
+            Data.dailyQuestDateKey = today;
+            Data.dailyQuests = new DailyQuestState[3];
+            for (int i = 0; i < Data.dailyQuests.Length; i++)
+            {
+                Data.dailyQuests[i] = CreateDailyQuest(pool[i], i, questRandom);
+            }
+        }
+
+        private DailyQuestState CreateDailyQuest(DailyQuestType type, int slot, System.Random questRandom)
+        {
+            DailyQuestState quest = new DailyQuestState
+            {
+                type = type,
+                progress = 0,
+                claimed = false
+            };
+
+            switch (type)
+            {
+                case DailyQuestType.PlayMoves:
+                    quest.target = 18 + slot * 4;
+                    quest.rewardCoins = 35 + slot * 8;
+                    break;
+                case DailyQuestType.ClearLines:
+                    quest.target = 7 + slot * 2;
+                    quest.rewardCoins = 45 + slot * 10;
+                    break;
+                case DailyQuestType.MakePure:
+                    quest.target = 1 + (slot == 2 ? 1 : 0);
+                    quest.rewardCoins = 55 + slot * 12;
+                    break;
+                case DailyQuestType.UsePop:
+                    quest.target = 1 + slot;
+                    quest.rewardCoins = 45 + slot * 12;
+                    break;
+                case DailyQuestType.ScorePoints:
+                    quest.target = 2200 + slot * 900 + questRandom.Next(0, 3) * 250;
+                    quest.rewardCoins = 45 + slot * 10;
+                    break;
+                default:
+                    quest.target = 1;
+                    quest.rewardCoins = 30;
+                    break;
+            }
+
+            return quest;
+        }
+
+        private int TryClaimCompletedDailyQuest(DailyQuestState quest, ref string completedQuestName)
+        {
+            if (quest == null || quest.claimed || quest.progress < quest.target)
+            {
+                return 0;
+            }
+
+            quest.claimed = true;
+            int reward = Mathf.Max(0, quest.rewardCoins);
+            Data.coins = Mathf.Max(0, Data.coins) + reward;
+            completedQuestName = string.IsNullOrEmpty(completedQuestName)
+                ? GetDailyQuestLabel(quest.type)
+                : "OBIECTIVE";
+            return reward;
+        }
+
+        private string GetDailyQuestShortLabel(DailyQuestType type)
+        {
+            switch (type)
+            {
+                case DailyQuestType.PlayMoves:
+                    return "MUTARI";
+                case DailyQuestType.ClearLines:
+                    return "LINII";
+                case DailyQuestType.MakePure:
+                    return "PURE";
+                case DailyQuestType.UsePop:
+                    return "POP";
+                case DailyQuestType.ScorePoints:
+                    return "SCOR";
+                default:
+                    return "TASK";
+            }
+        }
+
+        private string GetDailyQuestLabel(DailyQuestType type)
+        {
+            switch (type)
+            {
+                case DailyQuestType.PlayMoves:
+                    return "MUTARI ZILNICE";
+                case DailyQuestType.ClearLines:
+                    return "LINII ZILNICE";
+                case DailyQuestType.MakePure:
+                    return "PURE ZILNIC";
+                case DailyQuestType.UsePop:
+                    return "POP ZILNIC";
+                case DailyQuestType.ScorePoints:
+                    return "SCOR ZILNIC";
+                default:
+                    return "OBIECTIV ZILNIC";
+            }
+        }
+    }
+}

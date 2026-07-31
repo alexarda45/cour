@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5f31e86a9194a94b89ad60664efca31, type: 3}
+  m_Name: OceanTileSpriteSet
+  m_EditorClassIdentifier: 
+  blue: {fileID: -3384883758774382784, guid: f76e647c1c1005f4d868ccdbef232aad, type: 3}
+  cyan: {fileID: 1205787619114530959, guid: 1224bfc620768bd49954134289bb9a6d, type: 3}
+  teal: {fileID: -8878926929063596630, guid: 67cfe555a72196342aa60a2e9af25602, type: 3}
+  pearlWhite: {fileID: 456353566321082371, guid: a8359a8fbcc46b44ca50406e0763bf17, type: 3}

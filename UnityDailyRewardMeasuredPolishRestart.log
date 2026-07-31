@@ -1,0 +1,2210 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.5/staging' branch; Version is '6000.5.0f1 (88b47c5e7076) revision 8959100'; Using compiler version '194234433'; Build Type 'Release'
+OS: 'Windows 11  (10.0.26200) Core' Language: 'en' Physical Memory: 16091 MB
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-arda2" at "2026-07-22T23:18:24.5539991Z"
+BatchMode: 0, IsHumanControllingUs: 1, StartBugReporterOnCrash: 1, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-07-22T23:18:24Z
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.5.0f1\Editor\Unity.exe
+-projectPath
+C:\Users\arda2\Desktop\ChromaBlast
+-logFile
+C:\Users\arda2\Desktop\ChromaBlast\UnityDailyRewardMeasuredPolishRestart.log
+Successfully changed project path to: C:\Users\arda2\Desktop\ChromaBlast
+C:/Users/arda2/Desktop/ChromaBlast
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=0"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.Player connection [31596]  Target information:
+
+Player connection [31596]  * "[IP] 192.168.1.183 [Port] 55504 [Flags] 2 [Guid] 1037666358 [EditorId] 1037666358 [Version] 1048832 [Id] WindowsEditor(7,Arda) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [31596] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [31596] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-18332" after 0.3 seconds.
+[Licensing::Module] Licensing is not yet initialized.
+[Licensing::Client] Error: HandshakeResponse reported an error:
+	ResponseCode: 505
+	ResponseStatus: Unsupported protocol version '1.18.1'.
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-arda2"
+[Licensing::IpcConnector] LicenseClient-arda2 channel disconnected successfully.
+[Licensing::IpcConnector] Channel LicenseClient-arda2-6000.5.0 doesn't exist
+[Licensing::Module] Successfully launched the LicensingClient (PId: 28456)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-arda2-6000.5.0" at "2026-07-22T23:18:26.2953009Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 28456, path: "C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.1+9fbee8e
+  Session Id:              bd1059f325e94a849e20cd0701ad6e5c
+  Correlation Id:          a08562f1f24068d8b67fde02cbbf8fc8
+  External correlation Id: 9064201879164851183
+  Machine Id:              0wAOOPS+Kalo6sh4QUgzEUVGKOk=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-arda2-6000.5.0" (connect: 0.37s, validation: 0.25s, handshake: 0.01s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-arda2-6000.5.0-notifications" at "2026-07-22T23:18:26.555483Z"
+[Licensing::Module] Connected to LicensingClient (PId: 28456, launch time: 0.00, total connection time: 0.63s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 7972584482190-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 2.05s
+[Licensing::Module] Licensing is initialized (took 1.41s).
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Active build profile path: `Assets/Settings/Build Profiles/Android™.asset`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Artifact Garbage Collection - Removed 3 unused hashed content files
+[Licensing::Client] Successfully resolved entitlement details
+Got setting from build profile YAML, name `m_BuildTarget`, value `13`
+Got setting from build profile YAML, name `m_Subtarget`, value `0`
+Initialize engine version: 6000.5.0f1 (88b47c5e7076)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/arda2/Desktop/ChromaBlast/Assets
+[D3D12 Device Filter] Vendor Name: NVIDIA
+[D3D12 Device Filter] Device Name: NVIDIA GeForce RTX 4050 Laptop GPU
+[D3D12 Device Filter] Driver Version: 32.0.15.8186
+[D3D12 Device Filter] Feature Level: 12.2
+[D3D12 Device Filter] Graphics Memory: 5921 MB
+[D3D12 Device Filter] Processor Count: 20
+[D3D12 Device Filter] Device Type: Discrete
+GfxDevice: creating device client; kGfxThreadingModeSplitJobs
+d3d12: failed to query info queue interface (0x80004002).
+Direct3D:
+    Version:         Direct3D 12 [level 12.2]
+    Renderer:        NVIDIA GeForce RTX 4050 Laptop GPU (ID=0x28e1)
+    Vendor:          NVIDIA
+    VRAM:            5921 MB
+    App VRAM Budget: 5153 MB
+    Driver:          32.0.15.8186
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = 'C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56332
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.5.0f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll
+Registered in 0.003210 seconds.
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Got setting from build profile YAML, name `m_BuildSubtarget`, value `0`
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.572 seconds
+Domain Reload Profiling: 1272ms
+	BeginReloadAssembly (179ms)
+		CreateAndSetChildDomain (21ms)
+	RebuildCommonClasses (6ms)
+	RebuildNativeTypeToScriptingClass (20ms)
+	initialDomainReloadingComplete (80ms)
+	LoadAllAssembliesAndSetupDomain (412ms)
+		LoadAssemblies (155ms)
+		AnalyzeDomain (306ms)
+			TypeCache.Refresh (304ms)
+				TypeCache.ScanAssembly (287ms)
+	FinalizeReload (576ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (115ms)
+			BeforeProcessingInitializeOnLoad (113ms)
+			ProcessInitializeOnLoadAttributes (121ms)
+			ProcessInitializeOnLoadMethodAttributes (130ms)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 68 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.2d.animation@15.1.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.animation@6d5a363ae647)
+    com.unity.2d.aseprite@5.0.3 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.aseprite@d13865913efa)
+    com.unity.2d.psdimporter@14.0.3 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.psdimporter@5d82044f9e43)
+    com.unity.2d.spriteshape@15.0.3 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.spriteshape@fcb7ec61a58b)
+    com.unity.2d.tilemap.extras@8.0.3 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.tilemap.extras@a80140457adc)
+    com.unity.2d.tooling@3.0.1 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.tooling@6f06ffb033c0)
+    com.unity.collab-proxy@2.12.4 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.collab-proxy@0b1559bcd34e)
+    com.unity.ide.rider@3.0.38 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.ide.rider@1f60b3138684)
+    com.unity.ide.visualstudio@2.0.26 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.ide.visualstudio@a99d56dec63f)
+    com.unity.inputsystem@1.19.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.inputsystem@21a28c3a6c83)
+    com.unity.services.levelplay@9.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.services.levelplay@48940723ab9d)
+    com.unity.timeline@1.8.12 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.timeline@8cd8509afae5)
+    com.unity.visualscripting@1.9.11 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.visualscripting@8bed5ad90189)
+    com.unity.services.core@1.18.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.services.core@3464cb68d709)
+    com.unity.2d.common@14.0.1 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.common@73badf92ba8b)
+    com.unity.nuget.newtonsoft-json@3.2.2 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.nuget.newtonsoft-json@4dfd81071c64)
+    com.unity.searcher@4.9.4 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.searcher@d45a78918735)
+    com.unity.burst@1.8.29 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.burst@6bb9aca3ef38)
+    com.unity.nuget.mono-cecil@1.11.6 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+    com.unity.test-framework.performance@3.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.test-framework.performance@8b56083ec0f0)
+  Built-in packages:
+    com.unity.2d.sprite@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.sprite@053a968eab56)
+    com.unity.2d.tilemap@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.2d.tilemap@be0bacb99591)
+    com.unity.multiplayer.center@1.0.1 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.multiplayer.center@b860850997d0)
+    com.unity.render-pipelines.universal@17.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.render-pipelines.universal@0c18adc4ff89)
+    com.unity.test-framework@1.7.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.test-framework@f3e6c9a02477)
+    com.unity.ugui@2.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.ugui@4f9b15fd1386)
+    com.unity.modules.accessibility@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.accessibility)
+    com.unity.modules.adaptiveperformance@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.adaptiveperformance)
+    com.unity.modules.ai@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.ai)
+    com.unity.modules.androidjni@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.androidjni)
+    com.unity.modules.animation@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.assetbundle@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.audio@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.cloth@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.cloth)
+    com.unity.modules.director@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.physics2d@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.physics2d)
+    com.unity.modules.physicscore2d@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.physicscore2d)
+    com.unity.modules.screencapture@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.tilemap@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.tilemap)
+    com.unity.modules.ui@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unityanalytics@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unityanalytics)
+    com.unity.modules.unitywebrequest@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.unitywebrequesttexture@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unitywebrequesttexture)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.vectorgraphics@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.vectorgraphics)
+    com.unity.modules.vehicles@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.video@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.wind@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.xr@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.xr)
+    com.unity.modules.subsystems@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.subsystems)
+    com.unity.modules.hierarchycore@1.0.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.1.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.ext.nunit@44f7d31723bd)
+    com.unity.render-pipelines.core@17.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.render-pipelines.core@f43b729f1f6e)
+    com.unity.shadergraph@17.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.shadergraph@3fa956880a81)
+    com.unity.render-pipelines.universal-config@17.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.render-pipelines.universal-config@fdda01c80fe3)
+    com.unity.mathematics@1.4.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.mathematics@981956d94fb6)
+    com.unity.collections@6.5.0 (location: C:\Users\arda2\Desktop\ChromaBlast\Library\PackageCache\com.unity.collections@a43cabe808ca)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.03 seconds
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.0f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1300b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/arda2/Desktop/ChromaBlast
+ExitCode: 0 Duration: 5s871ms
+[1007/1310  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1302/1310  3s] Csc Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll (+2 others)
+[1304/1310  0s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp-Editor.dll, with 150 defines and 390 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1305/1310  0s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll, with 152 defines and 358 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1307/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1308/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (5.75 seconds), 6 items updated, 1310 evaluated
+AssetDatabase: script compilation time: 6.749274s
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 11.56 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Refreshing native plugins compatible for Editor in 8.68 ms, found 5 plugins.
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  4.549 seconds
+Domain Reload Profiling: 6026ms
+	BeginReloadAssembly (381ms)
+		DisableScriptedObjects (31ms)
+		CreateAndSetChildDomain (160ms)
+	RebuildCommonClasses (11ms)
+	RebuildNativeTypeToScriptingClass (21ms)
+	initialDomainReloadingComplete (90ms)
+	LoadAllAssembliesAndSetupDomain (973ms)
+		LoadAssemblies (542ms)
+		AnalyzeDomain (387ms)
+			TypeCache.Refresh (267ms)
+				TypeCache.ScanAssembly (248ms)
+			BuildScriptInfoCaches (106ms)
+			ResolveRequiredComponents (11ms)
+	FinalizeReload (4551ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			BeforeProcessingInitializeOnLoad (118ms)
+			ProcessInitializeOnLoadAttributes (3363ms)
+			ProcessInitializeOnLoadMethodAttributes (668ms)
+			AfterProcessingInitializeOnLoad (11ms)
+		AwakeInstancesAfterBackupRestoration (31ms)
+Starting new worker id: 0 with log in C:/Users/arda2/Desktop/ChromaBlast/Logs/AssetImportWorkerHW0.log
+Refreshing native plugins compatible for Editor in 9.09 ms, found 5 plugins.
+
+Asset Pipeline Refresh (id=eec3ab5d6fabfec40b34e29265c5deb1): Total: 14.173 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=5416 ms
+		Asset DB Callback time: managed=309 ms, native=47 ms
+		Scripting: domain reloads=1, domain reload time=1558 ms, compile time=6751 ms, other=90 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 32.587ms
+	ApplyChangesToAssetFolders: 0.837ms
+	Scan: 278.318ms
+	Collect global state as custom dependencies: 5.501ms
+	OnSourceAssetsModified: 0.870ms
+	CategorizeScriptCompilationAssets: 82.760ms
+	ProcessAssetsWithTransientArtifactChanges: 120.333ms
+	CategorizeAssets: 75.272ms
+	CompileScripts: 6751.046ms
+	ImportOutOfDateAssets: 4660.084ms (4593.856ms without children)
+		UnloadImportedAssets: 0.741ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.892ms
+		ImportSchedulerStart: 64.548ms
+	PostProcessAllAssets: 313.047ms
+		XRBuildSystem.XRAssetImported 2.404ms
+		VCAutoAddAssetPostprocess 1.244ms
+		MonoPostProcessAllAssets: 308.756ms
+			AssetPostprocessor.OnPostprocessAllAssets 170.269ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 28.200ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 25.237ms
+			AssetChangedListener.OnPostprocessAllAssets 19.293ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 7.347ms
+			SyncVS.PostprocessSyncProject 4.117ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 3.743ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 3.231ms
+			PlayServicesResolver.OnPostprocessAllAssets 3.069ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 2.372ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.277ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.869ms
+			PackageManagerResolver.OnPostprocessAllAssets 1.809ms
+			VersionHandlerImpl.OnPostprocessAllAssets 1.742ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 1.575ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 1.074ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.940ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.869ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.741ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.649ms
+			PostProcessor.OnPostprocessAllAssets 0.568ms
+			IOSResolver.OnPostprocessAllAssets 0.542ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.537ms
+			AssetProcessor.OnPostprocessAllAssets 0.526ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.471ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.458ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.450ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.447ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.426ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.388ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.376ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.352ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.350ms
+			AssetEvents.OnPostprocessAllAssets 0.329ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.312ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.235ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.205ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.194ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.190ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.180ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.167ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.145ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.090ms
+	PostAssetChangesProfiler: 13.204ms
+	UnloadStreamsBegin: 3.799ms
+	PersistCurrentRevisions: 0.194ms
+	GenerateScriptTypeHashes: 3.289ms
+	GenerateScriptTypeSerializationHashes: 5.776ms
+	Untracked: 1828.371ms
+
+Application.AssetDatabase Initial Refresh End
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+Scanning for USB devices : 4.245ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Chroma Blast
+Unloading 28 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Assets/Scenes/Menu.unity'
+	Deserialize:            57.067 ms
+	Integration:            427.666 ms
+	Integration of assets:  3.497 ms
+	Thread Wait Time:       0.017 ms
+	Total Operation Time:   488.247 ms
+Unloading 7870 unused Assets / (6.0 MB). Loaded Objects now: 9228.
+Memory consumption went from 467.4 MB to 461.4 MB.
+Total: 17.400000 ms (FindLiveObjects: 1.372400 ms CreateObjectMapping: 2.992000 ms MarkObjects: 8.714600 ms  DeleteObjects: 4.314000 ms)
+
+[LAYOUT] About to load UserSettings\Layouts\default-6000.dwlt, keepMainWindow=False
+[LAYOUT] About to save layout C:\Users\arda2\Desktop\ChromaBlast\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/arda2/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+[MODES] ModeService[default].InitializeCurrentMode
+[MODES] ModeService[default].RaiseModeChanged(default, default)
+<RI> Initializing input.
+Using Windows.Gaming.Input
+[Project] Loading completed in 22.146 seconds
+	Project init time: 				19.910 seconds
+		Template init time: 		0.000 seconds
+		Package Manager init time: 		1.709 seconds
+		Asset Database init time: 		0.891 seconds
+		Global illumination init time: 	0.004 seconds
+		Assemblies load time: 			1.320 seconds
+		Unity extensions init time: 	0.026 seconds
+		Asset Database refresh time: 	14.174 seconds
+	Scene opening time: 			1.916 seconds
+##utp:{"type":"ProjectInfo","version":2,"phase":"Immediate","time":1784762326687,"processId":18332,"projectLoad":22.146316900000003,"projectInit":19.9101513,"templateInit":0.0,"packageManagerInit":1.7085612,"assetDatabaseInit":0.8908702,"globalIlluminationInit":0.0038494,"assembliesLoad":1.3200595,"unityExtensionsInit":0.0264436,"assetDatabaseRefresh":14.1736719,"sceneOpening":1.9156649}
+##utp:{"type":"EditorInfo","version":2,"phase":"Immediate","time":1784762326687,"processId":18332,"editorVersion":"6000.5.0f1 (88b47c5e7076)","branch":"6000.5/staging","buildType":"Release","platform":"Windows"}
+Worker ready: AssetImportWorkerHW0 0
+Asset Pipeline Refresh (id=2615f916ec4383f43b10eefb5eb30d3c): Total: 0.151 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+Start Indexing on Editor startup
+[Indexing] Starting Initial Indexing for Assets
+Created GICache directory at C:/Users/arda2/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.014s, timestamps: [24.167 - 24.181]
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully updated the access token
+[Licensing::Module] Successfully updated access token: "BM88nhjw"... (expires: 2026-07-23T00:28:28Z)
+[Licensing::Client] Successfully resolved entitlement details
+Starting new worker id: 1 with log in C:/Users/arda2/Desktop/ChromaBlast/Logs/AssetImportWorkerHW1.log
+[Worker0] Imported GUID: a137e1a1a1ee83349a66d19473428489 - Path: Assets/Scripts/UI/MenuUI.cs - Importer: ScriptedImporter/UnityEditor.QuickSearchModule:UnityEditor.Search:ASIAI0B -> (ImportResultId: '5be9c5594d1fb61eba34977e40465e88') in 0.1155933 seconds
+UPID Received '9c7da945-ff6d-407a-a606-7413455cfddc'.
+Worker ready: AssetImportWorkerHW1 1
+SpriteAtlasPacking completed in 0.015101 sec
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 8.86 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.527 seconds
+Domain Reload Profiling: 3945ms
+	BeginReloadAssembly (1006ms)
+		DisableScriptedObjects (136ms)
+		CreateAndSetChildDomain (652ms)
+	RebuildCommonClasses (12ms)
+	RebuildNativeTypeToScriptingClass (20ms)
+	initialDomainReloadingComplete (89ms)
+	LoadAllAssembliesAndSetupDomain (289ms)
+		LoadAssemblies (190ms)
+		AnalyzeDomain (28ms)
+			TypeCache.Refresh (9ms)
+			ResolveRequiredComponents (14ms)
+	FinalizeReload (2529ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			BeforeProcessingInitializeOnLoad (120ms)
+			ProcessInitializeOnLoadAttributes (627ms)
+			ProcessInitializeOnLoadMethodAttributes (218ms)
+			AfterProcessingInitializeOnLoad (7ms)
+		AwakeInstancesAfterBackupRestoration (930ms)
+No restricted APIs configured; Validation skipped.
+Checking 29 assemblies for restricted APIs found 0 usage(s) in 5 ms
+Refreshing native plugins compatible for Editor in 8.49 ms, found 5 plugins.
+
+Asset Pipeline Refresh (id=43320c1d4193c0c44bf6d2343f53f75c): Total: 7.741 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=3074 ms
+		Asset DB Callback time: managed=2507 ms, native=661 ms
+		Scripting: domain reloads=1, domain reload time=1494 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.689ms
+	ApplyChangesToAssetFolders: 0.460ms
+	Collect global state as custom dependencies: 4.893ms
+	ProcessAssetsWithTransientArtifactChanges: 300.727ms
+	CategorizeAssets: 83.346ms
+	CompileScripts: 2.054ms
+	ImportOutOfDateAssets: 2618.846ms (2567.255ms without children)
+		CollectScriptTypesHashes: 2.992ms
+		ReloadNativeAssets: 1.692ms
+		UnloadImportedAssets: 2.299ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.097ms
+		ImportSchedulerStart: 46.466ms
+	PostProcessAllAssets: 3147.294ms
+		AssemblyValidation.PostprocessAllAssets 50.164ms
+		PostProcessCallbackCreateDeferredMaterials 23.767ms
+		SpriteAtlasDatabase.OnAssetPostprocessCallback 23.131ms
+		ShaderAssetModifiedCallback 13.693ms
+		ComputeShaderImportPostprocess 12.352ms
+		RaytracingShaderImportPostprocess 11.784ms
+		SpeedTreeImporter.PostprocessAllAssets 10.908ms
+		BlockShaderImporter.PostprocessAllAssets 4.922ms
+		LocalizationDatabase.AssetDatabasePostprocessCallback 4.236ms
+		XRBuildSystem.XRAssetImported 3.195ms
+		MonoPostProcessAllAssets: 2503.721ms
+			PackageManagerResolver.OnPostprocessAllAssets 1505.983ms
+			SyncVS.PostprocessSyncProject 334.115ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 237.084ms
+			PostProcessor.OnPostprocessAllAssets 60.223ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 45.541ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 42.518ms
+			MaterialPostprocessor.OnPostprocessAllAssets 41.420ms
+			AssetPostprocessor.OnPostprocessAllAssets 41.246ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 28.370ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 26.099ms
+			AssetChangedListener.OnPostprocessAllAssets 19.118ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 13.022ms
+			PlayServicesResolver.OnPostprocessAllAssets 8.753ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 6.852ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 6.839ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 6.368ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 2.533ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.282ms
+			VersionHandlerImpl.OnPostprocessAllAssets 1.950ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.892ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.883ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.638ms
+			IOSResolver.OnPostprocessAllAssets 0.580ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.567ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.566ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.471ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.454ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.429ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.399ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.397ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.364ms
+			AssetEvents.OnPostprocessAllAssets 0.338ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.314ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.306ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.228ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.189ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.186ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.173ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.155ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.142ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.109ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.083ms
+			AssetProcessor.OnPostprocessAllAssets 0.069ms
+	PostAssetChangesProfiler: 21.509ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.362ms
+	UnloadStreamsBegin: 2.280ms
+	PersistCurrentRevisions: 0.207ms
+	GenerateScriptTypeHashes: 6.512ms
+	GenerateScriptTypeSerializationHashes: 11.033ms
+	Untracked: 1545.088ms
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.181 ms
+	Integration:            645.763 ms
+	Integration of assets:  0.005 ms
+	Thread Wait Time:       0.103 ms
+	Total Operation Time:   653.052 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+TrimDiskCacheJob: Current cache size 0mb
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 18 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            5.884 ms
+	Integration:            449.222 ms
+	Integration of assets:  0.007 ms
+	Thread Wait Time:       0.033 ms
+	Total Operation Time:   455.146 ms
+Unloading 7447 unused Assets / (22.9 MB). Loaded Objects now: 10280.
+Memory consumption went from 0.71 GB to 0.69 GB.
+Total: 26.890400 ms (FindLiveObjects: 0.994100 ms CreateObjectMapping: 4.502200 ms MarkObjects: 17.080300 ms  DeleteObjects: 4.312100 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+SpriteAtlasPacking completed in 0.014207 sec
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 8.92 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.244 seconds
+Domain Reload Profiling: 3558ms
+	BeginReloadAssembly (945ms)
+		DisableScriptedObjects (104ms)
+		CreateAndSetChildDomain (647ms)
+	RebuildCommonClasses (11ms)
+	RebuildNativeTypeToScriptingClass (17ms)
+	initialDomainReloadingComplete (82ms)
+	LoadAllAssembliesAndSetupDomain (257ms)
+		LoadAssemblies (170ms)
+		AnalyzeDomain (25ms)
+			TypeCache.Refresh (9ms)
+			ResolveRequiredComponents (11ms)
+	FinalizeReload (2246ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (18ms)
+			BeforeProcessingInitializeOnLoad (111ms)
+			ProcessInitializeOnLoadAttributes (497ms)
+			ProcessInitializeOnLoadMethodAttributes (190ms)
+			AfterProcessingInitializeOnLoad (6ms)
+		AwakeInstancesAfterBackupRestoration (757ms)
+
+Asset Pipeline Refresh (id=fc9dd35d2b0124446acf6ab853b724da): Total: 3.891 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=2469 ms
+		Asset DB Callback time: managed=34 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=1384 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.249ms
+	ApplyChangesToAssetFolders: 0.466ms
+	Collect global state as custom dependencies: 3.976ms
+	CategorizeScriptCompilationAssets: 0.117ms
+	ProcessAssetsWithTransientArtifactChanges: 0.315ms
+	CategorizeAssets: 77.822ms
+	CompileScripts: 1.594ms
+	ImportOutOfDateAssets: 2328.270ms (2281.345ms without children)
+		CollectScriptTypesHashes: 1.031ms
+		ReloadNativeAssets: 1.665ms
+		UnloadImportedAssets: 0.306ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.888ms
+		ImportSchedulerStart: 43.949ms
+	PostProcessAllAssets: 34.969ms
+		MonoPostProcessAllAssets: 34.964ms
+			PackageManagerResolver.OnPostprocessAllAssets 1505.983ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 237.084ms
+			PostProcessor.OnPostprocessAllAssets 60.223ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 45.541ms
+			MaterialPostprocessor.OnPostprocessAllAssets 41.420ms
+			AssetPostprocessor.OnPostprocessAllAssets 41.246ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 28.370ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 26.099ms
+			AssetChangedListener.OnPostprocessAllAssets 19.118ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 12.159ms
+			PlayServicesResolver.OnPostprocessAllAssets 8.753ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 6.852ms
+			SyncVS.PostprocessSyncProject 3.557ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.693ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 2.533ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.335ms
+			VersionHandlerImpl.OnPostprocessAllAssets 1.950ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.919ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.892ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.883ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.638ms
+			IOSResolver.OnPostprocessAllAssets 0.580ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.566ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.454ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.436ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.429ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.429ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.399ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.397ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.364ms
+			AssetEvents.OnPostprocessAllAssets 0.338ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.334ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.314ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.215ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.186ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.181ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.173ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.164ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.155ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.142ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.109ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.083ms
+			AssetProcessor.OnPostprocessAllAssets 0.069ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.498ms
+	PersistCurrentRevisions: 0.192ms
+	GenerateScriptTypeHashes: 4.812ms
+	GenerateScriptTypeSerializationHashes: 8.228ms
+	Untracked: 1429.887ms
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            6.565 ms
+	Integration:            536.518 ms
+	Integration of assets:  0.088 ms
+	Thread Wait Time:       -0.062 ms
+	Total Operation Time:   543.109 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Asset Pipeline Refresh (id=e1e07b752af542e488a3cdaa8258c8f9): Total: 0.012 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+Importing 'GUID: d4b244d580914974bb09b413ed54b7b4 - Path: Assets/Resources/UI/DailyRewardPanel.prefab' with importer (PrefabImporter)
+Imported 'GUID: d4b244d580914974bb09b413ed54b7b4' -> (Import Result ID: 'fd514a455b847e3e4657d3999b052608') in 0.037 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=38323206adeae871747c0d46eb8d130a DependenciesID=25d9f6cf302db08a61e8762ebd3be0ac StaticDependenciesID=d34ad0531d8548463c82a1c879691abe 
+Refreshing native plugins compatible for Editor in 27.31 ms, found 5 plugins.
+Asset Pipeline Refresh (id=7802558c60d424245a7095d4df14dc92): Total: 0.275 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[Licensing::Client] Successfully resolved entitlement details
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.0f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1300b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/arda2/Desktop/ChromaBlast
+[Licensing::Client] Successfully resolved entitlement details
+ExitCode: 0 Duration: 8s403ms
+[1007/1310  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[BUSY       6s] Csc Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll (+2 others)
+[1302/1310  6s] Csc Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll (+2 others)
+[1304/1310  0s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp-Editor.dll, with 150 defines and 390 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1305/1310  1s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll, with 152 defines and 358 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1307/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1308/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (8.28 seconds), 6 items updated, 1310 evaluated
+Reloading assemblies after finishing script compilation.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+Total cache size 228717024
+Total cache size after purge 228717024, took 00:00:01.1988604
+Refreshing native plugins compatible for Editor in 22.16 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.941 seconds
+Domain Reload Profiling: 5828ms
+	BeginReloadAssembly (2113ms)
+		DisableScriptedObjects (236ms)
+		CreateAndSetChildDomain (704ms)
+	RebuildCommonClasses (12ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (94ms)
+	LoadAllAssembliesAndSetupDomain (648ms)
+		LoadAssemblies (277ms)
+		AnalyzeDomain (311ms)
+			TypeCache.Refresh (18ms)
+			BuildScriptInfoCaches (279ms)
+			ResolveRequiredComponents (12ms)
+	FinalizeReload (2943ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			BeforeProcessingInitializeOnLoad (237ms)
+			ProcessInitializeOnLoadAttributes (524ms)
+			ProcessInitializeOnLoadMethodAttributes (198ms)
+			AfterProcessingInitializeOnLoad (8ms)
+		AwakeInstancesAfterBackupRestoration (797ms)
+
+Asset Pipeline Refresh (id=35471ec88dc00364eaf0cfa4717b4a37): Total: 6.431 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=3211 ms
+		Asset DB Callback time: managed=36 ms, native=1 ms
+		Scripting: domain reloads=1, domain reload time=3180 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 3.840ms
+	ApplyChangesToAssetFolders: 0.578ms
+	Collect global state as custom dependencies: 4.465ms
+	ProcessAssetsWithTransientArtifactChanges: 7.504ms
+	CategorizeAssets: 86.418ms
+	CompileScripts: 1.948ms
+	ImportOutOfDateAssets: 3038.538ms (2983.899ms without children)
+		CollectScriptTypesHashes: 2.910ms
+		ReloadNativeAssets: 2.065ms
+		UnloadImportedAssets: 0.309ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.996ms
+		ImportSchedulerStart: 51.232ms
+	PostProcessAllAssets: 36.229ms
+		MonoPostProcessAllAssets: 36.222ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 12.983ms
+			AssetChangedListener.OnPostprocessAllAssets 9.634ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 7.480ms
+			AssetPostprocessor.OnPostprocessAllAssets 5.677ms
+			PlayServicesResolver.OnPostprocessAllAssets 4.109ms
+			SyncVS.PostprocessSyncProject 3.759ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.577ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 2.445ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.304ms
+			PackageManagerResolver.OnPostprocessAllAssets 2.139ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.624ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.955ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.896ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.867ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.734ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.714ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.680ms
+			IOSResolver.OnPostprocessAllAssets 0.627ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.578ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.553ms
+			VersionHandlerImpl.OnPostprocessAllAssets 0.500ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 0.491ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.464ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.461ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.445ms
+			PostProcessor.OnPostprocessAllAssets 0.425ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.414ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.368ms
+			AssetEvents.OnPostprocessAllAssets 0.354ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.342ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.328ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.315ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.240ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.230ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.185ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.181ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.180ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.177ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.176ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.154ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.137ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.094ms
+			AssetProcessor.OnPostprocessAllAssets 0.065ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.405ms
+	UnloadStreamsBegin: 0.177ms
+	PersistCurrentRevisions: 0.227ms
+	GenerateScriptTypeHashes: 5.129ms
+	GenerateScriptTypeSerializationHashes: 8.749ms
+	Untracked: 3243.676ms
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TMP_Text:GetPreferredWidth () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:3714)
+TMPro.TMP_Text:get_preferredWidth () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:1526)
+UnityEngine.UI.LayoutUtility/<>c:<GetPreferredWidth>b__4_1 (UnityEngine.UI.ILayoutElement) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutUtility.cs:68)
+UnityEngine.UI.LayoutUtility:GetLayoutProperty (UnityEngine.RectTransform,System.Func`2<UnityEngine.UI.ILayoutElement, single>,single,UnityEngine.UI.ILayoutElement&) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutUtility.cs:161)
+UnityEngine.UI.LayoutUtility:GetLayoutProperty (UnityEngine.RectTransform,System.Func`2<UnityEngine.UI.ILayoutElement, single>,single) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutUtility.cs:129)
+UnityEngine.UI.LayoutUtility:GetPreferredWidth (UnityEngine.RectTransform) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutUtility.cs:68)
+UnityEngine.UI.LayoutUtility:GetPreferredSize (UnityEngine.RectTransform,int) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutUtility.cs:31)
+UnityEngine.UI.HorizontalOrVerticalLayoutGroup:GetChildSizes (UnityEngine.RectTransform,int,bool,bool,single&,single&,single&) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/HorizontalOrVerticalLayoutGroup.cs:233)
+UnityEngine.UI.HorizontalOrVerticalLayoutGroup:CalcAlongAxis (int,bool) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/HorizontalOrVerticalLayoutGroup.cs:104)
+UnityEngine.UI.HorizontalLayoutGroup:CalculateLayoutInputHorizontal () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/HorizontalLayoutGroup.cs:19)
+UnityEngine.UI.LayoutRebuilder/<>c:<Rebuild>b__12_0 (UnityEngine.Component) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutRebuilder.cs:85)
+UnityEngine.UI.LayoutRebuilder:PerformLayoutCalculation (UnityEngine.RectTransform,UnityEngine.Events.UnityAction`1<UnityEngine.Component>) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutRebuilder.cs:160)
+UnityEngine.UI.LayoutRebuilder:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/Layout/LayoutRebuilder.cs:85)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:181)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+Asset Pipeline Refresh (id=5957115c030d96c4fb9b1894d91c5224): Total: 0.007 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.915 ms
+	Integration:            413.368 ms
+	Integration of assets:  0.007 ms
+	Thread Wait Time:       0.010 ms
+	Total Operation Time:   421.301 ms
+Unloading 389 unused Assets / (17.1 MB). Loaded Objects now: 10276.
+Memory consumption went from 0.74 GB to 0.72 GB.
+Total: 29.999400 ms (FindLiveObjects: 0.663000 ms CreateObjectMapping: 2.176100 ms MarkObjects: 26.609100 ms  DeleteObjects: 0.548600 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+SpriteAtlasPacking completed in 0.015664 sec
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 8.18 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.384 seconds
+Domain Reload Profiling: 3715ms
+	BeginReloadAssembly (959ms)
+		DisableScriptedObjects (108ms)
+		CreateAndSetChildDomain (635ms)
+	RebuildCommonClasses (11ms)
+	RebuildNativeTypeToScriptingClass (18ms)
+	initialDomainReloadingComplete (80ms)
+	LoadAllAssembliesAndSetupDomain (261ms)
+		LoadAssemblies (171ms)
+		AnalyzeDomain (28ms)
+			TypeCache.Refresh (9ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (2385ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (19ms)
+			BeforeProcessingInitializeOnLoad (118ms)
+			ProcessInitializeOnLoadAttributes (524ms)
+			ProcessInitializeOnLoadMethodAttributes (197ms)
+			AfterProcessingInitializeOnLoad (7ms)
+		AwakeInstancesAfterBackupRestoration (816ms)
+
+Asset Pipeline Refresh (id=5f72ab7dcbb473442ae327fdcbb09ea9): Total: 4.068 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=2630 ms
+		Asset DB Callback time: managed=34 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=1400 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.687ms
+	ApplyChangesToAssetFolders: 0.441ms
+	Collect global state as custom dependencies: 5.896ms
+	ProcessAssetsWithTransientArtifactChanges: 0.351ms
+	CategorizeAssets: 80.802ms
+	CompileScripts: 1.711ms
+	ImportOutOfDateAssets: 2469.806ms (2422.803ms without children)
+		CollectScriptTypesHashes: 1.071ms
+		ReloadNativeAssets: 2.673ms
+		UnloadImportedAssets: 0.371ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.934ms
+		ImportSchedulerStart: 42.991ms
+	PostProcessAllAssets: 34.903ms
+		MonoPostProcessAllAssets: 34.897ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 12.380ms
+			AssetChangedListener.OnPostprocessAllAssets 9.634ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 7.480ms
+			AssetPostprocessor.OnPostprocessAllAssets 5.677ms
+			PlayServicesResolver.OnPostprocessAllAssets 4.109ms
+			SyncVS.PostprocessSyncProject 3.624ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.447ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 2.445ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.297ms
+			PackageManagerResolver.OnPostprocessAllAssets 2.139ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.624ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.896ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.868ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.867ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.734ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.714ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.680ms
+			IOSResolver.OnPostprocessAllAssets 0.627ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.578ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.553ms
+			VersionHandlerImpl.OnPostprocessAllAssets 0.500ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 0.491ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.464ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.446ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.445ms
+			PostProcessor.OnPostprocessAllAssets 0.425ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.422ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.372ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.368ms
+			AssetEvents.OnPostprocessAllAssets 0.354ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.342ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.315ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.240ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.230ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.207ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.190ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.181ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.180ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.177ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.176ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.137ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.094ms
+			AssetProcessor.OnPostprocessAllAssets 0.065ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.250ms
+	UnloadStreamsBegin: 2.471ms
+	PersistCurrentRevisions: 0.280ms
+	GenerateScriptTypeHashes: 5.592ms
+	GenerateScriptTypeSerializationHashes: 9.516ms
+	Untracked: 1448.747ms
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.061 ms
+	Integration:            598.743 ms
+	Integration of assets:  0.007 ms
+	Thread Wait Time:       0.007 ms
+	Total Operation Time:   605.818 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 39 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            5.698 ms
+	Integration:            425.661 ms
+	Integration of assets:  0.008 ms
+	Thread Wait Time:       0.007 ms
+	Total Operation Time:   431.375 ms
+Unloading 389 unused Assets / (12.0 MB). Loaded Objects now: 10338.
+Memory consumption went from 0.72 GB to 0.71 GB.
+Total: 20.160100 ms (FindLiveObjects: 0.828000 ms CreateObjectMapping: 1.877600 ms MarkObjects: 16.914300 ms  DeleteObjects: 0.538500 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+SpriteAtlasPacking completed in 0.013354 sec
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+[Licensing::Client] Successfully resolved entitlement details
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 9.40 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.354 seconds
+Domain Reload Profiling: 3721ms
+	BeginReloadAssembly (981ms)
+		DisableScriptedObjects (105ms)
+		CreateAndSetChildDomain (634ms)
+	RebuildCommonClasses (11ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (83ms)
+	LoadAllAssembliesAndSetupDomain (273ms)
+		LoadAssemblies (182ms)
+		AnalyzeDomain (28ms)
+			TypeCache.Refresh (10ms)
+			ResolveRequiredComponents (13ms)
+	FinalizeReload (2355ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			BeforeProcessingInitializeOnLoad (115ms)
+			ProcessInitializeOnLoadAttributes (510ms)
+			ProcessInitializeOnLoadMethodAttributes (198ms)
+			AfterProcessingInitializeOnLoad (7ms)
+		AwakeInstancesAfterBackupRestoration (796ms)
+
+Asset Pipeline Refresh (id=908aa60862689f245b733fba6ca32faa): Total: 4.088 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=2597 ms
+		Asset DB Callback time: managed=42 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=1445 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.198ms
+	ApplyChangesToAssetFolders: 0.451ms
+	Collect global state as custom dependencies: 4.589ms
+	ProcessAssetsWithTransientArtifactChanges: 0.223ms
+	CategorizeAssets: 81.180ms
+	CompileScripts: 1.628ms
+	ImportOutOfDateAssets: 2450.768ms (2397.023ms without children)
+		CollectScriptTypesHashes: 1.131ms
+		ReloadNativeAssets: 1.880ms
+		UnloadImportedAssets: 0.351ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.928ms
+		ImportSchedulerStart: 50.545ms
+	PostProcessAllAssets: 42.424ms
+		MonoPostProcessAllAssets: 42.413ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 14.624ms
+			AssetChangedListener.OnPostprocessAllAssets 9.634ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 7.480ms
+			AssetPostprocessor.OnPostprocessAllAssets 5.677ms
+			SyncVS.PostprocessSyncProject 4.208ms
+			PlayServicesResolver.OnPostprocessAllAssets 4.109ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 3.324ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.547ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 2.445ms
+			PackageManagerResolver.OnPostprocessAllAssets 2.139ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.624ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.964ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.896ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.867ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.734ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.714ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.680ms
+			IOSResolver.OnPostprocessAllAssets 0.627ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.578ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.553ms
+			VersionHandlerImpl.OnPostprocessAllAssets 0.500ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 0.491ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.464ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.455ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.455ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.445ms
+			PostProcessor.OnPostprocessAllAssets 0.425ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.368ms
+			AssetEvents.OnPostprocessAllAssets 0.354ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.348ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.342ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.315ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.240ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.230ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.201ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.181ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.181ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.179ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.177ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.176ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.137ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.094ms
+			AssetProcessor.OnPostprocessAllAssets 0.065ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.358ms
+	PersistCurrentRevisions: 0.246ms
+	GenerateScriptTypeHashes: 5.042ms
+	GenerateScriptTypeSerializationHashes: 8.764ms
+	Untracked: 1492.965ms
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            9.870 ms
+	Integration:            573.392 ms
+	Integration of assets:  0.015 ms
+	Thread Wait Time:       0.021 ms
+	Total Operation Time:   583.298 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+Importing 'GUID: d4b244d580914974bb09b413ed54b7b4 - Path: Assets/Resources/UI/DailyRewardPanel.prefab' with importer (PrefabImporter)
+Imported 'GUID: d4b244d580914974bb09b413ed54b7b4' -> (Import Result ID: '8295577d60f7a1ba5fe477e4ca31e08d') in 0.028 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=a23d3ef20a5f4ee667f6ba3fb1109990 DependenciesID=fb093713a79d87e191b1c8be59a9ce56 StaticDependenciesID=2b7f57702195b72bfbe93524f1958855 
+Refreshing native plugins compatible for Editor in 8.65 ms, found 5 plugins.
+Asset Pipeline Refresh (id=a2db062f7d5a7064e9d5813a9fd22b23): Total: 0.204 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[Licensing::Client] Successfully resolved entitlement details
+Starting: C:\Program Files\Unity\Hub\Editor\6000.5.0f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1300b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/arda2/Desktop/ChromaBlast
+[Licensing::Client] Successfully resolved entitlement details
+ExitCode: 0 Duration: 2s197ms
+[1007/1310  0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[1302/1310  1s] Csc Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll (+2 others)
+[1304/1310  0s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp-Editor.dll, with 150 defines and 390 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1306/1310  0s] ILPostProcess Library/Bee/artifacts/1300b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1300b0aE.dag/Assembly-CSharp.dll, with 152 defines and 358 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[1307/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[1308/1310  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (2.16 seconds), 6 items updated, 1310 evaluated
+Reloading assemblies after finishing script compilation.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+Total cache size 228717024
+Total cache size after purge 228717024, took 00:00:00.3873447
+Refreshing native plugins compatible for Editor in 11.00 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.927 seconds
+Domain Reload Profiling: 5822ms
+	BeginReloadAssembly (2184ms)
+		DisableScriptedObjects (235ms)
+		CreateAndSetChildDomain (662ms)
+	RebuildCommonClasses (12ms)
+	RebuildNativeTypeToScriptingClass (22ms)
+	initialDomainReloadingComplete (97ms)
+	LoadAllAssembliesAndSetupDomain (579ms)
+		LoadAssemblies (191ms)
+		AnalyzeDomain (335ms)
+			TypeCache.Refresh (18ms)
+			BuildScriptInfoCaches (304ms)
+			ResolveRequiredComponents (11ms)
+	FinalizeReload (2928ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (20ms)
+			BeforeProcessingInitializeOnLoad (236ms)
+			ProcessInitializeOnLoadAttributes (518ms)
+			ProcessInitializeOnLoadMethodAttributes (194ms)
+			AfterProcessingInitializeOnLoad (7ms)
+		AwakeInstancesAfterBackupRestoration (827ms)
+
+Asset Pipeline Refresh (id=00cee08cf14ca26498eaa37b0bca33b6): Total: 6.220 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=3165 ms
+		Asset DB Callback time: managed=47 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=3005 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.752ms
+	ApplyChangesToAssetFolders: 0.453ms
+	Collect global state as custom dependencies: 4.208ms
+	ProcessAssetsWithTransientArtifactChanges: 7.083ms
+	CategorizeAssets: 83.172ms
+	CompileScripts: 1.711ms
+	ImportOutOfDateAssets: 3012.908ms (2959.673ms without children)
+		CollectScriptTypesHashes: 1.324ms
+		ReloadNativeAssets: 1.857ms
+		UnloadImportedAssets: 0.378ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.005ms
+		ImportSchedulerStart: 49.953ms
+	PostProcessAllAssets: 47.314ms
+		MonoPostProcessAllAssets: 47.307ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 16.791ms
+			AssetChangedListener.OnPostprocessAllAssets 8.080ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 6.266ms
+			AssetPostprocessor.OnPostprocessAllAssets 4.745ms
+			SyncVS.PostprocessSyncProject 4.734ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 4.450ms
+			PlayServicesResolver.OnPostprocessAllAssets 3.066ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.864ms
+			PackageManagerResolver.OnPostprocessAllAssets 1.895ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 1.808ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.360ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 1.031ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.979ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.703ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.685ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.614ms
+			PostProcessor.OnPostprocessAllAssets 0.582ms
+			IOSResolver.OnPostprocessAllAssets 0.578ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.547ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.512ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 0.475ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.456ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.425ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.417ms
+			VersionHandlerImpl.OnPostprocessAllAssets 0.407ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.361ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.351ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.339ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.336ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.252ms
+			AssetEvents.OnPostprocessAllAssets 0.250ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.248ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.239ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.237ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.202ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.196ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.185ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.167ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.161ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.159ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.104ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.091ms
+			AssetProcessor.OnPostprocessAllAssets 0.074ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.220ms
+	UnloadStreamsBegin: 0.074ms
+	PersistCurrentRevisions: 0.200ms
+	GenerateScriptTypeHashes: 4.946ms
+	GenerateScriptTypeSerializationHashes: 8.733ms
+	Untracked: 3052.843ms
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+The character used for Ellipsis is not available in font asset [Jost-ExtraBold SDF] or any potential fallbacks. Switching Text Overflow mode to Truncate.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+TMPro.TextMeshProUGUI:SetArraySizes (TMPro.TMP_Text/TextProcessingElement[]) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:1816)
+TMPro.TMP_Text:ParseInputText () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TMP_Text.cs:2063)
+TMPro.TextMeshProUGUI:OnPreRenderCanvas () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:2496)
+TMPro.TextMeshProUGUI:Rebuild (UnityEngine.UI.CanvasUpdate) (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs:229)
+UnityEngine.UI.CanvasUpdateRegistry:PerformUpdate () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/UGUI/UI/Core/CanvasUpdateRegistry.cs:215)
+UnityEngine.Canvas:SendWillRenderCanvases ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Runtime/TMP/TextMeshProUGUI.cs Line: 1816)
+
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.444 ms
+	Integration:            396.392 ms
+	Integration of assets:  0.009 ms
+	Thread Wait Time:       0.013 ms
+	Total Operation Time:   403.859 ms
+Unloading 402 unused Assets / (14.9 MB). Loaded Objects now: 10321.
+Memory consumption went from 0.71 GB to 0.70 GB.
+Total: 28.477700 ms (FindLiveObjects: 0.899500 ms CreateObjectMapping: 2.112400 ms MarkObjects: 24.894300 ms  DeleteObjects: 0.568400 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+SpriteAtlasPacking completed in 0.012895 sec
+Reloading assemblies for play mode.
+Reloading assemblies after forced synchronous recompile.
+Begin MonoManager ReloadAssembly
+Refreshing native plugins compatible for Editor in 9.08 ms, found 5 plugins.
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  2.411 seconds
+Domain Reload Profiling: 3768ms
+	BeginReloadAssembly (978ms)
+		DisableScriptedObjects (118ms)
+		CreateAndSetChildDomain (636ms)
+	RebuildCommonClasses (12ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (83ms)
+	LoadAllAssembliesAndSetupDomain (264ms)
+		LoadAssemblies (179ms)
+		AnalyzeDomain (28ms)
+			TypeCache.Refresh (10ms)
+			ResolveRequiredComponents (12ms)
+	FinalizeReload (2412ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (21ms)
+			BeforeProcessingInitializeOnLoad (118ms)
+			ProcessInitializeOnLoadAttributes (535ms)
+			ProcessInitializeOnLoadMethodAttributes (192ms)
+			AfterProcessingInitializeOnLoad (7ms)
+		AwakeInstancesAfterBackupRestoration (803ms)
+
+Asset Pipeline Refresh (id=3dfc99d6f643c0647a2589d32a36d407): Total: 4.135 seconds - Initiated by StopAssetImportingV2(ForceSynchronousImport | ForceDomainReload)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=2661 ms
+		Asset DB Callback time: managed=41 ms, native=0 ms
+		Scripting: domain reloads=1, domain reload time=1429 ms, compile time=2 ms, other=0 ms
+		Project Asset Count: scripts=1768, non-scripts=3281
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 2.660ms
+	ApplyChangesToAssetFolders: 0.526ms
+	Collect global state as custom dependencies: 4.866ms
+	ProcessAssetsWithTransientArtifactChanges: 0.227ms
+	CategorizeAssets: 84.618ms
+	CompileScripts: 1.646ms
+	ImportOutOfDateAssets: 2503.054ms (2449.882ms without children)
+		CollectScriptTypesHashes: 1.170ms
+		ReloadNativeAssets: 1.748ms
+		UnloadImportedAssets: 0.366ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 1.001ms
+		ImportSchedulerStart: 50.022ms
+	PostProcessAllAssets: 41.656ms
+		MonoPostProcessAllAssets: 41.650ms
+			UniversalRenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 13.816ms
+			AssetChangedListener.OnPostprocessAllAssets 8.080ms
+			SyncVS.PostprocessSyncProject 6.353ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 6.266ms
+			AssetPostprocessor.OnPostprocessAllAssets 4.745ms
+			PlayServicesResolver.OnPostprocessAllAssets 3.066ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 2.887ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 2.423ms
+			PackageManagerResolver.OnPostprocessAllAssets 1.895ms
+			ShaderGraphAssetPostProcessor.OnPostprocessAllAssets 1.808ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.360ms
+			SpriteEditorTexturePostprocessor.OnPostprocessAllAssets 0.979ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.914ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 0.703ms
+			TMPro_TexturePostProcessor.OnPostprocessAllAssets 0.685ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.648ms
+			MaterialPostprocessor.OnPostprocessAllAssets 0.614ms
+			PostProcessor.OnPostprocessAllAssets 0.582ms
+			IOSResolver.OnPostprocessAllAssets 0.578ms
+			SpriteShapeAssetPostProcessor.OnPostprocessAllAssets 0.512ms
+			SpriteSlicePostprocessor.OnPostprocessAllAssets 0.475ms
+			ShaderReflectionAssetPostProcessor.OnPostprocessAllAssets 0.425ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 0.425ms
+			UVCSAssetPostprocessor.OnPostprocessAllAssets 0.417ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.409ms
+			VersionHandlerImpl.OnPostprocessAllAssets 0.407ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.351ms
+			SampleDependencyImporterPostProcessor.OnPostprocessAllAssets 0.339ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.336ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.334ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.324ms
+			SpriteLibraryAssetPostprocessor.OnPostprocessAllAssets 0.252ms
+			AssetEvents.OnPostprocessAllAssets 0.250ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 0.237ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.202ms
+			SamplePostprocessor.OnPostprocessAllAssets 0.196ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.182ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.167ms
+			PSDImportPostProcessor.OnPostprocessAllAssets 0.161ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.159ms
+			PSDImporterAssetPostProcessor.OnPostprocessAllAssets 0.104ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.091ms
+			AssetProcessor.OnPostprocessAllAssets 0.074ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.304ms
+	PersistCurrentRevisions: 0.213ms
+	GenerateScriptTypeHashes: 4.901ms
+	GenerateScriptTypeSerializationHashes: 8.513ms
+	Untracked: 1484.624ms
+
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            7.199 ms
+	Integration:            590.045 ms
+	Integration of assets:  0.009 ms
+	Thread Wait Time:       0.042 ms
+	Total Operation Time:   597.294 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+Unloading 23 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            5.924 ms
+	Integration:            434.083 ms
+	Integration of assets:  0.005 ms
+	Thread Wait Time:       0.016 ms
+	Total Operation Time:   440.027 ms
+Unloading 387 unused Assets / (8.2 MB). Loaded Objects now: 10336.
+Memory consumption went from 0.72 GB to 0.71 GB.
+Total: 19.611800 ms (FindLiveObjects: 0.679300 ms CreateObjectMapping: 2.022000 ms MarkObjects: 16.389500 ms  DeleteObjects: 0.519500 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+MonoPathRemapper: Attempts to remap: 105788; Successful remaps: 25204
+Serialized file version minimum: 23, current 23
+Clearing [Jost-ExtraBold SDF] dynamic font asset data.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+TMPro.EditorEventCallbacks/<>c:<InitializeFontAssetResourceChangeCallBacks>b__0_0 () (at ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Editor/TMP/TMP_EditorResourceManager.cs:36)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@4f9b15fd1386/Editor/TMP/TMP_EditorResourceManager.cs Line: 36)
+
+Importing 'GUID: ec645a1a9000d964983c54948b58fb7f - Path: Assets/TextMesh Pro/Fonts/Jost-ExtraBold SDF.asset' with importer (NativeFormatImporter)
+Imported 'GUID: ec645a1a9000d964983c54948b58fb7f' -> (Import Result ID: 'e9b0797b8a6949e3f7cca3c0f7eeeec3') in 0.012 seconds [static dependencies only]. Details - ImportResultOutputID=7067e097251036c97c47dde42e6fa25f DependenciesID=513a5f56a765f530c6a67e770ab5b87e StaticDependenciesID=f7dd05b3ce017ded24d8dc54b14ff313 
+Refreshing native plugins compatible for Editor in 10.86 ms, found 5 plugins.
+Asset Pipeline Refresh (id=5cd5a20953592a44bbba1e421adb57a4): Total: 0.173 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-arda2-6000.5.0-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-arda2-6000.5.0 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1784763562126,"processId":18332,"allocatedMemory":52920438,"memoryLabels":[{"Default":234241},{"Permanent":15516},{"NewDelete":70249},{"Thread":4205432},{"Manager":822664},{"VertexData":8},{"Geometry":816},{"Texture":24},{"Shader":857364},{"Material":24},{"GfxDevice":64088},{"GfxThread":768},{"Animation":952},{"Audio":1544},{"FreeType":5515},{"FontEngine":736},{"Physics":2146},{"Physics2D":16},{"Serialization":599656},{"Input":45280},{"JobScheduler":256},{"TextLib":27414},{"Mono":48},{"MonoCode":128},{"ScriptingNativeRuntime":1716820},{"BaseObject":2078080},{"Resource":1208},{"Renderer":3080},{"Transform":4685},{"File":21895},{"WebCam":616},{"Culling":32},{"Terrain":11442},{"Wind":24},{"STL":40},{"String":9560},{"StaticString":3808},{"Utility":2674514},{"Curl":48},{"PoolAlloc":2360},{"AI":80},{"TypeTree":384667},{"CodeReload":448},{"RuntimeInitializeOnLoadManager":64},{"Sprites":102},{"SpriteAtlas":120},{"GI":7816},{"Director":8296},{"CloudService":6808},{"WebRequest":14290},{"VR":47114},{"SceneManager":608},{"Video":208},{"LazyScriptCache":32},{"NativeArray":33051792},{"Camera":17},{"Secure":265},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":552},{"Hierarchy":1176},{"UIElements":250888},{"CoreStats":13688},{"Identifiers":13536},{"Gui":328},{"EditorUtility":207528},{"VersionControl":8},{"Undo":931},{"AssetDatabase":5025557},{"AssetImporter":40},{"EditorGi":328},{"UnityConnect":35345},{"Upm":1988},{"UpmDiagnostics":8},{"AssetCompliance":64},{"DrivenProperties":72},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2892},{"Windowing":456},{"Licensing":664},{"AssetReference":32},{"IPCStream":32}]}

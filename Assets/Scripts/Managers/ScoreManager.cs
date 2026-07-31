@@ -1,0 +1,178 @@
+using System;
+using UnityEngine;
+
+namespace ChromaBlast
+{
+    [Serializable]
+    public class ScoreSnapshot
+    {
+        public int score;
+        public int chain;
+        public int[] chroma = new int[GameConstants.ColorCount];
+    }
+
+    public struct ScoreDelta
+    {
+        public int totalAdded;
+        public int placementScore;
+        public int lineScore;
+        public int pureBonus;
+        public int popScore;
+        public bool hadClear;
+        public bool hadPure;
+    }
+
+    public class ScoreManager : MonoBehaviour
+    {
+        public event Action Changed;
+
+        public int Score { get; private set; }
+        public int Chain { get; private set; }
+
+        private readonly int[] chroma = new int[GameConstants.ColorCount];
+
+        public void ResetScore()
+        {
+            Score = 0;
+            Chain = 0;
+            for (int i = 0; i < chroma.Length; i++)
+            {
+                chroma[i] = 0;
+            }
+
+            Changed?.Invoke();
+        }
+
+        public ScoreDelta ApplyMove(ClearResult clearResult)
+        {
+            return ApplyMove(clearResult, 0);
+        }
+
+        public ScoreDelta ApplyMove(ClearResult clearResult, int placedCells)
+        {
+            ScoreDelta delta = new ScoreDelta();
+            delta.placementScore = Mathf.Max(0, placedCells) * 3;
+
+            if (clearResult == null || clearResult.linesCleared <= 0)
+            {
+                Chain = 0;
+                delta.totalAdded = delta.placementScore;
+                Score += delta.totalAdded;
+                Changed?.Invoke();
+                return delta;
+            }
+
+            Chain++;
+            delta.hadClear = true;
+            delta.hadPure = clearResult.pureLines > 0;
+            delta.lineScore = clearResult.linesCleared * 100 * Chain;
+            delta.pureBonus = clearResult.pureLines * 450 * Mathf.Max(1, Chain);
+            int cellBonus = clearResult.cellsCleared * 8;
+            delta.totalAdded = delta.placementScore + delta.lineScore + delta.pureBonus + cellBonus;
+            Score += delta.totalAdded;
+
+            for (int i = 0; i < GameConstants.ColorCount; i++)
+            {
+                if (clearResult.clearedByColor[i] > 0)
+                {
+                    AddChroma((ChromaColor)i, clearResult.clearedByColor[i]);
+                }
+
+                if (clearResult.pureLinesByColor[i] > 0)
+                {
+                    AddChroma((ChromaColor)i, clearResult.pureLinesByColor[i] * 6);
+                }
+            }
+
+            Changed?.Invoke();
+            return delta;
+        }
+
+        public ScoreDelta ApplyPop(ChromaColor color, int cellsPopped)
+        {
+            ScoreDelta delta = new ScoreDelta();
+            if (cellsPopped <= 0)
+            {
+                chroma[(int)color] = 0;
+                Changed?.Invoke();
+                return delta;
+            }
+
+            delta.popScore = cellsPopped * 70 + (cellsPopped >= 8 ? 220 : 0);
+            delta.totalAdded = delta.popScore;
+            Score += delta.totalAdded;
+            chroma[(int)color] = 0;
+            Changed?.Invoke();
+            return delta;
+        }
+
+        public void AddBonusScore(int amount)
+        {
+            int bonus = Mathf.Max(0, amount);
+            if (bonus <= 0)
+            {
+                return;
+            }
+
+            Score += bonus;
+            Changed?.Invoke();
+        }
+
+        public void AddRewardedChroma(ChromaColor color)
+        {
+            chroma[(int)color] = GameConstants.ChromaThreshold;
+            Changed?.Invoke();
+        }
+
+        public int GetChroma(ChromaColor color)
+        {
+            return chroma[(int)color];
+        }
+
+        public float GetChroma01(ChromaColor color)
+        {
+            return Mathf.Clamp01(chroma[(int)color] / (float)GameConstants.ChromaThreshold);
+        }
+
+        public bool IsPopReady(ChromaColor color)
+        {
+            return chroma[(int)color] >= GameConstants.ChromaThreshold;
+        }
+
+        public ScoreSnapshot CreateSnapshot()
+        {
+            ScoreSnapshot snapshot = new ScoreSnapshot
+            {
+                score = Score,
+                chain = Chain,
+                chroma = new int[GameConstants.ColorCount]
+            };
+            Array.Copy(chroma, snapshot.chroma, chroma.Length);
+            return snapshot;
+        }
+
+        public void Restore(ScoreSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                ResetScore();
+                return;
+            }
+
+            Score = snapshot.score;
+            Chain = snapshot.chain;
+            for (int i = 0; i < chroma.Length; i++)
+            {
+                chroma[i] = snapshot.chroma != null && i < snapshot.chroma.Length ? snapshot.chroma[i] : 0;
+            }
+
+            Changed?.Invoke();
+        }
+
+        private void AddChroma(ChromaColor color, int amount)
+        {
+            int index = (int)color;
+            chroma[index] = Mathf.Min(GameConstants.ChromaThreshold, chroma[index] + amount);
+        }
+    }
+}
