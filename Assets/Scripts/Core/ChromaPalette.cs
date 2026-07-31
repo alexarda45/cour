@@ -4,12 +4,13 @@ namespace ChromaBlast
 {
     public static class ChromaPalette
     {
+        // Index order matches the ChromaColor enum (Cyan, Magenta, Lime, Amber).
         private static readonly string[] TileResourcePaths =
         {
-            "Ocean/Tiles/Tile_Cyan",
-            "Ocean/Tiles/Tile_Blue",
-            "Ocean/Tiles/Tile_Teal",
-            "Ocean/Tiles/Tile_PearlWhite"
+            "Ocean/Tiles/Tile_Reference_Cyan",
+            "Ocean/Tiles/Tile_Reference_Pink",
+            "Ocean/Tiles/Tile_Reference_Blue",
+            "Ocean/Tiles/Tile_Reference_Yellow"
         };
 
         private static readonly Sprite[] TileSprites = new Sprite[TileResourcePaths.Length];

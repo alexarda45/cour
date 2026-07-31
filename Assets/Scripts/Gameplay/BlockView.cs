@@ -8,19 +8,18 @@ namespace ChromaBlast
     [RequireComponent(typeof(Image))]
     public class BlockView : MonoBehaviour
     {
-        private const float FittedTileVisualScale = 1.03f;
-        private const float FittedTileGlowScale = 1.08f;
-        private const float FittedTileShadowScale = 1.067f;
+        private const float TileVisualScale = 1.03f;
 
-        private static readonly string[] FittedTileResourcePaths =
+        // Index order matches the ChromaColor enum (Cyan, Magenta, Lime, Amber).
+        private static readonly string[] TileResourcePaths =
         {
-            "Ocean/Tiles/Fitted/Tile_Cyan_Fitted",
-            "Ocean/Tiles/Fitted/Tile_Blue_Fitted",
-            "Ocean/Tiles/Fitted/Tile_Teal_Fitted",
-            "Ocean/Tiles/Fitted/Tile_PearlWhite_Fitted"
+            "Ocean/Tiles/Tile_Reference_Cyan",
+            "Ocean/Tiles/Tile_Reference_Pink",
+            "Ocean/Tiles/Tile_Reference_Blue",
+            "Ocean/Tiles/Tile_Reference_Yellow"
         };
 
-        private static readonly Sprite[] FittedTileSprites = new Sprite[FittedTileResourcePaths.Length];
+        private static readonly Sprite[] TileSprites = new Sprite[TileResourcePaths.Length];
 
         [SerializeField] private Image image;
         [SerializeField] private Image shadowImage;
@@ -70,7 +69,7 @@ namespace ChromaBlast
                 image = GetComponent<Image>();
             }
 
-            Sprite tileSprite = GetFittedTileSprite(color) ?? ChromaPalette.GetTileSprite(color);
+            Sprite tileSprite = GetTileSprite(color) ?? ChromaPalette.GetTileSprite(color);
             if (image != null)
             {
                 image.sprite = tileSprite;
@@ -78,7 +77,7 @@ namespace ChromaBlast
             }
 
             EnsureVisualImages();
-            ApplyTileSprite(tileSprite, ChromaPalette.GetColor(color));
+            ApplyTileSprite(tileSprite);
 
             DisableLegacyLayers();
 
@@ -108,10 +107,13 @@ namespace ChromaBlast
 
         private void EnsureVisualImages()
         {
-            shadowImage = EnsureLayerImage(shadowImage, "TileShadow", FittedTileShadowScale, true);
-            glowImage = EnsureLayerImage(glowImage, "TileGlow", FittedTileGlowScale, true);
-            tileImage = EnsureLayerImage(tileImage, "TileVisual", FittedTileVisualScale, false);
-            highlightImage = EnsureLayerImage(highlightImage, "TileHighlight", FittedTileVisualScale * 0.98f, false);
+            // shadowImage/glowImage/highlightImage are kept only as targets for the
+            // placement/clear juice routines below; ApplyTileSprite keeps them
+            // disabled since the tile art now bakes in its own bevel and shadow.
+            shadowImage = EnsureLayerImage(shadowImage, "TileShadow", TileVisualScale, true);
+            glowImage = EnsureLayerImage(glowImage, "TileGlow", TileVisualScale, true);
+            tileImage = EnsureLayerImage(tileImage, "TileVisual", TileVisualScale, false);
+            highlightImage = EnsureLayerImage(highlightImage, "TileHighlight", TileVisualScale, false);
 
             if (shadowImage != null)
             {
@@ -176,54 +178,31 @@ namespace ChromaBlast
             return layer.GetComponent<Image>();
         }
 
-        private void ApplyTileSprite(Sprite tileSprite, UnityEngine.Color baseColor)
+        private void ApplyTileSprite(Sprite tileSprite)
         {
-            bool hasSprite = tileSprite != null;
-            Image[] images = { shadowImage, glowImage, tileImage, highlightImage };
-            for (int i = 0; i < images.Length; i++)
-            {
-                if (images[i] == null)
-                {
-                    continue;
-                }
-
-                images[i].enabled = hasSprite;
-                images[i].sprite = tileSprite;
-            }
-
             if (tileImage != null)
             {
+                tileImage.enabled = tileSprite != null;
+                tileImage.sprite = tileSprite;
                 tileImage.color = UnityEngine.Color.white;
             }
 
-            if (shadowImage != null)
-            {
-                shadowImage.color = new Color(0f, 0.012f, 0.035f, MobilePerformance.LowEndMode ? 0.20f : 0.42f);
-            }
-
-            if (glowImage != null)
-            {
-                UnityEngine.Color glow = UnityEngine.Color.Lerp(baseColor, UnityEngine.Color.white, 0.16f);
-                glow.a = MobilePerformance.LowEndMode ? 0.06f : 0.19f;
-                glowImage.color = glow;
-            }
-
-            if (highlightImage != null)
-            {
-                highlightImage.color = new Color(1f, 1f, 1f, MobilePerformance.LowEndMode ? 0.055f : 0.16f);
-            }
-
+            // The tile art already bakes in its own bevel, highlight and shadow,
+            // so the old procedural overlay layers stay off to avoid a duplicated look.
+            SetLegacyLayerEnabled(shadowImage, false);
+            SetLegacyLayerEnabled(glowImage, false);
+            SetLegacyLayerEnabled(highlightImage, false);
         }
 
-        private static Sprite GetFittedTileSprite(ChromaColor color)
+        private static Sprite GetTileSprite(ChromaColor color)
         {
-            int index = Mathf.Clamp((int)color, 0, FittedTileResourcePaths.Length - 1);
-            if (FittedTileSprites[index] == null)
+            int index = Mathf.Clamp((int)color, 0, TileResourcePaths.Length - 1);
+            if (TileSprites[index] == null)
             {
-                FittedTileSprites[index] = Resources.Load<Sprite>(FittedTileResourcePaths[index]);
+                TileSprites[index] = Resources.Load<Sprite>(TileResourcePaths[index]);
             }
 
-            return FittedTileSprites[index];
+            return TileSprites[index];
         }
 
         private void DisableLegacyLayers()
