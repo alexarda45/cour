@@ -8,7 +8,17 @@ namespace ChromaBlast
     [RequireComponent(typeof(Image))]
     public class BlockView : MonoBehaviour
     {
-        private const float TileVisualScale = 1.03f;
+        // The Tile_Reference_* art has a transparent margin baked into its square
+        // canvas (the solid tile shape only fills ~87% of the canvas width), so
+        // the sprite must be scaled up well past 1.0 for tiles to read as
+        // nearly touching on the board/tray, matching the reference look.
+        private const float TileVisualScale = 1.15f;
+
+        // The same art also bakes in a soft drop shadow that extends further
+        // below the tile than the margin above it, which pulls the solid tile
+        // shape visually above true center when the sprite is centered on its
+        // full canvas. This nudges it back down by that same fraction.
+        private const float TileVerticalCenteringNudge = -0.024f;
 
         // Index order matches the ChromaColor enum (Cyan, Magenta, Lime, Amber).
         private static readonly string[] TileResourcePaths =
@@ -130,7 +140,8 @@ namespace ChromaBlast
             if (tileImage != null)
             {
                 tileImage.transform.SetAsLastSibling();
-                tileImage.rectTransform.localPosition = Vector3.zero;
+                float verticalNudge = tileImage.rectTransform.rect.height * TileVisualScale * TileVerticalCenteringNudge;
+                tileImage.rectTransform.localPosition = new Vector3(0f, verticalNudge, 0f);
             }
 
             if (highlightImage != null)
