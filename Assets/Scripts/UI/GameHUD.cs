@@ -1188,6 +1188,13 @@ namespace ChromaBlast
             capsuleArt.fillCenter = true;
             capsuleArt.raycastTarget = false;
 
+            // TEMP diagnostic logging -- remove once confirmed on-device.
+            Debug.Log(
+                $"[UIArtDebug] CapsuleArt: sprite={(capsuleSprite == null ? "NULL" : capsuleSprite.name)}, "
+                + $"spriteRect={(capsuleSprite == null ? "n/a" : $"{capsuleSprite.rect.width}x{capsuleSprite.rect.height}")}, "
+                + $"rectTransform.sizeDelta={capsuleArtRect.sizeDelta}, "
+                + $"rectTransform.rect={capsuleArtRect.rect}");
+
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
             crownGlowRect.anchorMax = crownGlowRect.anchorMin;
@@ -1221,6 +1228,13 @@ namespace ChromaBlast
                 bestScoreCrownImage.color = Color.white;
                 bestScoreCrownImage.preserveAspect = true;
                 bestScoreCrownImage.raycastTarget = false;
+
+                // TEMP diagnostic logging -- remove once confirmed on-device.
+                Debug.Log(
+                    $"[UIArtDebug] Crown: sprite={(crownSprite == null ? "NULL" : crownSprite.name)}, "
+                    + $"spriteRect={(crownSprite == null ? "n/a" : $"{crownSprite.rect.width}x{crownSprite.rect.height}")}, "
+                    + $"rectTransform.sizeDelta={crownRect.sizeDelta}, "
+                    + $"rectTransform.rect={crownRect.rect}");
             }
 
             RectTransform valueRect = highScoreText.transform as RectTransform;
@@ -3430,6 +3444,13 @@ namespace ChromaBlast
                 gear.type = Image.Type.Simple;
                 gear.preserveAspect = true;
                 gear.raycastTarget = false;
+
+                // TEMP diagnostic logging -- remove once confirmed on-device.
+                Debug.Log(
+                    $"[UIArtDebug] SettingsGear: sprite={(settingsSprite == null ? "NULL" : settingsSprite.name)}, "
+                    + $"spriteRect={(settingsSprite == null ? "n/a" : $"{settingsSprite.rect.width}x{settingsSprite.rect.height}")}, "
+                    + $"rectTransform.sizeDelta={gearRect.sizeDelta}, "
+                    + $"rectTransform.rect={gearRect.rect}");
             }
 
             glowRect.SetAsFirstSibling();
