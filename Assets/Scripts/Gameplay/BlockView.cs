@@ -129,6 +129,8 @@ namespace ChromaBlast
 
         public void SetTrayShadowVisible(bool visible)
         {
+            // TEMP diagnostic logging -- remove once the render issue is found.
+            Debug.Log($"[TrayShadowDebug] {name}: shadowImage null? {shadowImage == null}");
             if (shadowImage == null)
             {
                 return;
@@ -146,6 +148,15 @@ namespace ChromaBlast
             }
 
             shadowImage.enabled = visible && shadowImage.sprite != null;
+
+            // TEMP diagnostic logging -- remove once the render issue is found.
+            Debug.Log(
+                $"[TrayShadowDebug] {name}: activeInHierarchy={shadowImage.gameObject.activeInHierarchy}, "
+                + $"shadowSibling={shadowImage.transform.GetSiblingIndex()}, "
+                + $"tileSibling={(tileImage == null ? -1 : tileImage.transform.GetSiblingIndex())}, "
+                + $"shadowCanvas={GetComponentInParent<Canvas>()?.name ?? "none"}, "
+                + $"spriteValid={shadowImage.sprite != null}, "
+                + $"enabled={shadowImage.enabled}, color={shadowImage.color}");
         }
 
         private void EnsureVisualImages()
