@@ -122,8 +122,10 @@ namespace ChromaBlast
         // read as floating above the tray background instead of flat against it.
         // Reuses the shadowImage layer that ApplyTileSprite otherwise keeps off
         // (board tiles already bake their own shadow into the art).
-        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.22f);
-        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.14f);
+        // TEMP: alpha boosted to 0.5 for both modes to confirm the layer actually
+        // renders on-device; dial back down once confirmed visible.
+        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.5f);
+        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.5f);
 
         public void SetTrayShadowVisible(bool visible)
         {
@@ -131,6 +133,11 @@ namespace ChromaBlast
             {
                 return;
             }
+
+            // Explicit SetActive alongside .enabled: shadowImage is created inside
+            // BlockView's own Awake/EnsureVisualImages, so it should already be
+            // active, but this guards against it ever being parked inactive.
+            shadowImage.gameObject.SetActive(true);
 
             if (visible)
             {
