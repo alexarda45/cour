@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 153eb13b1345443a836bb6cd1c508542
+guid: 8e92060ab99c5e4468eeb1c01f4b2541
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 10012431695270689
-    second: Tile_Reference_Cyan_0
+      213: 6621959207560845539
+    second: Board_LightBlue_Final_Square_BACKUP_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,9 +46,9 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 0
+  spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 0
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Tile_Reference_Cyan_0
+      name: Board_LightBlue_Final_Square_BACKUP_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 723
-        height: 723
+        width: 1185
+        height: 1185
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3166c247fa22496981cb0800000000000000
-      internalID: 10012431695270689
+      spriteID: 3e89acb80dce5eb50800000000000000
+      internalID: 6621959207560845539
       vertices: []
       indices: 
       edges: []
@@ -151,7 +151,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Tile_Reference_Cyan_0: 10012431695270689
+      Board_LightBlue_Final_Square_BACKUP_0: 6621959207560845539
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
