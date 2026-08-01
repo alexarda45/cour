@@ -15,7 +15,7 @@ namespace ChromaBlast
         [SerializeField] private float dragLiftPixels = 34f;
         [SerializeField] private float minimumTouchSize = 128f;
 
-        private const float TrayPieceVisualFill = 0.90f;
+        private const float TrayPieceVisualFill = 0.98f;
 
         private CanvasGroup canvasGroup;
         private Image hitArea;
