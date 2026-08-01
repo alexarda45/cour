@@ -136,7 +136,7 @@ TextureImporter:
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 248, y: 248, z: 248, w: 248}
-      customData:
+      customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
@@ -144,17 +144,17 @@ TextureImporter:
       spriteID: e0e0d35eed0b47ada16e0800000000000000
       internalID: 1358193518410938488
       vertices: []
-      indices:
+      indices: 
       edges: []
       weights: []
     outline: []
-    customData:
+    customData: 
     physicsShape: []
     bones: []
-    spriteID: b6fdf1a86ea14f8db37d0800000000000000
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
-    indices:
+    indices: 
     edges: []
     weights: []
     secondaryTextures: []
@@ -162,8 +162,8 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       BestScoreCapsule_0: 1358193518410938488
-  mipmapLimitGroupName:
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  userData:
-  assetBundleName:
-  assetBundleVariant:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

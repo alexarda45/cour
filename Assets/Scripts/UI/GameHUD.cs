@@ -1172,13 +1172,24 @@ namespace ChromaBlast
             capsuleGloss.enabled = false;
 
             RectTransform capsuleArtRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleArt");
-            ConfigureHudLayerRect(capsuleArtRect, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+            // The supplied capsule uses a 1536x1024 canvas while its visible pill
+            // occupies only the middle band. Oversize the image rect so that the
+            // baked transparent padding stays outside the 320x108 HUD footprint
+            // and the original artwork itself is actually visible at the intended
+            // size. No source pixels are cropped or recoloured.
+            capsuleArtRect.anchorMin = new Vector2(0.5f, 0.5f);
+            capsuleArtRect.anchorMax = capsuleArtRect.anchorMin;
+            capsuleArtRect.pivot = new Vector2(0.5f, 0.5f);
+            capsuleArtRect.anchoredPosition = Vector2.zero;
+            capsuleArtRect.sizeDelta = new Vector2(328f, 208f);
+            capsuleArtRect.localScale = Vector3.one;
             Image capsuleArt = GetOrAddImage(capsuleArtRect.gameObject);
             Sprite capsuleSprite = LoadOceanSprite(BestScoreCapsulePath);
             capsuleArt.sprite = capsuleSprite;
             capsuleArt.enabled = capsuleSprite != null;
             capsuleArt.color = Color.white;
-            capsuleArt.type = Image.Type.Sliced;
+            capsuleArt.type = Image.Type.Simple;
+            capsuleArt.preserveAspect = true;
             capsuleArt.raycastTarget = false;
 
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
@@ -1201,7 +1212,10 @@ namespace ChromaBlast
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
             crownRect.anchoredPosition = new Vector2(48f, 2f);
-            crownRect.sizeDelta = new Vector2(68f, 68f);
+            // CrownIcon.png also contains generous transparent framing. The
+            // larger image rect compensates for that padding while keeping the
+            // visible crown inside the existing BestScoreHud bounds.
+            crownRect.sizeDelta = new Vector2(110f, 110f);
             crownRect.localScale = Vector3.one;
             bestScoreCrownImage = GetOrAddImage(crownRect.gameObject);
             if (bestScoreCrownImage != null)
@@ -3409,7 +3423,11 @@ namespace ChromaBlast
             gearRect.anchorMax = gearRect.anchorMin;
             gearRect.pivot = new Vector2(0.5f, 0.5f);
             gearRect.anchoredPosition = Vector2.zero;
-            gearRect.sizeDelta = new Vector2(68f, 68f);
+            // SettingsIcon.png is a portrait 1024x1536 canvas around a square
+            // gear. Matching the canvas to a square rect made the actual gear
+            // tiny. Preserve the source aspect in a compensated portrait rect so
+            // the visible gear fills the existing 100x100 button hit area.
+            gearRect.sizeDelta = new Vector2(120f, 180f);
             gearRect.localScale = Vector3.one;
             Image gear = GetOrAddImage(gearRect.gameObject);
             if (gear != null)
