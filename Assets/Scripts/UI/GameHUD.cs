@@ -1196,8 +1196,8 @@ namespace ChromaBlast
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
             crownGlowRect.anchorMax = crownGlowRect.anchorMin;
             crownGlowRect.pivot = new Vector2(0.5f, 0.5f);
-            crownGlowRect.anchoredPosition = new Vector2(52f, -6f);
-            crownGlowRect.sizeDelta = new Vector2(66f, 66f);
+            crownGlowRect.anchoredPosition = new Vector2(52f, 0f);
+            crownGlowRect.sizeDelta = new Vector2(50f, 50f);
             crownGlowRect.localScale = Vector3.one;
             Image crownGlow = GetOrAddImage(crownGlowRect.gameObject);
             if (crownGlow != null)
@@ -1211,11 +1211,13 @@ namespace ChromaBlast
             crownRect.anchorMin = new Vector2(0f, 0.5f);
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
-            crownRect.anchoredPosition = new Vector2(52f, -6f);
-            // CrownIcon.png also contains generous transparent framing. The
-            // larger image rect compensates for that padding while keeping the
-            // visible crown inside the existing BestScoreHud bounds.
-            crownRect.sizeDelta = new Vector2(88f, 88f);
+            crownRect.anchoredPosition = new Vector2(52f, 0f);
+            // BestScoreHud local bounds are x [0, 320], y [-108, 0]. With a middle-left
+            // anchor, center (52, -54) and size 62x62, the crown bounds are x [21, 83]
+            // and y [-85, -23]. This leaves 21 px horizontally and 23 px vertically at
+            // the nearest capsule edges. BestScoreText spans y [-105, -3], so its centre
+            // is also exactly -54 and both visuals share the same horizontal midline.
+            crownRect.sizeDelta = new Vector2(62f, 62f);
             crownRect.localScale = Vector3.one;
             bestScoreCrownImage = GetOrAddImage(crownRect.gameObject);
             if (bestScoreCrownImage != null)
