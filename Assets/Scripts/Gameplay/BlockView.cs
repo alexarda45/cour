@@ -118,6 +118,29 @@ namespace ChromaBlast
             }
         }
 
+        // A soft contact shadow for pieces resting/dragging in the tray, so they
+        // read as floating above the tray background instead of flat against it.
+        // Reuses the shadowImage layer that ApplyTileSprite otherwise keeps off
+        // (board tiles already bake their own shadow into the art).
+        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.22f);
+        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.14f);
+
+        public void SetTrayShadowVisible(bool visible)
+        {
+            if (shadowImage == null)
+            {
+                return;
+            }
+
+            if (visible)
+            {
+                shadowImage.sprite = tileImage != null ? tileImage.sprite : shadowImage.sprite;
+                shadowImage.color = MobilePerformance.LowEndMode ? TraySoftShadowColorLowEnd : TraySoftShadowColor;
+            }
+
+            shadowImage.enabled = visible && shadowImage.sprite != null;
+        }
+
         private void EnsureVisualImages()
         {
             // shadowImage/glowImage/highlightImage are kept only as targets for the

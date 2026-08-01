@@ -459,6 +459,7 @@ namespace ChromaBlast
                 blockRect.sizeDelta = Vector2.one * (cellSize * TrayPieceVisualFill);
                 blockRect.anchoredPosition = visualOffset + new Vector2((cell.x + 0.5f) * cellSize, (cell.y + 0.5f) * cellSize);
                 block.Initialize(Instance.color, false);
+                block.SetTrayShadowVisible(true);
             }
 
             EnsureMoveBadge();
