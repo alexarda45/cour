@@ -9,8 +9,9 @@ namespace ChromaBlast
     public class GameHUD : MonoBehaviour
     {
         private const string OceanBackgroundPath = "Ocean/Backgrounds/BG_Ocean";
-        private const string BestScoreCrownPath = "Ocean/Icons/Icon_Crown_Gold";
-        private const string SettingsGearPath = "Ocean/Icons/Icon_Settings_GearWhite";
+        private const string BestScoreCrownPath = "Ocean/UI/CrownIcon";
+        private const string BestScoreCapsulePath = "Ocean/UI/BestScoreCapsule";
+        private const string SettingsGearPath = "Ocean/UI/SettingsIcon";
         private const string SettingsPanelPath = "Ocean/Settings/Settings_Panel";
         private const string SettingsClosePath = "Ocean/Settings/Close_X";
         private const string SettingsRestartIconPath = "Ocean/Icons/Icon_Restart";
@@ -1153,27 +1154,32 @@ namespace ChromaBlast
             capsuleShadow.raycastTarget = false;
             capsuleShadow.enabled = true;
 
+            // Real art replaces the procedural glass-pill assembly below: border
+            // rim, flat backdrop fill and gloss sheen are all baked into
+            // BestScoreCapsule.png now, so those layers stay off to avoid a
+            // duplicated look. CapsuleShadow above is kept -- it's a drop shadow
+            // under the pill, not part of the pill face, so it still adds to it.
             RectTransform borderRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleBorder");
-            ConfigureHudLayerRect(borderRect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Image border = GetOrAddImage(borderRect.gameObject);
-            UISpriteFactory.ApplyFrame(border, 0.50f, 0.045f);
-            // Soft white-blue glass rim like the reference pill, not neon cyan.
-            border.color = new Color(0.74f, 0.88f, 1f, 0.95f);
-            border.fillCenter = false;
-            border.enabled = true;
-            border.raycastTarget = false;
+            border.enabled = false;
 
             RectTransform backdropRect = GetOrCreateChildRect(bestScoreHudRoot, "Backdrop");
-            ConfigureHudLayerRect(backdropRect, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
             Image backdrop = GetOrAddImage(backdropRect.gameObject);
-            StyleRoundedHudImage(backdrop, new Color(0.15f, 0.42f, 0.88f, 0.97f));
-            backdrop.enabled = true;
+            backdrop.enabled = false;
 
             RectTransform glossRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleGloss");
-            ConfigureHudLayerRect(glossRect, new Vector2(0.06f, 0.54f), new Vector2(0.94f, 0.90f), Vector2.zero, Vector2.zero);
             Image capsuleGloss = GetOrAddImage(glossRect.gameObject);
-            StyleRoundedHudImage(capsuleGloss, new Color(0.85f, 0.97f, 1f, 0.24f));
-            capsuleGloss.enabled = true;
+            capsuleGloss.enabled = false;
+
+            RectTransform capsuleArtRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleArt");
+            ConfigureHudLayerRect(capsuleArtRect, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
+            Image capsuleArt = GetOrAddImage(capsuleArtRect.gameObject);
+            Sprite capsuleSprite = LoadOceanSprite(BestScoreCapsulePath);
+            capsuleArt.sprite = capsuleSprite;
+            capsuleArt.enabled = capsuleSprite != null;
+            capsuleArt.color = Color.white;
+            capsuleArt.type = Image.Type.Sliced;
+            capsuleArt.raycastTarget = false;
 
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
@@ -1203,7 +1209,9 @@ namespace ChromaBlast
                 Sprite crownSprite = LoadOceanSprite(BestScoreCrownPath);
                 bestScoreCrownImage.sprite = crownSprite;
                 bestScoreCrownImage.enabled = crownSprite != null;
-                bestScoreCrownImage.color = new Color(1f, 0.84f, 0.34f, 1f);
+                // CrownIcon.png is full-color art, not a silhouette -- tinting it
+                // would multiply in an unwanted gold-on-gold shift, so leave it white.
+                bestScoreCrownImage.color = Color.white;
                 bestScoreCrownImage.preserveAspect = true;
                 bestScoreCrownImage.raycastTarget = false;
             }
@@ -1233,8 +1241,9 @@ namespace ChromaBlast
             borderRect.SetSiblingIndex(2);
             backdropRect.SetSiblingIndex(3);
             glossRect.SetSiblingIndex(4);
-            crownGlowRect.SetSiblingIndex(5);
-            crownRect.SetSiblingIndex(6);
+            capsuleArtRect.SetSiblingIndex(5);
+            crownGlowRect.SetSiblingIndex(6);
+            crownRect.SetSiblingIndex(7);
             valueRect.SetAsLastSibling();
         }
 
@@ -3405,10 +3414,12 @@ namespace ChromaBlast
             Image gear = GetOrAddImage(gearRect.gameObject);
             if (gear != null)
             {
+                // SettingsIcon.png is full-color art, not a silhouette -- leave it
+                // white so its own baked-in blue rim/glow isn't tinted further.
                 Sprite settingsSprite = LoadOceanSprite(SettingsGearPath);
                 gear.sprite = settingsSprite;
                 gear.enabled = settingsSprite != null;
-                gear.color = new Color(0.88f, 0.98f, 1f, 1f);
+                gear.color = Color.white;
                 gear.type = Image.Type.Simple;
                 gear.preserveAspect = true;
                 gear.raycastTarget = false;
