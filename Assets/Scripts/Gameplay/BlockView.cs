@@ -9,13 +9,13 @@ namespace ChromaBlast
     public class BlockView : MonoBehaviour
     {
         // The Tile_Reference_* art has a transparent margin baked into its square
-        // canvas (the solid tile shape only fills ~87% of the canvas width), and
-        // BoardManager's own cellPadding inset (its grid-line gap between cells)
-        // shrinks the rect this sprite fills before this scale is even applied.
-        // Closing both gaps so the tile reads as filling the cell edge-to-edge
-        // needs meaningfully more than just the ~1.15 that offsets the art's
-        // own margin alone.
-        private const float TileVisualScale = 1.30f;
+        // canvas (the solid tile shape only fills ~87% of the canvas width), so
+        // the sprite must be scaled up past 1.0 for tiles to read as nearly
+        // touching on the board/tray, matching the reference look. Keep this
+        // close to that ~1/0.87 ratio only — pushing it further crushes the
+        // rounded corners into square-looking blocks. Any remaining cell gap
+        // should be closed via BoardManager's cellPadding, not this scale.
+        private const float TileVisualScale = 1.15f;
 
         // The same art also bakes in a soft drop shadow that extends further
         // below the tile than the margin above it, which pulls the solid tile

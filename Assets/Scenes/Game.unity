@@ -7183,7 +7183,7 @@ MonoBehaviour:
   blockLayer: {fileID: 1799226813}
   cellPrefab: {fileID: 0}
   blockPrefab: {fileID: 0}
-  cellPadding: 4
+  cellPadding: 2
   clearParticlesByColor:
   - {fileID: 8799062536042320584, guid: 7bd4f677a3b7ed24eba4242d1dfaf6bf, type: 3}
   - {fileID: 983576395684192507, guid: 0e18a6b3253baa140b187c8ff05e38f6, type: 3}

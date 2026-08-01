@@ -15,7 +15,7 @@ namespace ChromaBlast
         [SerializeField] private RectTransform blockLayer;
         [SerializeField] private BoardCell cellPrefab;
         [SerializeField] private BlockView blockPrefab;
-        [SerializeField] private float cellPadding = 4f;
+        [SerializeField] private float cellPadding = 2f;
 
         [Header("Effects")]
         [SerializeField] private ParticleSystem[] clearParticlesByColor;
