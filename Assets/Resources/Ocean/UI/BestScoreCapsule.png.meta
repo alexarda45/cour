@@ -1,9 +1,9 @@
 fileFormatVersion: 2
-guid: 5c5f0e07d1194b679d8b913b1956f2f2
+guid: 1a88d309b1204dad8aeb3b4d30f51de8
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1358193518410938488
+      213: 411865054572955620
     second: BestScoreCapsule_0
   externalObjects: {}
   serializedVersion: 13
@@ -51,8 +51,8 @@ TextureImporter:
   spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 9
-  spriteBorder: {x: 248, y: 248, z: 248, w: 248}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -129,20 +129,20 @@ TextureImporter:
       name: BestScoreCapsule_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1536
-        height: 1024
+        x: 58
+        y: 246
+        width: 1418
+        height: 546
       alignment: 0
       pivot: {x: 0, y: 0}
-      border: {x: 248, y: 248, z: 248, w: 248}
+      border: {x: 0, y: 0, z: 0, w: 0}
       customData:
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e0e0d35eed0b47ada16e0800000000000000
-      internalID: 1358193518410938488
+      spriteID: 30535f43c5ca44ccbe870800000000000000
+      internalID: 411865054572955620
       vertices: []
       indices:
       edges: []
@@ -151,7 +151,7 @@ TextureImporter:
     customData:
     physicsShape: []
     bones: []
-    spriteID: b6fdf1a86ea14f8db37d0800000000000000
+    spriteID: 12f8239e3abb42fe8aea0800000000000000
     internalID: 0
     vertices: []
     indices:
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      BestScoreCapsule_0: 1358193518410938488
+      BestScoreCapsule_0: 411865054572955620
   mipmapLimitGroupName:
   pSDRemoveMatte: 0
   userData:

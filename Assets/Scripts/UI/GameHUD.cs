@@ -1178,7 +1178,14 @@ namespace ChromaBlast
             capsuleArt.sprite = capsuleSprite;
             capsuleArt.enabled = capsuleSprite != null;
             capsuleArt.color = Color.white;
-            capsuleArt.type = Image.Type.Sliced;
+            // Sprite import is now cropped tight to the pill's visible content
+            // (see BestScoreCapsule.png.meta), which brings its aspect ratio
+            // (~2.6:1) much closer to this rect's (~3.1:1) than the untrimmed
+            // canvas (~1.5:1) was, so a plain stretch reads fine without
+            // needing 9-slice border math.
+            capsuleArt.type = Image.Type.Simple;
+            capsuleArt.preserveAspect = false;
+            capsuleArt.fillCenter = true;
             capsuleArt.raycastTarget = false;
 
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
