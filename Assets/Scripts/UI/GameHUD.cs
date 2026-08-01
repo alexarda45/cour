@@ -15,6 +15,7 @@ namespace ChromaBlast
         private const string SettingsClosePath = "Ocean/Settings/Close_X";
         private const string SettingsRestartIconPath = "Ocean/Icons/Icon_Restart";
         private const string FinalBoardVisualPath = "Ocean/Board/Board_LightBlue_Final_Square";
+        private const string ScoreFontPath = "Fonts/Fredoka-SemiBold SDF";
         private const string SelectedLanguageKey = "SelectedLanguage";
         private const string EnglishLanguageCode = "en";
         private const float SettingsPanelWidth = 690f;
@@ -3248,6 +3249,18 @@ namespace ChromaBlast
             scoreText.fontSizeMin = 104f;
             scoreText.characterSpacing = -4f;
             scoreText.alignment = TextAlignmentOptions.Center;
+
+            TMP_FontAsset scoreFont = Resources.Load<TMP_FontAsset>(ScoreFontPath);
+            if (scoreFont != null)
+            {
+                scoreText.font = scoreFont;
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"Missing TMP font asset at Resources path: {ScoreFontPath}. Run Window > TextMeshPro > "
+                    + "Font Asset Creator on Fredoka-SemiBold.ttf and save the result there. Falling back to the current font.");
+            }
 
             // Bubbly reference look: white glyphs cooling to pale ice blue at the
             // bottom, with a thin light-blue rim instead of a hard dark outline.
