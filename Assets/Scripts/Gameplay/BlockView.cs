@@ -122,15 +122,19 @@ namespace ChromaBlast
         // read as floating above the tray background instead of flat against it.
         // Reuses the shadowImage layer that ApplyTileSprite otherwise keeps off
         // (board tiles already bake their own shadow into the art).
-        // TEMP: alpha boosted to 0.5 for both modes to confirm the layer actually
-        // renders on-device; dial back down once confirmed visible.
-        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.5f);
-        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.5f);
+        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.22f);
+        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.14f);
+
+        // Down-right offset for the tray shadow. Must be applied here, after
+        // Initialize, because EnsureVisualImages resets the layer to its default
+        // (3,-5) board offset. Kept small enough that the shadow can never reach
+        // a neighboring tray slot: adjacent pieces' edges sit >=40px apart
+        // (310px slot pitch minus a max 270px piece width), while this extends
+        // ~10px past the piece edge including the tile art's visual overhang.
+        private static readonly Vector3 TrayShadowOffset = new Vector3(6f, -9f, 0f);
 
         public void SetTrayShadowVisible(bool visible)
         {
-            // TEMP diagnostic logging -- remove once the render issue is found.
-            Debug.Log($"[TrayShadowDebug] {name}: shadowImage null? {shadowImage == null}");
             if (shadowImage == null)
             {
                 return;
@@ -145,47 +149,10 @@ namespace ChromaBlast
             {
                 shadowImage.sprite = tileImage != null ? tileImage.sprite : shadowImage.sprite;
                 shadowImage.color = MobilePerformance.LowEndMode ? TraySoftShadowColorLowEnd : TraySoftShadowColor;
+                shadowImage.rectTransform.localPosition = TrayShadowOffset;
             }
 
             shadowImage.enabled = visible && shadowImage.sprite != null;
-
-            // TEMP: tray shadow offset boosted from (3,-5) to (15,-20) purely as a
-            // visibility test -- the shadow is the same size as the tile, so at
-            // (3,-5) only a 3x5px sliver peeks out from behind it. Dial back to a
-            // subtle value once confirmed visible.
-            shadowImage.rectTransform.localPosition = new Vector3(15f, -20f, 0f);
-
-            // TEMP diagnostic logging -- remove once the render issue is found.
-            Debug.Log(
-                $"[TrayShadowDebug] {name}: activeInHierarchy={shadowImage.gameObject.activeInHierarchy}, "
-                + $"shadowSibling={shadowImage.transform.GetSiblingIndex()}, "
-                + $"tileSibling={(tileImage == null ? -1 : tileImage.transform.GetSiblingIndex())}, "
-                + $"shadowCanvas={GetComponentInParent<Canvas>()?.name ?? "none"}, "
-                + $"spriteValid={shadowImage.sprite != null}, "
-                + $"enabled={shadowImage.enabled}, color={shadowImage.color}");
-
-            // TEMP diagnostic logging -- SetTrayShadowVisible runs during
-            // PieceView.Initialize, BEFORE PieceSpawner.SpawnPieceInSlot parents
-            // the piece into its tray slot (slot.SetPiece comes after), so
-            // "shadowCanvas=none" above is expected at that moment. This re-logs
-            // one frame later, after parenting, to confirm the canvas is present.
-            StartCoroutine(LogCanvasNextFrame());
-        }
-
-        private IEnumerator LogCanvasNextFrame()
-        {
-            yield return null;
-            if (this == null || shadowImage == null)
-            {
-                yield break;
-            }
-
-            Debug.Log(
-                $"[TrayShadowDebug] {name} (next frame): "
-                + $"shadowCanvas={GetComponentInParent<Canvas>()?.name ?? "none"}, "
-                + $"activeInHierarchy={shadowImage.gameObject.activeInHierarchy}, "
-                + $"enabled={shadowImage.enabled}, "
-                + $"worldPos={shadowImage.rectTransform.position}");
         }
 
         private void EnsureVisualImages()
