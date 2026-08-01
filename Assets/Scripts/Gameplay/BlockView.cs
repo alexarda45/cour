@@ -149,6 +149,12 @@ namespace ChromaBlast
 
             shadowImage.enabled = visible && shadowImage.sprite != null;
 
+            // TEMP: tray shadow offset boosted from (3,-5) to (15,-20) purely as a
+            // visibility test -- the shadow is the same size as the tile, so at
+            // (3,-5) only a 3x5px sliver peeks out from behind it. Dial back to a
+            // subtle value once confirmed visible.
+            shadowImage.rectTransform.localPosition = new Vector3(15f, -20f, 0f);
+
             // TEMP diagnostic logging -- remove once the render issue is found.
             Debug.Log(
                 $"[TrayShadowDebug] {name}: activeInHierarchy={shadowImage.gameObject.activeInHierarchy}, "
@@ -157,6 +163,29 @@ namespace ChromaBlast
                 + $"shadowCanvas={GetComponentInParent<Canvas>()?.name ?? "none"}, "
                 + $"spriteValid={shadowImage.sprite != null}, "
                 + $"enabled={shadowImage.enabled}, color={shadowImage.color}");
+
+            // TEMP diagnostic logging -- SetTrayShadowVisible runs during
+            // PieceView.Initialize, BEFORE PieceSpawner.SpawnPieceInSlot parents
+            // the piece into its tray slot (slot.SetPiece comes after), so
+            // "shadowCanvas=none" above is expected at that moment. This re-logs
+            // one frame later, after parenting, to confirm the canvas is present.
+            StartCoroutine(LogCanvasNextFrame());
+        }
+
+        private IEnumerator LogCanvasNextFrame()
+        {
+            yield return null;
+            if (this == null || shadowImage == null)
+            {
+                yield break;
+            }
+
+            Debug.Log(
+                $"[TrayShadowDebug] {name} (next frame): "
+                + $"shadowCanvas={GetComponentInParent<Canvas>()?.name ?? "none"}, "
+                + $"activeInHierarchy={shadowImage.gameObject.activeInHierarchy}, "
+                + $"enabled={shadowImage.enabled}, "
+                + $"worldPos={shadowImage.rectTransform.position}");
         }
 
         private void EnsureVisualImages()
