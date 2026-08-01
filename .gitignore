@@ -8,6 +8,10 @@
 [Uu]serSettings/
 [Mm]emoryCaptures/
 
+# Unity Editor scene auto-recovery snapshots
+[Aa]ssets/_Recovery/
+[Aa]ssets/_Recovery.meta
+
 # Visual Studio / Rider / VS Code cache
 .vs/
 .vsconfig
