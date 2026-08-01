@@ -37,6 +37,13 @@ namespace ChromaBlast
             image.type = Image.Type.Sliced;
         }
 
+        public static void ApplySoftShadow(Image image, float radius01 = 0.30f)
+        {
+            if (image == null) return;
+            image.sprite = SoftRoundedRect(radius01);
+            image.type = Image.Type.Sliced;
+        }
+
         // ---- Sprite generators (cached) ----
 
         public static Sprite RoundedRect(float radius01 = 0.28f, int size = 64)
@@ -85,6 +92,42 @@ namespace ChromaBlast
             }
 
             float border = Mathf.Min(radius + thickness, size * 0.5f - 1f);
+            Sprite sprite = Build(pixels, size, key, new Vector4(border, border, border, border));
+            Cache[key] = sprite;
+            return sprite;
+        }
+
+        // Rounded rect with a wide blurred edge, for drop shadows. The shape is
+        // inset by the feather width so the blur fully fades out inside the
+        // texture and the 9-slice never clips it.
+        public static Sprite SoftRoundedRect(float radius01 = 0.30f, float feather01 = 0.35f, int size = 96)
+        {
+            string key = $"softrr_{size}_{radius01:0.00}_{feather01:0.00}";
+            if (Cache.TryGetValue(key, out Sprite cached) && cached != null) return cached;
+
+            Color32[] pixels = new Color32[size * size];
+            float half = size * 0.5f;
+            float feather = Mathf.Max(1f, Mathf.Clamp01(feather01) * half);
+            float extent = half - feather;
+            float radius = Mathf.Clamp01(radius01) * extent;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = Mathf.Abs(x + 0.5f - half) - (extent - radius);
+                    float py = Mathf.Abs(y + 0.5f - half) - (extent - radius);
+                    float ox = Mathf.Max(px, 0f);
+                    float oy = Mathf.Max(py, 0f);
+                    float outside = Mathf.Sqrt(ox * ox + oy * oy);
+                    float inside = Mathf.Min(Mathf.Max(px, py), 0f);
+                    float d = outside + inside - radius;
+                    float a = Mathf.Clamp01(0.5f - d / feather);
+                    a = a * a;                                        // softer falloff tail
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                }
+            }
+
+            float border = Mathf.Min(radius + feather, half - 1f);
             Sprite sprite = Build(pixels, size, key, new Vector4(border, border, border, border));
             Cache[key] = sprite;
             return sprite;

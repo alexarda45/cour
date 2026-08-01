@@ -86,6 +86,7 @@ namespace ChromaBlast
         private RectTransform bestScoreHudRoot;
         private Image bestScoreCrownImage;
         private Image finalBoardVisualImage;
+        private Image finalBoardShadowImage;
         private Image pauseOverlayImage;
         private RectTransform pausePanelRoot;
         private Image pausePanelImage;
@@ -899,6 +900,27 @@ namespace ChromaBlast
             visualRect.localScale = Vector3.one;
             visualRect.SetAsFirstSibling();
 
+            // Soft drop shadow behind the board panel so it reads as floating
+            // above the ocean background, like the reference. Drawn first so
+            // every other board child renders on top of it.
+            finalBoardShadowImage = EnsureImageLayer(finalBoardShadowImage, "FinalBoardDropShadow", boardRoot);
+            if (finalBoardShadowImage != null)
+            {
+                UISpriteFactory.ApplySoftShadow(finalBoardShadowImage, 0.16f);
+                finalBoardShadowImage.color = new Color(0f, 0.06f, 0.20f, 0.38f);
+                finalBoardShadowImage.raycastTarget = false;
+                finalBoardShadowImage.enabled = true;
+
+                RectTransform shadowRect = finalBoardShadowImage.rectTransform;
+                shadowRect.anchorMin = Vector2.zero;
+                shadowRect.anchorMax = Vector2.one;
+                shadowRect.pivot = new Vector2(0.5f, 0.5f);
+                shadowRect.offsetMin = new Vector2(-18f, -36f);
+                shadowRect.offsetMax = new Vector2(18f, 0f);
+                shadowRect.localScale = Vector3.one;
+                shadowRect.SetAsFirstSibling();
+            }
+
             DisableLegacyFinalBoardLayers(boardRoot, visualRect);
             DisableLegacyBoardFrameDecorators(boardRoot);
         }
@@ -981,7 +1003,7 @@ namespace ChromaBlast
             shadowRect.anchorMin = scoreRect.anchorMin;
             shadowRect.anchorMax = scoreRect.anchorMax;
             shadowRect.pivot = scoreRect.pivot;
-            shadowRect.anchoredPosition = new Vector2(0f, -5f);
+            shadowRect.anchoredPosition = new Vector2(0f, -7f);
             shadowRect.sizeDelta = scoreRect.sizeDelta;
             shadowRect.localScale = Vector3.one;
             scoreShadowText = shadowRect.GetComponent<TMP_Text>();
@@ -1123,15 +1145,19 @@ namespace ChromaBlast
             glow.enabled = false;
 
             RectTransform shadowRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleShadow");
-            ConfigureHudLayerRect(shadowRect, Vector2.zero, Vector2.one, new Vector2(2f, -7f), new Vector2(-2f, -1f));
+            ConfigureHudLayerRect(shadowRect, Vector2.zero, Vector2.one, new Vector2(-4f, -14f), new Vector2(4f, -2f));
             Image capsuleShadow = GetOrAddImage(shadowRect.gameObject);
-            capsuleShadow.enabled = false;
+            UISpriteFactory.ApplySoftShadow(capsuleShadow, 0.50f);
+            capsuleShadow.color = new Color(0.01f, 0.08f, 0.26f, 0.45f);
+            capsuleShadow.raycastTarget = false;
+            capsuleShadow.enabled = true;
 
             RectTransform borderRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleBorder");
             ConfigureHudLayerRect(borderRect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Image border = GetOrAddImage(borderRect.gameObject);
             UISpriteFactory.ApplyFrame(border, 0.50f, 0.045f);
-            border.color = new Color(0.34f, 0.93f, 1f, 0.90f);
+            // Soft white-blue glass rim like the reference pill, not neon cyan.
+            border.color = new Color(0.74f, 0.88f, 1f, 0.95f);
             border.fillCenter = false;
             border.enabled = true;
             border.raycastTarget = false;
@@ -1139,13 +1165,13 @@ namespace ChromaBlast
             RectTransform backdropRect = GetOrCreateChildRect(bestScoreHudRoot, "Backdrop");
             ConfigureHudLayerRect(backdropRect, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
             Image backdrop = GetOrAddImage(backdropRect.gameObject);
-            StyleRoundedHudImage(backdrop, new Color(0.015f, 0.30f, 0.76f, 0.96f));
+            StyleRoundedHudImage(backdrop, new Color(0.15f, 0.42f, 0.88f, 0.97f));
             backdrop.enabled = true;
 
             RectTransform glossRect = GetOrCreateChildRect(bestScoreHudRoot, "CapsuleGloss");
             ConfigureHudLayerRect(glossRect, new Vector2(0.06f, 0.54f), new Vector2(0.94f, 0.90f), Vector2.zero, Vector2.zero);
             Image capsuleGloss = GetOrAddImage(glossRect.gameObject);
-            StyleRoundedHudImage(capsuleGloss, new Color(0.82f, 1f, 1f, 0.18f));
+            StyleRoundedHudImage(capsuleGloss, new Color(0.85f, 0.97f, 1f, 0.24f));
             capsuleGloss.enabled = true;
 
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
@@ -3223,6 +3249,17 @@ namespace ChromaBlast
             scoreText.characterSpacing = -4f;
             scoreText.alignment = TextAlignmentOptions.Center;
 
+            // Bubbly reference look: white glyphs cooling to pale ice blue at the
+            // bottom, with a thin light-blue rim instead of a hard dark outline.
+            scoreText.enableVertexGradient = true;
+            scoreText.colorGradient = new VertexGradient(
+                Color.white,
+                Color.white,
+                new Color(0.80f, 0.91f, 1f),
+                new Color(0.80f, 0.91f, 1f));
+            scoreText.outlineWidth = 0.05f;
+            scoreText.outlineColor = new Color32(140, 190, 235, 210);
+
             Shadow legacyShadow = scoreText.GetComponent<Shadow>();
             if (legacyShadow != null)
             {
@@ -3239,7 +3276,7 @@ namespace ChromaBlast
                 scoreShadowText.fontSizeMin = scoreText.fontSizeMin;
                 scoreShadowText.characterSpacing = scoreText.characterSpacing;
                 scoreShadowText.alignment = TextAlignmentOptions.Center;
-                scoreShadowText.color = new Color(0.01f, 0.16f, 0.34f, 0.46f);
+                scoreShadowText.color = new Color(0.10f, 0.30f, 0.55f, 0.42f);
                 scoreShadowText.text = scoreText.text;
                 scoreShadowText.enabled = true;
                 scoreShadowText.gameObject.SetActive(true);
