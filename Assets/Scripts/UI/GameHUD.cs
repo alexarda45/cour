@@ -1196,8 +1196,8 @@ namespace ChromaBlast
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
             crownGlowRect.anchorMax = crownGlowRect.anchorMin;
             crownGlowRect.pivot = new Vector2(0.5f, 0.5f);
-            crownGlowRect.anchoredPosition = new Vector2(48f, 0f);
-            crownGlowRect.sizeDelta = new Vector2(78f, 78f);
+            crownGlowRect.anchoredPosition = new Vector2(52f, -6f);
+            crownGlowRect.sizeDelta = new Vector2(66f, 66f);
             crownGlowRect.localScale = Vector3.one;
             Image crownGlow = GetOrAddImage(crownGlowRect.gameObject);
             if (crownGlow != null)
@@ -1211,11 +1211,11 @@ namespace ChromaBlast
             crownRect.anchorMin = new Vector2(0f, 0.5f);
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
-            crownRect.anchoredPosition = new Vector2(48f, 2f);
+            crownRect.anchoredPosition = new Vector2(52f, -6f);
             // CrownIcon.png also contains generous transparent framing. The
             // larger image rect compensates for that padding while keeping the
             // visible crown inside the existing BestScoreHud bounds.
-            crownRect.sizeDelta = new Vector2(110f, 110f);
+            crownRect.sizeDelta = new Vector2(88f, 88f);
             crownRect.localScale = Vector3.one;
             bestScoreCrownImage = GetOrAddImage(crownRect.gameObject);
             if (bestScoreCrownImage != null)
@@ -3403,6 +3403,8 @@ namespace ChromaBlast
             ConfigureHudLayerRect(surfaceRect, Vector2.zero, Vector2.one, new Vector2(3f, 3f), new Vector2(-3f, -3f));
             Image surface = GetOrAddImage(surfaceRect.gameObject);
             StyleRoundedHudImage(surface, new Color(0.01f, 0.075f, 0.16f, 0.76f));
+            surface.enabled = false;
+            surface.raycastTarget = false;
 
             RectTransform glowRect = GetOrCreateChildRect(menuButton.transform, "SettingsGlow");
             ConfigureHudLayerRect(glowRect, Vector2.zero, Vector2.one, new Vector2(-8f, -8f), new Vector2(8f, 8f));
@@ -3411,12 +3413,14 @@ namespace ChromaBlast
             glow.color = new Color(0.20f, 0.88f, 1f, 0.56f);
             glow.fillCenter = false;
             glow.raycastTarget = false;
+            glow.enabled = false;
 
             RectTransform glossRect = GetOrCreateChildRect(menuButton.transform, "SettingsGloss");
             ConfigureHudLayerRect(glossRect, new Vector2(0.12f, 0.56f), new Vector2(0.88f, 0.90f), Vector2.zero, Vector2.zero);
             Image gloss = GetOrAddImage(glossRect.gameObject);
             StyleRoundedHudImage(gloss, new Color(0.76f, 1f, 1f, 0.07f));
-            gloss.enabled = true;
+            gloss.enabled = false;
+            gloss.raycastTarget = false;
 
             RectTransform gearRect = GetOrCreateChildRect(menuButton.transform, "GearIcon");
             gearRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -3459,7 +3463,9 @@ namespace ChromaBlast
                 feedback = menuButton.gameObject.AddComponent<UIButtonFeedback>();
             }
 
-            feedback.Configure(0.95f, 0.06f, glow);
+            // Keep the existing press-scale feedback, but do not pulse a backing
+            // layer: the Settings button must display only the supplied gear art.
+            feedback.Configure(0.95f, 0.06f, null);
         }
 
         private void StyleOceanControlButton(Button button)
