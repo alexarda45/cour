@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace ChromaBlast
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public class PieceView : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler
+    public class PieceView : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler, IPointerUpHandler
     {
         [SerializeField] private RectTransform blockRoot;
         [SerializeField] private BlockView blockPrefab;
@@ -79,12 +79,33 @@ namespace ChromaBlast
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            // Reinforce the per-piece zero-threshold setting at press time in case
+            // an input module refreshes PointerEventData between initialization and drag.
+            eventData.useDragThreshold = false;
             AudioManager.Instance?.PlayClick();
             if (!canCurrentlyFit)
             {
                 ShakeUnavailable();
                 gameManager?.ShowNoFitPieceHint();
                 Haptics.Light();
+                return;
+            }
+
+            // The drag threshold is already zero, so there is no positional tween to
+            // remove. Give the touch an immediate pickup response without starting a
+            // drag on a simple tap; OnBeginDrag restores the board-drag scale.
+            if (RectTransform != null && invalidDropRoutine == null && !dragging)
+            {
+                RectTransform.DOKill();
+                RectTransform.localScale = Vector3.one * 1.04f;
+            }
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (!dragging && RectTransform != null && invalidDropRoutine == null)
+            {
+                RectTransform.localScale = Vector3.one;
             }
         }
 

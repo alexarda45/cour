@@ -1126,7 +1126,7 @@ namespace ChromaBlast
             bestScoreHudRoot.anchorMax = bestScoreHudRoot.anchorMin;
             bestScoreHudRoot.pivot = new Vector2(0f, 1f);
             bestScoreHudRoot.anchoredPosition = new Vector2(34f, -50f);
-            bestScoreHudRoot.sizeDelta = new Vector2(320f, 132f);
+            bestScoreHudRoot.sizeDelta = new Vector2(350f, 132f);
             bestScoreHudRoot.localScale = Vector3.one;
             bestScoreHudRoot.gameObject.SetActive(true);
             bestScoreHudRoot.SetAsLastSibling();
@@ -1181,7 +1181,7 @@ namespace ChromaBlast
             capsuleArtRect.anchorMax = capsuleArtRect.anchorMin;
             capsuleArtRect.pivot = new Vector2(0.5f, 0.5f);
             capsuleArtRect.anchoredPosition = Vector2.zero;
-            capsuleArtRect.sizeDelta = new Vector2(328f, 208f);
+            capsuleArtRect.sizeDelta = new Vector2(358f, 238f);
             capsuleArtRect.localScale = Vector3.one;
             Image capsuleArt = GetOrAddImage(capsuleArtRect.gameObject);
             Sprite capsuleSprite = LoadOceanSprite(BestScoreCapsulePath);
@@ -1212,7 +1212,7 @@ namespace ChromaBlast
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
             crownRect.anchoredPosition = new Vector2(62f, 0f);
-            // BestScoreHud local bounds are x [0, 320], y [-132, 0]. With a middle-left
+            // BestScoreHud local bounds are x [0, 350], y [-132, 0]. With a middle-left
             // anchor, center (62, -66) and size 112x112, the crown bounds are x [6, 118]
             // and y [-122, -10]. This leaves at least 6 px inside the capsule bounds.
             // BestScoreText spans y [-129, -3], so its centre is also exactly -66.
@@ -3390,7 +3390,7 @@ namespace ChromaBlast
                 // BestScoreHud uses top-left pivot at Y=-50 with height 132, so its
                 // vertical centre is -50 - 66 = -116. Match that exact screen-space
                 // centre with this top-anchored, centre-pivot Settings button.
-                rect.anchoredPosition = new Vector2(-58f, -116f);
+                rect.anchoredPosition = new Vector2(-78f, -116f);
                 rect.sizeDelta = new Vector2(100f, 100f);
                 rect.localScale = Vector3.one;
             }

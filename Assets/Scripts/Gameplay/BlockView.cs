@@ -122,8 +122,8 @@ namespace ChromaBlast
         // read as floating above the tray background instead of flat against it.
         // Reuses the shadowImage layer that ApplyTileSprite otherwise keeps off
         // (board tiles already bake their own shadow into the art).
-        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.22f);
-        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.14f);
+        private static readonly Color TraySoftShadowColor = new Color(0f, 0.02f, 0.06f, 0.44f);
+        private static readonly Color TraySoftShadowColorLowEnd = new Color(0f, 0.02f, 0.06f, 0.28f);
 
         // Down-right offset for the tray shadow. Must be applied here, after
         // Initialize, because EnsureVisualImages resets the layer to its default
