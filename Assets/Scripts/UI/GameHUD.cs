@@ -3382,7 +3382,10 @@ namespace ChromaBlast
                 rect.anchorMin = new Vector2(1f, 1f);
                 rect.anchorMax = rect.anchorMin;
                 rect.pivot = new Vector2(0.5f, 0.5f);
-                rect.anchoredPosition = new Vector2(-58f, -64f);
+                // BestScoreHud uses top-left pivot at Y=-34 with height 108, so its
+                // vertical centre is -34 - 54 = -88. Match that exact screen-space
+                // centre with this top-anchored, centre-pivot Settings button.
+                rect.anchoredPosition = new Vector2(-58f, -88f);
                 rect.sizeDelta = new Vector2(100f, 100f);
                 rect.localScale = Vector3.one;
             }
