@@ -1196,8 +1196,8 @@ namespace ChromaBlast
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
             crownGlowRect.anchorMax = crownGlowRect.anchorMin;
             crownGlowRect.pivot = new Vector2(0.5f, 0.5f);
-            crownGlowRect.anchoredPosition = new Vector2(52f, 0f);
-            crownGlowRect.sizeDelta = new Vector2(50f, 50f);
+            crownGlowRect.anchoredPosition = new Vector2(50f, 0f);
+            crownGlowRect.sizeDelta = new Vector2(64f, 64f);
             crownGlowRect.localScale = Vector3.one;
             Image crownGlow = GetOrAddImage(crownGlowRect.gameObject);
             if (crownGlow != null)
@@ -1211,13 +1211,12 @@ namespace ChromaBlast
             crownRect.anchorMin = new Vector2(0f, 0.5f);
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
-            crownRect.anchoredPosition = new Vector2(52f, 0f);
+            crownRect.anchoredPosition = new Vector2(50f, 0f);
             // BestScoreHud local bounds are x [0, 320], y [-108, 0]. With a middle-left
-            // anchor, center (52, -54) and size 62x62, the crown bounds are x [21, 83]
-            // and y [-85, -23]. This leaves 21 px horizontally and 23 px vertically at
-            // the nearest capsule edges. BestScoreText spans y [-105, -3], so its centre
-            // is also exactly -54 and both visuals share the same horizontal midline.
-            crownRect.sizeDelta = new Vector2(62f, 62f);
+            // anchor, center (50, -54) and size 80x80, the crown bounds are x [10, 90]
+            // and y [-94, -14]. The nearest capsule-edge margin is therefore 10 px.
+            // BestScoreText spans y [-105, -3], so its centre is also exactly -54.
+            crownRect.sizeDelta = new Vector2(80f, 80f);
             crownRect.localScale = Vector3.one;
             bestScoreCrownImage = GetOrAddImage(crownRect.gameObject);
             if (bestScoreCrownImage != null)
@@ -1242,10 +1241,16 @@ namespace ChromaBlast
             valueRect.localScale = Vector3.one;
             highScoreText.alignment = TextAlignmentOptions.Center;
             highScoreText.fontStyle = FontStyles.Bold;
+            TMP_FontAsset bestScoreFont = Resources.Load<TMP_FontAsset>(ScoreFontPath);
+            if (bestScoreFont != null)
+            {
+                highScoreText.font = bestScoreFont;
+            }
             highScoreText.enableAutoSizing = true;
             highScoreText.fontSize = 56f;
             highScoreText.fontSizeMax = 56f;
             highScoreText.fontSizeMin = 34f;
+            highScoreText.enableVertexGradient = false;
             highScoreText.color = Color.white;
             highScoreText.enabled = true;
             highScoreText.gameObject.SetActive(true);
@@ -3436,7 +3441,7 @@ namespace ChromaBlast
             // gear. Matching the canvas to a square rect made the actual gear
             // tiny. Preserve the source aspect in a compensated portrait rect so
             // the visible gear fills the existing 100x100 button hit area.
-            gearRect.sizeDelta = new Vector2(120f, 180f);
+            gearRect.sizeDelta = new Vector2(140f, 210f);
             gearRect.localScale = Vector3.one;
             Image gear = GetOrAddImage(gearRect.gameObject);
             if (gear != null)
@@ -3762,7 +3767,7 @@ namespace ChromaBlast
 
             highScoreText.gameObject.SetActive(true);
             highScoreText.enabled = true;
-            highScoreText.color = new Color(1f, 0.97f, 0.82f, 1f);
+            highScoreText.color = Color.white;
             highScoreText.text = displayedBestScore.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
