@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace ChromaBlast
 {
     [RequireComponent(typeof(CanvasGroup))]
-    public class PieceView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler
+    public class PieceView : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler
     {
         [SerializeField] private RectTransform blockRoot;
         [SerializeField] private BlockView blockPrefab;
@@ -86,6 +86,14 @@ namespace ChromaBlast
                 gameManager?.ShowNoFitPieceHint();
                 Haptics.Light();
             }
+        }
+
+        public void OnInitializePotentialDrag(PointerEventData eventData)
+        {
+            // The EventSystem is already configured with a 1 px global threshold.
+            // Disable that final threshold only for tray pieces so their visual drag
+            // begins on the first pointer movement without affecting other UI controls.
+            eventData.useDragThreshold = false;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
