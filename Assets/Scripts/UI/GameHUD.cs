@@ -875,7 +875,7 @@ namespace ChromaBlast
             boardRoot.anchorMax = boardRoot.anchorMin;
             boardRoot.pivot = new Vector2(0.5f, 0.5f);
             boardRoot.anchoredPosition = Vector2.zero;
-            boardRoot.sizeDelta = new Vector2(987f, 987f);
+            boardRoot.sizeDelta = new Vector2(960f, 960f);
             boardRoot.localScale = Vector3.one;
 
             finalBoardVisualImage = EnsureImageLayer(finalBoardVisualImage, "FinalBoardVisual", boardRoot);
@@ -994,11 +994,11 @@ namespace ChromaBlast
                 }
             }
 
-            scoreRect.anchorMin = new Vector2(0.5f, 0.85f);
+            scoreRect.anchorMin = new Vector2(0.5f, 0.835f);
             scoreRect.anchorMax = scoreRect.anchorMin;
             scoreRect.pivot = new Vector2(0.5f, 0.5f);
             scoreRect.anchoredPosition = Vector2.zero;
-            scoreRect.sizeDelta = new Vector2(780f, 190f);
+            scoreRect.sizeDelta = new Vector2(820f, 205f);
             scoreRect.localScale = Vector3.one;
 
             RectTransform shadowRect = GetOrCreateChildRect(parentRect, "ScoreShadowText");
@@ -1125,8 +1125,8 @@ namespace ChromaBlast
             bestScoreHudRoot.anchorMin = new Vector2(0f, 1f);
             bestScoreHudRoot.anchorMax = bestScoreHudRoot.anchorMin;
             bestScoreHudRoot.pivot = new Vector2(0f, 1f);
-            bestScoreHudRoot.anchoredPosition = new Vector2(34f, -34f);
-            bestScoreHudRoot.sizeDelta = new Vector2(320f, 108f);
+            bestScoreHudRoot.anchoredPosition = new Vector2(34f, -50f);
+            bestScoreHudRoot.sizeDelta = new Vector2(320f, 132f);
             bestScoreHudRoot.localScale = Vector3.one;
             bestScoreHudRoot.gameObject.SetActive(true);
             bestScoreHudRoot.SetAsLastSibling();
@@ -1196,8 +1196,8 @@ namespace ChromaBlast
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
             crownGlowRect.anchorMax = crownGlowRect.anchorMin;
             crownGlowRect.pivot = new Vector2(0.5f, 0.5f);
-            crownGlowRect.anchoredPosition = new Vector2(50f, 0f);
-            crownGlowRect.sizeDelta = new Vector2(64f, 64f);
+            crownGlowRect.anchoredPosition = new Vector2(62f, 0f);
+            crownGlowRect.sizeDelta = new Vector2(90f, 90f);
             crownGlowRect.localScale = Vector3.one;
             Image crownGlow = GetOrAddImage(crownGlowRect.gameObject);
             if (crownGlow != null)
@@ -1211,12 +1211,12 @@ namespace ChromaBlast
             crownRect.anchorMin = new Vector2(0f, 0.5f);
             crownRect.anchorMax = crownRect.anchorMin;
             crownRect.pivot = new Vector2(0.5f, 0.5f);
-            crownRect.anchoredPosition = new Vector2(50f, 0f);
-            // BestScoreHud local bounds are x [0, 320], y [-108, 0]. With a middle-left
-            // anchor, center (50, -54) and size 80x80, the crown bounds are x [10, 90]
-            // and y [-94, -14]. The nearest capsule-edge margin is therefore 10 px.
-            // BestScoreText spans y [-105, -3], so its centre is also exactly -54.
-            crownRect.sizeDelta = new Vector2(80f, 80f);
+            crownRect.anchoredPosition = new Vector2(62f, 0f);
+            // BestScoreHud local bounds are x [0, 320], y [-132, 0]. With a middle-left
+            // anchor, center (62, -66) and size 112x112, the crown bounds are x [6, 118]
+            // and y [-122, -10]. This leaves at least 6 px inside the capsule bounds.
+            // BestScoreText spans y [-129, -3], so its centre is also exactly -66.
+            crownRect.sizeDelta = new Vector2(112f, 112f);
             crownRect.localScale = Vector3.one;
             bestScoreCrownImage = GetOrAddImage(crownRect.gameObject);
             if (bestScoreCrownImage != null)
@@ -1236,7 +1236,7 @@ namespace ChromaBlast
             valueRect.anchorMin = new Vector2(0f, 0f);
             valueRect.anchorMax = new Vector2(1f, 1f);
             valueRect.pivot = new Vector2(0.5f, 0.5f);
-            valueRect.offsetMin = new Vector2(92f, 3f);
+            valueRect.offsetMin = new Vector2(120f, 3f);
             valueRect.offsetMax = new Vector2(-10f, -3f);
             valueRect.localScale = Vector3.one;
             highScoreText.alignment = TextAlignmentOptions.Center;
@@ -3274,9 +3274,9 @@ namespace ChromaBlast
             scoreText.color = Color.white;
             scoreText.fontStyle |= FontStyles.Bold;
             scoreText.enableAutoSizing = true;
-            scoreText.fontSize = 170f;
-            scoreText.fontSizeMax = 170f;
-            scoreText.fontSizeMin = 104f;
+            scoreText.fontSize = 178f;
+            scoreText.fontSizeMax = 178f;
+            scoreText.fontSizeMin = 108f;
             scoreText.characterSpacing = -4f;
             scoreText.alignment = TextAlignmentOptions.Center;
 
@@ -3387,10 +3387,10 @@ namespace ChromaBlast
                 rect.anchorMin = new Vector2(1f, 1f);
                 rect.anchorMax = rect.anchorMin;
                 rect.pivot = new Vector2(0.5f, 0.5f);
-                // BestScoreHud uses top-left pivot at Y=-34 with height 108, so its
-                // vertical centre is -34 - 54 = -88. Match that exact screen-space
+                // BestScoreHud uses top-left pivot at Y=-50 with height 132, so its
+                // vertical centre is -50 - 66 = -116. Match that exact screen-space
                 // centre with this top-anchored, centre-pivot Settings button.
-                rect.anchoredPosition = new Vector2(-58f, -88f);
+                rect.anchoredPosition = new Vector2(-58f, -116f);
                 rect.sizeDelta = new Vector2(100f, 100f);
                 rect.localScale = Vector3.one;
             }
