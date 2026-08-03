@@ -3261,7 +3261,7 @@ namespace ChromaBlast
                 barRect.anchorMin = new Vector2(barAnchors[i], 0.778f);
                 barRect.anchorMax = barRect.anchorMin;
                 barRect.pivot = new Vector2(0.5f, 0.5f);
-                barRect.anchoredPosition = Vector2.zero;
+                barRect.anchoredPosition = new Vector2(0f, -18f);
                 barRect.sizeDelta = new Vector2(185f, 36f);
             }
         }
