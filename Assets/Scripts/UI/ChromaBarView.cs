@@ -20,6 +20,7 @@ namespace ChromaBlast
 
         private static readonly Sprite[] PopButtonSprites = new Sprite[GameConstants.ColorCount];
         private static readonly bool[] MissingPopButtonSpriteLogged = new bool[GameConstants.ColorCount];
+        private static readonly Vector2 PopButtonSize = new Vector2(170f, 54f);
 
         [SerializeField] private ChromaColor color;
         [SerializeField] private Slider slider;
@@ -239,7 +240,7 @@ namespace ChromaBlast
             Sprite sprite = PopButtonSprites[index];
             if (sprite == null)
             {
-                sprite = Resources.Load<Sprite>(PopButtonSpritePaths[index]);
+                sprite = LoadPopButtonSprite(PopButtonSpritePaths[index]);
                 PopButtonSprites[index] = sprite;
             }
 
@@ -252,6 +253,17 @@ namespace ChromaBlast
                 }
 
                 return;
+            }
+
+            RectTransform buttonRect = popButton.transform as RectTransform;
+            if (buttonRect != null)
+            {
+                buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
+                buttonRect.anchorMax = buttonRect.anchorMin;
+                buttonRect.pivot = new Vector2(0.5f, 0.5f);
+                buttonRect.anchoredPosition = Vector2.zero;
+                buttonRect.sizeDelta = PopButtonSize;
+                buttonRect.localScale = Vector3.one;
             }
 
             Image buttonImage = popButton.image != null ? popButton.image : popButton.GetComponent<Image>();
@@ -276,6 +288,27 @@ namespace ChromaBlast
                     legacyEffects[i].enabled = false;
                 }
             }
+        }
+
+        private static Sprite LoadPopButtonSprite(string resourcePath)
+        {
+            Sprite[] sprites = Resources.LoadAll<Sprite>(resourcePath);
+            if (sprites == null || sprites.Length == 0)
+            {
+                return null;
+            }
+
+            int separatorIndex = resourcePath.LastIndexOf('/');
+            string expectedName = separatorIndex >= 0 ? resourcePath.Substring(separatorIndex + 1) : resourcePath;
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                if (sprites[i] != null && string.Equals(sprites[i].name, expectedName, StringComparison.Ordinal))
+                {
+                    return sprites[i];
+                }
+            }
+
+            return sprites[0];
         }
 
         private void DisableLegacyPopButtonText()
