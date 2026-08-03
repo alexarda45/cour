@@ -9,15 +9,6 @@ namespace ChromaBlast
     {
         private const float FinalBoardGridPaddingX = 16f;
         private const float FinalBoardGridPaddingY = 9.5f;
-        // Matches the fixed board tile artwork used by BlockView and the regular
-        // placement preview: Cyan, Magenta/Pink, Lime/Blue and Amber/Yellow.
-        private static readonly Color32[] CompletionPreviewColors =
-        {
-            new Color32(6, 213, 233, 255),
-            new Color32(233, 5, 43, 255),
-            new Color32(5, 73, 233, 255),
-            new Color32(233, 178, 0, 255)
-        };
 
         [Header("UI")]
         [SerializeField] private RectTransform boardRoot;
@@ -34,14 +25,14 @@ namespace ChromaBlast
         private readonly BlockView[,] blocks = new BlockView[GameConstants.BoardSize, GameConstants.BoardSize];
         private readonly List<BoardCell> generatedCells = new List<BoardCell>();
         private readonly List<BoardCell> previewCells = new List<BoardCell>();
-        private readonly List<CompletionFillVisual> completionPreviewPool = new List<CompletionFillVisual>();
+        private readonly List<CompletionOutlineVisual> completionPreviewPool = new List<CompletionOutlineVisual>();
         private readonly List<LineGlowVisual> lineGlowPool = new List<LineGlowVisual>();
         private readonly List<IntersectionFlareVisual> intersectionFlarePool = new List<IntersectionFlareVisual>();
 
         private RectTransform lineClearEffectLayer;
         private RectTransform completionPreviewLayer;
         private Coroutine completionPreviewPulseRoutine;
-        private int activeCompletionPreviewFills;
+        private int activeCompletionPreviewOutlines;
         private int lineClearEffectGeneration;
         private string previewShapeId;
         private Vector2Int previewOrigin = new Vector2Int(int.MinValue, int.MinValue);
@@ -442,7 +433,7 @@ namespace ChromaBlast
 
         private void ShowCompletionLinePreview(PieceInstance piece, Vector2Int origin)
         {
-            Color completionColor = GetCompletionPreviewColor(piece.color);
+            Color completionColor = ChromaPalette.GetColor(piece.color);
             bool[] touchedRows = new bool[GameConstants.BoardSize];
             bool[] touchedColumns = new bool[GameConstants.BoardSize];
             Vector2Int[] shapeCells = piece.Data.cells;
@@ -466,7 +457,7 @@ namespace ChromaBlast
 
                 for (int x = 0; x < GameConstants.BoardSize; x++)
                 {
-                    ShowCompletionLineFill(x, y, completionColor);
+                    ShowCompletionLineOutline(x, y, completionColor);
                 }
             }
 
@@ -479,32 +470,30 @@ namespace ChromaBlast
 
                 for (int y = 0; y < GameConstants.BoardSize; y++)
                 {
-                    ShowCompletionLineFill(x, y, completionColor);
+                    ShowCompletionLineOutline(x, y, completionColor);
                 }
             }
 
-            if (activeCompletionPreviewFills > 0 && completionPreviewPulseRoutine == null)
+            if (activeCompletionPreviewOutlines > 0 && completionPreviewPulseRoutine == null)
             {
                 completionPreviewPulseRoutine = StartCoroutine(CompletionPreviewPulseRoutine());
             }
         }
 
-        private void ShowCompletionLineFill(int x, int y, Color color)
+        private void ShowCompletionLineOutline(int x, int y, Color color)
         {
             if (!IsInside(x, y) || completionPreviewLayer == null)
             {
                 return;
             }
 
-            CompletionFillVisual fill = GetCompletionFill(activeCompletionPreviewFills++);
-            ConfigureBoardRect(fill.root, x, y);
-            fill.baseColor = color;
-            fill.replacesOccupiedTile = blocks[x, y] != null;
-            Color.RGBToHSV(color, out fill.hue, out fill.saturation, out fill.value);
-            color.a = fill.replacesOccupiedTile ? 1f : 0.78f;
-            fill.image.color = color;
-            fill.root.gameObject.SetActive(true);
-            fill.root.SetAsLastSibling();
+            CompletionOutlineVisual outline = GetCompletionOutline(activeCompletionPreviewOutlines++);
+            ConfigureBoardRect(outline.root, x, y);
+            outline.baseColor = color;
+            color.a = 0.76f;
+            outline.image.color = color;
+            outline.root.gameObject.SetActive(true);
+            outline.root.SetAsLastSibling();
         }
 
         public int CountEmptyCells()
@@ -608,25 +597,25 @@ namespace ChromaBlast
             previewOrigin = new Vector2Int(int.MinValue, int.MinValue);
         }
 
-        private CompletionFillVisual GetCompletionFill(int index)
+        private CompletionOutlineVisual GetCompletionOutline(int index)
         {
             while (completionPreviewPool.Count <= index)
             {
-                GameObject fillObject = new GameObject(
-                    $"CompletionLineFill_{completionPreviewPool.Count}",
+                GameObject outlineObject = new GameObject(
+                    $"CompletionLineOutline_{completionPreviewPool.Count}",
                     typeof(RectTransform),
                     typeof(UnityEngine.UI.Image));
-                RectTransform fillRect = (RectTransform)fillObject.transform;
-                fillRect.SetParent(completionPreviewLayer, false);
-                UnityEngine.UI.Image fillImage = fillObject.GetComponent<UnityEngine.UI.Image>();
-                UISpriteFactory.ApplyRounded(fillImage, 0.20f);
-                fillImage.material = null;
-                fillImage.raycastTarget = false;
-                fillImage.fillCenter = true;
-                completionPreviewPool.Add(new CompletionFillVisual
+                RectTransform outlineRect = (RectTransform)outlineObject.transform;
+                outlineRect.SetParent(completionPreviewLayer, false);
+                UnityEngine.UI.Image outlineImage = outlineObject.GetComponent<UnityEngine.UI.Image>();
+                UISpriteFactory.ApplyFrame(outlineImage, 0.20f, 0.085f);
+                outlineImage.material = null;
+                outlineImage.raycastTarget = false;
+                outlineImage.fillCenter = false;
+                completionPreviewPool.Add(new CompletionOutlineVisual
                 {
-                    root = fillRect,
-                    image = fillImage
+                    root = outlineRect,
+                    image = outlineImage
                 });
             }
 
@@ -641,64 +630,42 @@ namespace ChromaBlast
                 completionPreviewPulseRoutine = null;
             }
 
-            for (int i = 0; i < activeCompletionPreviewFills && i < completionPreviewPool.Count; i++)
+            for (int i = 0; i < activeCompletionPreviewOutlines && i < completionPreviewPool.Count; i++)
             {
-                CompletionFillVisual fill = completionPreviewPool[i];
-                if (fill != null && fill.root != null)
+                CompletionOutlineVisual outline = completionPreviewPool[i];
+                if (outline != null && outline.root != null)
                 {
-                    fill.root.gameObject.SetActive(false);
+                    outline.root.gameObject.SetActive(false);
                 }
             }
 
-            activeCompletionPreviewFills = 0;
+            activeCompletionPreviewOutlines = 0;
         }
 
         private IEnumerator CompletionPreviewPulseRoutine()
         {
-            while (activeCompletionPreviewFills > 0)
+            while (activeCompletionPreviewOutlines > 0)
             {
                 float wave = 0.5f + Mathf.Sin(Time.unscaledTime * 8.5f) * 0.5f;
                 float pulse = Mathf.SmoothStep(0f, 1f, wave);
-                float alpha = Mathf.Lerp(0.62f, 0.98f, pulse);
-                for (int i = 0; i < activeCompletionPreviewFills && i < completionPreviewPool.Count; i++)
+                float alpha = Mathf.Lerp(0.48f, 0.98f, pulse);
+                for (int i = 0; i < activeCompletionPreviewOutlines && i < completionPreviewPool.Count; i++)
                 {
-                    CompletionFillVisual fill = completionPreviewPool[i];
-                    if (fill == null || fill.image == null)
+                    CompletionOutlineVisual outline = completionPreviewPool[i];
+                    if (outline == null || outline.image == null)
                     {
                         continue;
                     }
 
-                    Color color;
-                    if (fill.replacesOccupiedTile)
-                    {
-                        // Fully opaque normal UI blending replaces the original
-                        // tile RGB instead of mixing it with the active piece.
-                        // Pulse value/brightness while keeping hue and saturation
-                        // stable, so a mixed row remains one clean piece colour.
-                        float lowValue = Mathf.Clamp01(fill.value * 0.84f);
-                        float highValue = Mathf.Clamp01(fill.value * 1.08f);
-                        color = Color.HSVToRGB(fill.hue, fill.saturation, Mathf.Lerp(lowValue, highValue, pulse));
-                        color.a = 1f;
-                    }
-                    else
-                    {
-                        color = fill.baseColor;
-                        color.a = alpha;
-                    }
-
-                    fill.image.color = color;
+                    Color color = outline.baseColor;
+                    color.a = alpha;
+                    outline.image.color = color;
                 }
 
                 yield return null;
             }
 
             completionPreviewPulseRoutine = null;
-        }
-
-        private static Color GetCompletionPreviewColor(ChromaColor color)
-        {
-            int colorIndex = Mathf.Clamp((int)color, 0, CompletionPreviewColors.Length - 1);
-            return CompletionPreviewColors[colorIndex];
         }
 
         public void PlacePiece(PieceInstance piece, Vector2Int origin)
@@ -2065,15 +2032,11 @@ namespace ChromaBlast
             }
         }
 
-        private sealed class CompletionFillVisual
+        private sealed class CompletionOutlineVisual
         {
             public RectTransform root;
             public UnityEngine.UI.Image image;
             public Color baseColor;
-            public bool replacesOccupiedTile;
-            public float hue;
-            public float saturation;
-            public float value;
         }
 
         private sealed class LineGlowVisual
