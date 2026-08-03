@@ -499,7 +499,9 @@ namespace ChromaBlast
             CompletionFillVisual fill = GetCompletionFill(activeCompletionPreviewFills++);
             ConfigureBoardRect(fill.root, x, y);
             fill.baseColor = color;
-            color.a = 0.78f;
+            fill.replacesOccupiedTile = blocks[x, y] != null;
+            Color.RGBToHSV(color, out fill.hue, out fill.saturation, out fill.value);
+            color.a = fill.replacesOccupiedTile ? 1f : 0.78f;
             fill.image.color = color;
             fill.root.gameObject.SetActive(true);
             fill.root.SetAsLastSibling();
@@ -618,6 +620,7 @@ namespace ChromaBlast
                 fillRect.SetParent(completionPreviewLayer, false);
                 UnityEngine.UI.Image fillImage = fillObject.GetComponent<UnityEngine.UI.Image>();
                 UISpriteFactory.ApplyRounded(fillImage, 0.20f);
+                fillImage.material = null;
                 fillImage.raycastTarget = false;
                 fillImage.fillCenter = true;
                 completionPreviewPool.Add(new CompletionFillVisual
@@ -655,7 +658,8 @@ namespace ChromaBlast
             while (activeCompletionPreviewFills > 0)
             {
                 float wave = 0.5f + Mathf.Sin(Time.unscaledTime * 8.5f) * 0.5f;
-                float alpha = Mathf.Lerp(0.62f, 0.98f, Mathf.SmoothStep(0f, 1f, wave));
+                float pulse = Mathf.SmoothStep(0f, 1f, wave);
+                float alpha = Mathf.Lerp(0.62f, 0.98f, pulse);
                 for (int i = 0; i < activeCompletionPreviewFills && i < completionPreviewPool.Count; i++)
                 {
                     CompletionFillVisual fill = completionPreviewPool[i];
@@ -664,8 +668,24 @@ namespace ChromaBlast
                         continue;
                     }
 
-                    Color color = fill.baseColor;
-                    color.a = alpha;
+                    Color color;
+                    if (fill.replacesOccupiedTile)
+                    {
+                        // Fully opaque normal UI blending replaces the original
+                        // tile RGB instead of mixing it with the active piece.
+                        // Pulse value/brightness while keeping hue and saturation
+                        // stable, so a mixed row remains one clean piece colour.
+                        float lowValue = Mathf.Clamp01(fill.value * 0.84f);
+                        float highValue = Mathf.Clamp01(fill.value * 1.08f);
+                        color = Color.HSVToRGB(fill.hue, fill.saturation, Mathf.Lerp(lowValue, highValue, pulse));
+                        color.a = 1f;
+                    }
+                    else
+                    {
+                        color = fill.baseColor;
+                        color.a = alpha;
+                    }
+
                     fill.image.color = color;
                 }
 
@@ -2050,6 +2070,10 @@ namespace ChromaBlast
             public RectTransform root;
             public UnityEngine.UI.Image image;
             public Color baseColor;
+            public bool replacesOccupiedTile;
+            public float hue;
+            public float saturation;
+            public float value;
         }
 
         private sealed class LineGlowVisual
