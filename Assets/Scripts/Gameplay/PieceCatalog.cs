@@ -131,17 +131,33 @@ namespace ChromaBlast
 
             if (data.id == "square2")
             {
-                weight *= 1.85f;
+                weight *= 2.35f;
             }
             else if (data.id == "square3")
             {
-                weight *= 3.00f;
+                weight *= 4.50f;
+            }
+            else if (data.id.StartsWith("rect", StringComparison.Ordinal))
+            {
+                weight *= 2.10f;
             }
             else if (data.id.StartsWith("line4", StringComparison.Ordinal)
-                || data.id.StartsWith("line5", StringComparison.Ordinal)
-                || data.id.StartsWith("rect", StringComparison.Ordinal))
+                || data.id.StartsWith("line5", StringComparison.Ordinal))
             {
                 weight *= 1.30f;
+            }
+
+            if (data.id == "plus5" || data.id == "stair5")
+            {
+                weight *= 0.28f;
+            }
+            else if (data.id.StartsWith("corner3", StringComparison.Ordinal)
+                || data.id.StartsWith("l4", StringComparison.Ordinal)
+                || data.id.StartsWith("t4", StringComparison.Ordinal)
+                || data.id == "s4"
+                || data.id == "z4")
+            {
+                weight *= 0.48f;
             }
 
             if (difficulty01 < 0.14f && cellCount >= 6)

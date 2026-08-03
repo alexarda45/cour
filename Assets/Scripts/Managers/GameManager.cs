@@ -318,7 +318,8 @@ namespace ChromaBlast
 
             if (!restoredClassicRun)
             {
-                SpawnNextSet();
+                pieceSpawner.SpawnOpeningSatisfyingSet(board, random, GetPieceDifficulty());
+                ResetMoveHint();
                 if (!pieceSpawner.HasActivePieces())
                 {
                     SpawnNextSet();

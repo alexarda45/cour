@@ -38,6 +38,43 @@ namespace ChromaBlast
             SpawnGuaranteedSet(board, random, difficulty01, 0f);
         }
 
+        public void SpawnOpeningSatisfyingSet(BoardManager board, System.Random random, float difficulty01)
+        {
+            EnsureTraySlots();
+            if (board == null || random == null || traySlots == null || traySlots.Length == 0)
+            {
+                return;
+            }
+
+            if (board.CountEmptyCells() != GameConstants.BoardSize * GameConstants.BoardSize)
+            {
+                SpawnGuaranteedSet(board, random, difficulty01, 0f);
+                return;
+            }
+
+            string[] recipe = random.NextDouble() < 0.64
+                ? new[] { "square3", "square3", "rect2x3" }
+                : new[] { "rect3x2", "rect3x2", "square2" };
+            PieceInstance[] openingSet = new PieceInstance[GameConstants.TraySize];
+            for (int i = 0; i < openingSet.Length; i++)
+            {
+                openingSet[i] = new PieceInstance(
+                    recipe[i],
+                    (ChromaColor)random.Next(GameConstants.ColorCount));
+            }
+
+            for (int i = openingSet.Length - 1; i > 0; i--)
+            {
+                int swapIndex = random.Next(i + 1);
+                PieceInstance swap = openingSet[i];
+                openingSet[i] = openingSet[swapIndex];
+                openingSet[swapIndex] = swap;
+            }
+
+            SpawnSet(openingSet);
+            RefreshFitHints(board);
+        }
+
         public void SpawnGuaranteedSet(BoardManager board, System.Random random, float difficulty01, float assist01)
         {
             EnsureTraySlots();
