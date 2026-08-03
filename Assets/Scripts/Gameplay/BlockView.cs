@@ -46,6 +46,10 @@ namespace ChromaBlast
         public RectTransform RectTransform { get; private set; }
 
         private Coroutine visualRoutine;
+        private Sprite completionPreviewOriginalSprite;
+        private Sprite completionPreviewTargetSprite;
+        private Color completionPreviewOriginalColor;
+        private bool completionSpritePreviewActive;
 
         private void Awake()
         {
@@ -90,6 +94,7 @@ namespace ChromaBlast
             }
 
             EnsureVisualImages();
+            EndCompletionSpritePreview();
             ApplyTileSprite(tileSprite);
 
             DisableLegacyLayers();
@@ -256,6 +261,60 @@ namespace ChromaBlast
             return TileSprites[index];
         }
 
+        public bool BeginCompletionSpritePreview(ChromaColor targetColor)
+        {
+            if (tileImage == null)
+            {
+                EnsureVisualImages();
+            }
+
+            Sprite targetSprite = GetTileSprite(targetColor);
+            if (tileImage == null || targetSprite == null)
+            {
+                return false;
+            }
+
+            if (!completionSpritePreviewActive)
+            {
+                completionPreviewOriginalSprite = tileImage.sprite;
+                completionPreviewOriginalColor = tileImage.color;
+            }
+
+            completionPreviewTargetSprite = targetSprite;
+            completionSpritePreviewActive = true;
+            SetCompletionTargetSpriteVisible(true);
+            return true;
+        }
+
+        public void SetCompletionTargetSpriteVisible(bool targetVisible)
+        {
+            if (!completionSpritePreviewActive || tileImage == null)
+            {
+                return;
+            }
+
+            tileImage.sprite = targetVisible
+                ? completionPreviewTargetSprite
+                : completionPreviewOriginalSprite;
+
+            // Keep the source artwork fully opaque and untinted in both phases;
+            // the pulse is the sprite swap itself, never alpha blending.
+            tileImage.color = completionPreviewOriginalColor;
+        }
+
+        public void EndCompletionSpritePreview()
+        {
+            if (completionSpritePreviewActive && tileImage != null)
+            {
+                tileImage.sprite = completionPreviewOriginalSprite;
+                tileImage.color = completionPreviewOriginalColor;
+            }
+
+            completionPreviewOriginalSprite = null;
+            completionPreviewTargetSprite = null;
+            completionSpritePreviewActive = false;
+        }
+
         private void DisableLegacyLayers()
         {
             if (innerImage == null)
@@ -336,6 +395,7 @@ namespace ChromaBlast
 
         public void PlayClear(float delay)
         {
+            EndCompletionSpritePreview();
             if (!MobilePerformance.UseFullJuice())
             {
                 RunVisualRoutine(QuickClearRoutine(delay));
