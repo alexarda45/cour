@@ -9,7 +9,17 @@ namespace ChromaBlast
 {
     public class ChromaBarView : MonoBehaviour
     {
-    private static readonly bool CleanGameplayHud = true;
+        private static readonly bool CleanGameplayHud = true;
+        private static readonly string[] PopButtonSpritePaths =
+        {
+            "Ocean/UI/Pop/PopButton_Cyan",
+            "Ocean/UI/Pop/PopButton_Magenta",
+            "Ocean/UI/Pop/PopButton_Lime",
+            "Ocean/UI/Pop/PopButton_Amber"
+        };
+
+        private static readonly Sprite[] PopButtonSprites = new Sprite[GameConstants.ColorCount];
+        private static readonly bool[] MissingPopButtonSpriteLogged = new bool[GameConstants.ColorCount];
 
         [SerializeField] private ChromaColor color;
         [SerializeField] private Slider slider;
@@ -44,6 +54,9 @@ namespace ChromaBlast
                 {
                     popButtonText = popButton.GetComponentInChildren<TMP_Text>(true);
                 }
+
+                ConfigurePopButtonVisual();
+                DisableLegacyPopButtonText();
             }
 
             ApplyCleanHudVisibility(false);
@@ -76,12 +89,6 @@ namespace ChromaBlast
             if (popButton != null)
             {
                 popButton.interactable = usablePop;
-            }
-
-            if (popButtonText != null)
-            {
-                popButtonText.text = usablePop ? "POP!" : "POP";
-                popButtonText.color = usablePop ? Color.white : ChromaPalette.GetColor(color);
             }
 
             ApplyCleanHudVisibility(usablePop);
@@ -177,19 +184,6 @@ namespace ChromaBlast
                 swatchImage.color = themeColor;
             }
 
-            if (popButton != null)
-            {
-                if (popButtonText == null)
-                {
-                    popButtonText = popButton.GetComponentInChildren<TMP_Text>(true);
-                }
-
-                if (popButtonText != null && !wasReady)
-                {
-                    popButtonText.color = themeColor;
-                }
-            }
-
             if (label != null)
             {
                 label.color = themeColor;
@@ -230,7 +224,71 @@ namespace ChromaBlast
 
             if (popButtonText != null)
             {
-                popButtonText.gameObject.SetActive(showPopButton);
+                popButtonText.gameObject.SetActive(false);
+            }
+        }
+
+        private void ConfigurePopButtonVisual()
+        {
+            if (popButton == null)
+            {
+                return;
+            }
+
+            int index = Mathf.Clamp((int)color, 0, PopButtonSpritePaths.Length - 1);
+            Sprite sprite = PopButtonSprites[index];
+            if (sprite == null)
+            {
+                sprite = Resources.Load<Sprite>(PopButtonSpritePaths[index]);
+                PopButtonSprites[index] = sprite;
+            }
+
+            if (sprite == null)
+            {
+                if (!MissingPopButtonSpriteLogged[index])
+                {
+                    Debug.LogError($"Missing POP button sprite at Resources path: {PopButtonSpritePaths[index]}");
+                    MissingPopButtonSpriteLogged[index] = true;
+                }
+
+                return;
+            }
+
+            Image buttonImage = popButton.image != null ? popButton.image : popButton.GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                buttonImage.sprite = sprite;
+                buttonImage.color = Color.white;
+                buttonImage.type = Image.Type.Simple;
+                buttonImage.preserveAspect = true;
+                buttonImage.raycastTarget = true;
+                popButton.targetGraphic = buttonImage;
+            }
+
+            // The supplied art already contains its outline, gloss and shadow.
+            // Keep the existing scale-based press and ready-pulse feedback only.
+            popButton.transition = Selectable.Transition.None;
+            Shadow[] legacyEffects = popButton.GetComponents<Shadow>();
+            for (int i = 0; i < legacyEffects.Length; i++)
+            {
+                if (legacyEffects[i] != null)
+                {
+                    legacyEffects[i].enabled = false;
+                }
+            }
+        }
+
+        private void DisableLegacyPopButtonText()
+        {
+            if (popButtonText == null && popButton != null)
+            {
+                popButtonText = popButton.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (popButtonText != null)
+            {
+                popButtonText.raycastTarget = false;
+                popButtonText.gameObject.SetActive(false);
             }
         }
 
