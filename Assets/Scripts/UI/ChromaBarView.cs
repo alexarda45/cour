@@ -20,7 +20,7 @@ namespace ChromaBlast
 
         private static readonly Sprite[] PopButtonSprites = new Sprite[GameConstants.ColorCount];
         private static readonly bool[] MissingPopButtonSpriteLogged = new bool[GameConstants.ColorCount];
-        private static readonly Vector2 PopButtonSize = new Vector2(170f, 54f);
+        private static readonly Vector2 PopButtonSize = new Vector2(154f, 54f);
 
         [SerializeField] private ChromaColor color;
         [SerializeField] private Slider slider;
