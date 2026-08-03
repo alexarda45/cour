@@ -435,7 +435,7 @@ namespace ChromaBlast
 
         private void ShowCompletionLinePreview(PieceInstance piece, Vector2Int origin)
         {
-            Color activePieceColor = ChromaPalette.GetColor(piece.color);
+            Color activePieceColor = ChromaPalette.GetTileArtworkColor(piece.color);
             bool[] touchedRows = new bool[GameConstants.BoardSize];
             bool[] touchedColumns = new bool[GameConstants.BoardSize];
             Vector2Int[] shapeCells = piece.Data.cells;
@@ -539,17 +539,19 @@ namespace ChromaBlast
                 UnityEngine.UI.Image outerGlow = CreateCompletionGlowFrame(
                     root,
                     "OuterGlow",
-                    new Vector2(-4f, -4f),
-                    new Vector2(4f, 4f),
+                    new Vector2(-12f, -12f),
+                    new Vector2(12f, 12f),
                     0.20f,
-                    0.15f);
+                    0.22f,
+                    true);
                 UnityEngine.UI.Image coreRim = CreateCompletionGlowFrame(
                     root,
                     "CoreRim",
                     Vector2.zero,
                     Vector2.zero,
                     0.20f,
-                    0.055f);
+                    0.055f,
+                    false);
 
                 CompletionCellGlowVisual glow = new CompletionCellGlowVisual
                 {
@@ -570,7 +572,8 @@ namespace ChromaBlast
             Vector2 offsetMin,
             Vector2 offsetMax,
             float radius,
-            float thickness)
+            float thicknessOrFeather,
+            bool softGlow)
         {
             GameObject frameObject = new GameObject(objectName, typeof(RectTransform), typeof(UnityEngine.UI.Image));
             RectTransform frameRect = (RectTransform)frameObject.transform;
@@ -582,7 +585,14 @@ namespace ChromaBlast
             frameRect.pivot = new Vector2(0.5f, 0.5f);
 
             UnityEngine.UI.Image image = frameObject.GetComponent<UnityEngine.UI.Image>();
-            UISpriteFactory.ApplyFrame(image, radius, thickness);
+            if (softGlow)
+            {
+                UISpriteFactory.ApplySoftFrame(image, radius, thicknessOrFeather);
+            }
+            else
+            {
+                UISpriteFactory.ApplyFrame(image, radius, thicknessOrFeather);
+            }
             image.preserveAspect = false;
             image.fillCenter = false;
             image.raycastTarget = false;
@@ -601,14 +611,14 @@ namespace ChromaBlast
             if (glow.outerGlow != null)
             {
                 Color outerColor = glow.baseColor;
-                outerColor.a = Mathf.Lerp(0.38f, 0.82f, easedPulse);
+                outerColor.a = Mathf.Lerp(0.30f, 1f, easedPulse);
                 glow.outerGlow.color = outerColor;
             }
 
             if (glow.coreRim != null)
             {
                 Color rimColor = glow.baseColor;
-                rimColor.a = Mathf.Lerp(0.72f, 1f, easedPulse);
+                rimColor.a = Mathf.Lerp(0.55f, 1f, easedPulse);
                 glow.coreRim.color = rimColor;
             }
         }
@@ -746,12 +756,12 @@ namespace ChromaBlast
 
         private IEnumerator CompletionPreviewPulseRoutine()
         {
-            float elapsed = 0f;
+            const float pulsePeriod = 0.70f;
 
             while (completionPreviewBlocks.Count > 0 || activeCompletionGlows > 0)
             {
-                elapsed += Time.unscaledDeltaTime;
-                float glowPulse = 0.5f + Mathf.Sin(elapsed * 8.5f) * 0.5f;
+                float pulseRadians = Time.unscaledTime * (Mathf.PI * 2f / pulsePeriod);
+                float glowPulse = 0.5f + Mathf.Sin(pulseRadians) * 0.5f;
                 for (int i = 0; i < activeCompletionGlows; i++)
                 {
                     SetCompletionGlowAlpha(completionGlowPool[i], glowPulse);

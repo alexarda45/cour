@@ -16,6 +16,17 @@ namespace ChromaBlast
         private static readonly Sprite[] TileSprites = new Sprite[TileResourcePaths.Length];
         private static readonly bool[] MissingTileLogged = new bool[TileResourcePaths.Length];
 
+        // Fixed colours sampled from the board's Tile_Reference_* artwork.
+        // Unlike ThemeColors, these stay aligned with the visual tile mapping:
+        // Cyan, Pink (Magenta), Blue (Lime), Yellow (Amber).
+        private static readonly Color32[] TileArtworkColors =
+        {
+            new Color32(6, 213, 233, 255),
+            new Color32(233, 5, 43, 255),
+            new Color32(5, 73, 233, 255),
+            new Color32(233, 178, 0, 255)
+        };
+
         private static readonly Color[][] ThemeColors =
         {
             new[] { Hex("#17E6FF"), Hex("#FF4FD8"), Hex("#A6FF42"), Hex("#FFD166") },
@@ -146,6 +157,12 @@ namespace ChromaBlast
         public static Color GetColor(ChromaColor color)
         {
             return GetColor(color, CurrentTheme);
+        }
+
+        public static Color GetTileArtworkColor(ChromaColor color)
+        {
+            int colorIndex = Mathf.Clamp((int)color, 0, TileArtworkColors.Length - 1);
+            return TileArtworkColors[colorIndex];
         }
 
         public static Color GetColor(ChromaColor color, ThemeType theme)

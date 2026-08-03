@@ -37,6 +37,13 @@ namespace ChromaBlast
             image.type = Image.Type.Sliced;
         }
 
+        public static void ApplySoftFrame(Image image, float radius01 = 0.22f, float feather01 = 0.22f)
+        {
+            if (image == null) return;
+            image.sprite = SoftRoundedFrame(radius01, feather01);
+            image.type = Image.Type.Simple;
+        }
+
         public static void ApplySoftShadow(Image image, float radius01 = 0.30f)
         {
             if (image == null) return;
@@ -93,6 +100,40 @@ namespace ChromaBlast
 
             float border = Mathf.Min(radius + thickness, size * 0.5f - 1f);
             Sprite sprite = Build(pixels, size, key, new Vector4(border, border, border, border));
+            Cache[key] = sprite;
+            return sprite;
+        }
+
+        // Hollow rounded rim with a baked soft falloff on both sides of the edge.
+        // The transparent centre prevents this from tinting the tile artwork.
+        public static Sprite SoftRoundedFrame(float radius01 = 0.22f, float feather01 = 0.22f, int size = 128)
+        {
+            string key = $"softframe_{size}_{radius01:0.00}_{feather01:0.00}";
+            if (Cache.TryGetValue(key, out Sprite cached) && cached != null) return cached;
+
+            Color32[] pixels = new Color32[size * size];
+            float half = size * 0.5f;
+            float feather = Mathf.Max(1f, Mathf.Clamp01(feather01) * half);
+            float extent = half - feather - 1f;
+            float radius = Mathf.Clamp01(radius01) * extent;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = Mathf.Abs(x + 0.5f - half) - (extent - radius);
+                    float py = Mathf.Abs(y + 0.5f - half) - (extent - radius);
+                    float ox = Mathf.Max(px, 0f);
+                    float oy = Mathf.Max(py, 0f);
+                    float outside = Mathf.Sqrt(ox * ox + oy * oy);
+                    float inside = Mathf.Min(Mathf.Max(px, py), 0f);
+                    float distanceFromRim = Mathf.Abs(outside + inside - radius);
+                    float a = Mathf.Clamp01(1f - distanceFromRim / feather);
+                    a = a * a * (3f - 2f * a);
+                    pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                }
+            }
+
+            Sprite sprite = Build(pixels, size, key, Vector4.zero);
             Cache[key] = sprite;
             return sprite;
         }
