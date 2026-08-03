@@ -18,8 +18,8 @@ namespace ChromaBlast
         private static readonly Color BaseColor = Color.clear;
         private static readonly Color CompletionGlow = new Color(0.12f, 0.58f, 0.72f, 1f);
         private static readonly Color CompletionGlowPeak = new Color(0.25f, 0.94f, 1f, 1f);
-        private static readonly Color ValidPreview = new Color(0.16f, 0.82f, 1f, 0.27f);
-        private static readonly Color ValidPreviewStrong = new Color(0.26f, 0.92f, 1f, 0.37f);
+        private const float ValidPreviewAlpha = 0.27f;
+        private const float ValidPreviewStrongAlpha = 0.37f;
         private Coroutine flashRoutine;
         private Coroutine sweepRoutine;
         private Coroutine linePulseRoutine;
@@ -130,7 +130,8 @@ namespace ChromaBlast
             preview.preserveAspect = false;
             preview.fillCenter = true;
 
-            Color previewColor = completesLine ? ValidPreviewStrong : ValidPreview;
+            Color previewColor = ChromaPalette.GetColor(color);
+            previewColor.a = completesLine ? ValidPreviewStrongAlpha : ValidPreviewAlpha;
             previewBaseColor = previewColor;
             preview.color = previewColor;
             SetPreviewInset(5f);
