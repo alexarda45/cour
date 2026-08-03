@@ -601,14 +601,14 @@ namespace ChromaBlast
             if (glow.outerGlow != null)
             {
                 Color outerColor = glow.baseColor;
-                outerColor.a = Mathf.Lerp(0.18f, 0.55f, easedPulse);
+                outerColor.a = Mathf.Lerp(0.38f, 0.82f, easedPulse);
                 glow.outerGlow.color = outerColor;
             }
 
             if (glow.coreRim != null)
             {
                 Color rimColor = glow.baseColor;
-                rimColor.a = Mathf.Lerp(0.52f, 1f, easedPulse);
+                rimColor.a = Mathf.Lerp(0.72f, 1f, easedPulse);
                 glow.coreRim.color = rimColor;
             }
         }
@@ -746,28 +746,11 @@ namespace ChromaBlast
 
         private IEnumerator CompletionPreviewPulseRoutine()
         {
-            const float targetSpriteDuration = 0.42f;
-            const float originalSpriteDuration = 0.16f;
             float elapsed = 0f;
-            bool showingTarget = true;
 
             while (completionPreviewBlocks.Count > 0 || activeCompletionGlows > 0)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float cycleTime = targetSpriteDuration + originalSpriteDuration;
-                bool shouldShowTarget = Mathf.Repeat(elapsed, cycleTime) < targetSpriteDuration;
-                if (shouldShowTarget != showingTarget)
-                {
-                    showingTarget = shouldShowTarget;
-                    for (int i = 0; i < completionPreviewBlocks.Count; i++)
-                    {
-                        if (completionPreviewBlocks[i] != null)
-                        {
-                            completionPreviewBlocks[i].SetCompletionTargetSpriteVisible(showingTarget);
-                        }
-                    }
-                }
-
                 float glowPulse = 0.5f + Mathf.Sin(elapsed * 8.5f) * 0.5f;
                 for (int i = 0; i < activeCompletionGlows; i++)
                 {
