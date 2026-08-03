@@ -12,7 +12,7 @@ namespace ChromaBlast
     {
         [SerializeField] private RectTransform blockRoot;
         [SerializeField] private BlockView blockPrefab;
-        [SerializeField] private float dragLiftPixels = 34f;
+        [SerializeField] private float dragLiftPixels = 82f;
         [SerializeField] private float minimumTouchSize = 128f;
 
         private const float TrayPieceVisualFill = 0.98f;

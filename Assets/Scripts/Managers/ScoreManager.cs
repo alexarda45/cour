@@ -24,6 +24,13 @@ namespace ChromaBlast
 
     public class ScoreManager : MonoBehaviour
     {
+        private const int PlacementScorePerCell = 5;
+        private const int LineScoreBase = 150;
+        private const int PureLineBonusBase = 650;
+        private const int ClearedCellBonus = 12;
+        private const int PopScorePerCell = 90;
+        private const int LargePopBonus = 300;
+
         public event Action Changed;
 
         public int Score { get; private set; }
@@ -51,7 +58,7 @@ namespace ChromaBlast
         public ScoreDelta ApplyMove(ClearResult clearResult, int placedCells)
         {
             ScoreDelta delta = new ScoreDelta();
-            delta.placementScore = Mathf.Max(0, placedCells) * 3;
+            delta.placementScore = Mathf.Max(0, placedCells) * PlacementScorePerCell;
 
             if (clearResult == null || clearResult.linesCleared <= 0)
             {
@@ -65,9 +72,9 @@ namespace ChromaBlast
             Chain++;
             delta.hadClear = true;
             delta.hadPure = clearResult.pureLines > 0;
-            delta.lineScore = clearResult.linesCleared * 100 * Chain;
-            delta.pureBonus = clearResult.pureLines * 450 * Mathf.Max(1, Chain);
-            int cellBonus = clearResult.cellsCleared * 8;
+            delta.lineScore = clearResult.linesCleared * LineScoreBase * Chain;
+            delta.pureBonus = clearResult.pureLines * PureLineBonusBase * Mathf.Max(1, Chain);
+            int cellBonus = clearResult.cellsCleared * ClearedCellBonus;
             delta.totalAdded = delta.placementScore + delta.lineScore + delta.pureBonus + cellBonus;
             Score += delta.totalAdded;
 
@@ -98,7 +105,7 @@ namespace ChromaBlast
                 return delta;
             }
 
-            delta.popScore = cellsPopped * 70 + (cellsPopped >= 8 ? 220 : 0);
+            delta.popScore = cellsPopped * PopScorePerCell + (cellsPopped >= 8 ? LargePopBonus : 0);
             delta.totalAdded = delta.popScore;
             Score += delta.totalAdded;
             chroma[(int)color] = 0;

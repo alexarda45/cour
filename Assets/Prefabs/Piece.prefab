@@ -64,5 +64,5 @@ MonoBehaviour:
   blockRoot: {fileID: 5298936103536843985}
   blockPrefab: {fileID: 8732237725622225860, guid: 42daaa7dbb464c04ca699007b5bfb5e4, type: 3}
   trayCellSize: 42
-  dragLiftPixels: 34
+  dragLiftPixels: 82
   minimumTouchSize: 128
