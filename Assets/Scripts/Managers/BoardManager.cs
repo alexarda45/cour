@@ -26,11 +26,15 @@ namespace ChromaBlast
         private readonly List<BoardCell> generatedCells = new List<BoardCell>();
         private readonly List<BoardCell> previewCells = new List<BoardCell>();
         private readonly List<BlockView> completionPreviewBlocks = new List<BlockView>();
+        private readonly List<CompletionCellGlowVisual> completionGlowPool = new List<CompletionCellGlowVisual>();
+        private readonly HashSet<Vector2Int> completionGlowCoordinates = new HashSet<Vector2Int>();
         private readonly List<LineGlowVisual> lineGlowPool = new List<LineGlowVisual>();
         private readonly List<IntersectionFlareVisual> intersectionFlarePool = new List<IntersectionFlareVisual>();
 
         private RectTransform lineClearEffectLayer;
+        private RectTransform completionGlowLayer;
         private Coroutine completionPreviewPulseRoutine;
+        private int activeCompletionGlows;
         private int lineClearEffectGeneration;
         private string previewShapeId;
         private Vector2Int previewOrigin = new Vector2Int(int.MinValue, int.MinValue);
@@ -90,6 +94,11 @@ namespace ChromaBlast
             if (lineClearEffectLayer != null)
             {
                 lineClearEffectLayer.SetAsLastSibling();
+            }
+
+            if (completionGlowLayer != null)
+            {
+                completionGlowLayer.SetAsLastSibling();
             }
 
             UpdateOpportunityHints();
@@ -426,6 +435,7 @@ namespace ChromaBlast
 
         private void ShowCompletionLinePreview(PieceInstance piece, Vector2Int origin)
         {
+            Color activePieceColor = ChromaPalette.GetColor(piece.color);
             bool[] touchedRows = new bool[GameConstants.BoardSize];
             bool[] touchedColumns = new bool[GameConstants.BoardSize];
             Vector2Int[] shapeCells = piece.Data.cells;
@@ -450,6 +460,7 @@ namespace ChromaBlast
                 for (int x = 0; x < GameConstants.BoardSize; x++)
                 {
                     ShowCompletionSpritePreview(x, y, piece.color);
+                    ShowCompletionCellGlow(x, y, activePieceColor);
                 }
             }
 
@@ -463,10 +474,12 @@ namespace ChromaBlast
                 for (int y = 0; y < GameConstants.BoardSize; y++)
                 {
                     ShowCompletionSpritePreview(x, y, piece.color);
+                    ShowCompletionCellGlow(x, y, activePieceColor);
                 }
             }
 
-            if (completionPreviewBlocks.Count > 0 && completionPreviewPulseRoutine == null)
+            if ((completionPreviewBlocks.Count > 0 || activeCompletionGlows > 0)
+                && completionPreviewPulseRoutine == null)
             {
                 completionPreviewPulseRoutine = StartCoroutine(CompletionPreviewPulseRoutine());
             }
@@ -488,6 +501,115 @@ namespace ChromaBlast
             if (block.BeginCompletionSpritePreview(color) && !completionPreviewBlocks.Contains(block))
             {
                 completionPreviewBlocks.Add(block);
+            }
+        }
+
+        private void ShowCompletionCellGlow(int x, int y, Color color)
+        {
+            if (!IsInside(x, y) || completionGlowLayer == null)
+            {
+                return;
+            }
+
+            Vector2Int coordinate = new Vector2Int(x, y);
+            if (!completionGlowCoordinates.Add(coordinate))
+            {
+                return;
+            }
+
+            CompletionCellGlowVisual glow = GetCompletionCellGlow(activeCompletionGlows);
+            activeCompletionGlows++;
+            ConfigureBoardRect(glow.root, x, y);
+            glow.baseColor = color;
+            SetCompletionGlowAlpha(glow, 0f);
+            glow.root.gameObject.SetActive(true);
+            glow.root.SetAsLastSibling();
+        }
+
+        private CompletionCellGlowVisual GetCompletionCellGlow(int index)
+        {
+            while (completionGlowPool.Count <= index)
+            {
+                GameObject rootObject = new GameObject(
+                    $"CompletionCellGlow_{completionGlowPool.Count}",
+                    typeof(RectTransform));
+                RectTransform root = (RectTransform)rootObject.transform;
+                root.SetParent(completionGlowLayer, false);
+
+                UnityEngine.UI.Image outerGlow = CreateCompletionGlowFrame(
+                    root,
+                    "OuterGlow",
+                    new Vector2(-4f, -4f),
+                    new Vector2(4f, 4f),
+                    0.20f,
+                    0.15f);
+                UnityEngine.UI.Image coreRim = CreateCompletionGlowFrame(
+                    root,
+                    "CoreRim",
+                    Vector2.zero,
+                    Vector2.zero,
+                    0.20f,
+                    0.055f);
+
+                CompletionCellGlowVisual glow = new CompletionCellGlowVisual
+                {
+                    root = root,
+                    outerGlow = outerGlow,
+                    coreRim = coreRim
+                };
+                rootObject.SetActive(false);
+                completionGlowPool.Add(glow);
+            }
+
+            return completionGlowPool[index];
+        }
+
+        private static UnityEngine.UI.Image CreateCompletionGlowFrame(
+            RectTransform parent,
+            string objectName,
+            Vector2 offsetMin,
+            Vector2 offsetMax,
+            float radius,
+            float thickness)
+        {
+            GameObject frameObject = new GameObject(objectName, typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            RectTransform frameRect = (RectTransform)frameObject.transform;
+            frameRect.SetParent(parent, false);
+            frameRect.anchorMin = Vector2.zero;
+            frameRect.anchorMax = Vector2.one;
+            frameRect.offsetMin = offsetMin;
+            frameRect.offsetMax = offsetMax;
+            frameRect.pivot = new Vector2(0.5f, 0.5f);
+
+            UnityEngine.UI.Image image = frameObject.GetComponent<UnityEngine.UI.Image>();
+            UISpriteFactory.ApplyFrame(image, radius, thickness);
+            image.preserveAspect = false;
+            image.fillCenter = false;
+            image.raycastTarget = false;
+            image.material = null;
+            return image;
+        }
+
+        private static void SetCompletionGlowAlpha(CompletionCellGlowVisual glow, float pulse)
+        {
+            if (glow == null)
+            {
+                return;
+            }
+
+            float easedPulse = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(pulse));
+            if (glow.outerGlow != null)
+            {
+                Color outerColor = glow.baseColor;
+                outerColor.a = Mathf.Lerp(0.18f, 0.55f, easedPulse);
+                glow.outerGlow.color = outerColor;
+            }
+
+            if (glow.coreRim != null)
+            {
+                Color rimColor = glow.baseColor;
+                rimColor.a = Mathf.Lerp(0.52f, 1f, easedPulse);
+                glow.coreRim.color = rimColor;
             }
         }
 
@@ -609,6 +731,17 @@ namespace ChromaBlast
             }
 
             completionPreviewBlocks.Clear();
+
+            for (int i = 0; i < activeCompletionGlows; i++)
+            {
+                if (completionGlowPool[i] != null && completionGlowPool[i].root != null)
+                {
+                    completionGlowPool[i].root.gameObject.SetActive(false);
+                }
+            }
+
+            activeCompletionGlows = 0;
+            completionGlowCoordinates.Clear();
         }
 
         private IEnumerator CompletionPreviewPulseRoutine()
@@ -618,7 +751,7 @@ namespace ChromaBlast
             float elapsed = 0f;
             bool showingTarget = true;
 
-            while (completionPreviewBlocks.Count > 0)
+            while (completionPreviewBlocks.Count > 0 || activeCompletionGlows > 0)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float cycleTime = targetSpriteDuration + originalSpriteDuration;
@@ -633,6 +766,12 @@ namespace ChromaBlast
                             completionPreviewBlocks[i].SetCompletionTargetSpriteVisible(showingTarget);
                         }
                     }
+                }
+
+                float glowPulse = 0.5f + Mathf.Sin(elapsed * 8.5f) * 0.5f;
+                for (int i = 0; i < activeCompletionGlows; i++)
+                {
+                    SetCompletionGlowAlpha(completionGlowPool[i], glowPulse);
                 }
 
                 yield return null;
@@ -1985,6 +2124,33 @@ namespace ChromaBlast
                 lineClearEffectLayer.SetAsLastSibling();
             }
 
+            if (completionGlowLayer == null && boardRoot != null)
+            {
+                Transform existing = boardRoot.Find("CompletionLineGlowLayer");
+                completionGlowLayer = existing as RectTransform;
+                if (completionGlowLayer == null)
+                {
+                    GameObject layer = new GameObject("CompletionLineGlowLayer", typeof(RectTransform));
+                    completionGlowLayer = (RectTransform)layer.transform;
+                    completionGlowLayer.SetParent(boardRoot, false);
+                }
+
+                completionGlowLayer.anchorMin = Vector2.zero;
+                completionGlowLayer.anchorMax = Vector2.one;
+                completionGlowLayer.offsetMin = Vector2.zero;
+                completionGlowLayer.offsetMax = Vector2.zero;
+                completionGlowLayer.localScale = Vector3.one;
+                completionGlowLayer.SetAsLastSibling();
+            }
+
+        }
+
+        private sealed class CompletionCellGlowVisual
+        {
+            public RectTransform root;
+            public UnityEngine.UI.Image outerGlow;
+            public UnityEngine.UI.Image coreRim;
+            public Color baseColor;
         }
 
         private sealed class LineGlowVisual
