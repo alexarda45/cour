@@ -18,8 +18,21 @@ namespace ChromaBlast
         private static readonly Color BaseColor = Color.clear;
         private static readonly Color CompletionGlow = new Color(0.12f, 0.58f, 0.72f, 1f);
         private static readonly Color CompletionGlowPeak = new Color(0.25f, 0.94f, 1f, 1f);
-        private const float ValidPreviewAlpha = 0.27f;
-        private const float ValidPreviewStrongAlpha = 0.37f;
+        // These RGB values match the centre/base colour of the fixed
+        // Tile_Reference_Cyan/Pink/Blue/Yellow artwork used by BlockView.
+        // ChromaPalette.GetColor is theme-dependent, so using it here can make
+        // the ghost disagree with the actual tile sprite (for example, Lime is
+        // visually represented by the blue reference tile in this board skin).
+        private static readonly Color32[] TileArtworkPreviewColors =
+        {
+            new Color32(6, 213, 233, 255),
+            new Color32(233, 5, 43, 255),
+            new Color32(5, 73, 233, 255),
+            new Color32(233, 178, 0, 255)
+        };
+
+        private const float ValidPreviewAlpha = 0.50f;
+        private const float ValidPreviewStrongAlpha = 0.65f;
         private Coroutine flashRoutine;
         private Coroutine sweepRoutine;
         private Coroutine linePulseRoutine;
@@ -130,7 +143,8 @@ namespace ChromaBlast
             preview.preserveAspect = false;
             preview.fillCenter = true;
 
-            Color previewColor = ChromaPalette.GetColor(color);
+            int colorIndex = Mathf.Clamp((int)color, 0, TileArtworkPreviewColors.Length - 1);
+            Color previewColor = TileArtworkPreviewColors[colorIndex];
             previewColor.a = completesLine ? ValidPreviewStrongAlpha : ValidPreviewAlpha;
             previewBaseColor = previewColor;
             preview.color = previewColor;
