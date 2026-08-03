@@ -221,6 +221,12 @@ namespace ChromaBlast
             if (popButton != null)
             {
                 popButton.gameObject.SetActive(showPopButton);
+                if (showPopButton)
+                {
+                    // Button.OnEnable reapplies its ColorBlock when the ready button becomes active.
+                    // Reassert the authored sprite and neutral white tint after that transition.
+                    ConfigurePopButtonVisual();
+                }
             }
 
             if (popButtonText != null)
@@ -266,7 +272,23 @@ namespace ChromaBlast
                 buttonRect.localScale = Vector3.one;
             }
 
-            Image buttonImage = popButton.image != null ? popButton.image : popButton.GetComponent<Image>();
+            popButton.transition = Selectable.Transition.None;
+            ColorBlock colors = popButton.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = Color.white;
+            colors.pressedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.disabledColor = Color.white;
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0f;
+            popButton.colors = colors;
+
+            Image buttonImage = popButton.GetComponent<Image>();
+            if (buttonImage == null)
+            {
+                buttonImage = popButton.targetGraphic as Image;
+            }
+
             if (buttonImage != null)
             {
                 buttonImage.sprite = sprite;
@@ -274,12 +296,12 @@ namespace ChromaBlast
                 buttonImage.type = Image.Type.Simple;
                 buttonImage.preserveAspect = true;
                 buttonImage.raycastTarget = true;
+                buttonImage.canvasRenderer.SetColor(Color.white);
                 popButton.targetGraphic = buttonImage;
             }
 
             // The supplied art already contains its outline, gloss and shadow.
             // Keep the existing scale-based press and ready-pulse feedback only.
-            popButton.transition = Selectable.Transition.None;
             Shadow[] legacyEffects = popButton.GetComponents<Shadow>();
             for (int i = 0; i < legacyEffects.Length; i++)
             {
