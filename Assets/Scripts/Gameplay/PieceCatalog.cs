@@ -18,6 +18,10 @@ namespace ChromaBlast
             P("line5_h", V(0, 0), V(1, 0), V(2, 0), V(3, 0), V(4, 0)),
             P("line5_v", V(0, 0), V(0, 1), V(0, 2), V(0, 3), V(0, 4)),
             P("square2", V(0, 0), V(1, 0), V(0, 1), V(1, 1)),
+            P("square3",
+                V(0, 0), V(1, 0), V(2, 0),
+                V(0, 1), V(1, 1), V(2, 1),
+                V(0, 2), V(1, 2), V(2, 2)),
             P("rect2x3", V(0, 0), V(1, 0), V(0, 1), V(1, 1), V(0, 2), V(1, 2)),
             P("rect3x2", V(0, 0), V(1, 0), V(2, 0), V(0, 1), V(1, 1), V(2, 1)),
             P("corner3", V(0, 0), V(0, 1), V(1, 0)),
@@ -125,10 +129,17 @@ namespace ChromaBlast
                 weight *= Mathf.Lerp(1.02f, 1.34f, difficulty01);
             }
 
-            if (data.id.StartsWith("line4", StringComparison.Ordinal)
+            if (data.id == "square2")
+            {
+                weight *= 1.85f;
+            }
+            else if (data.id == "square3")
+            {
+                weight *= 3.00f;
+            }
+            else if (data.id.StartsWith("line4", StringComparison.Ordinal)
                 || data.id.StartsWith("line5", StringComparison.Ordinal)
-                || data.id.StartsWith("rect", StringComparison.Ordinal)
-                || data.id == "square2")
+                || data.id.StartsWith("rect", StringComparison.Ordinal))
             {
                 weight *= 1.30f;
             }

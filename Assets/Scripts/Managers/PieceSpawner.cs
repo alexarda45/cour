@@ -911,6 +911,7 @@ namespace ChromaBlast
                 {
                     "line5_h",
                     "line5_v",
+                    "square3",
                     "rect2x3",
                     "rect3x2",
                     "line4_h",
@@ -995,6 +996,7 @@ namespace ChromaBlast
             {
                 "line5_h",
                 "line5_v",
+                "square3",
                 "rect2x3",
                 "rect3x2",
                 "plus5",
@@ -1033,7 +1035,8 @@ namespace ChromaBlast
                 if (candidate.shapeId.StartsWith("line4", StringComparison.Ordinal)
                     || candidate.shapeId.StartsWith("line5", StringComparison.Ordinal)
                     || candidate.shapeId.StartsWith("rect", StringComparison.Ordinal)
-                    || candidate.shapeId == "square2")
+                    || candidate.shapeId == "square2"
+                    || candidate.shapeId == "square3")
                 {
                     score += 260;
                 }
