@@ -349,12 +349,15 @@ MonoBehaviour:
   sfxSource: {fileID: 1479719911}
   audioListener: {fileID: 1477513779}
   musicClip: {fileID: 0}
-  clickClip: {fileID: 0}
-  placeClip: {fileID: 0}
-  clearClip: {fileID: 0}
-  pureClip: {fileID: 0}
-  popClip: {fileID: 0}
-  gameOverClip: {fileID: 0}
+  clickClip: {fileID: 8300000, guid: 1b7a3197694c418f8f233e81a7e96318, type: 3}
+  placeClip: {fileID: 8300000, guid: ceba4596d5bc4d5e9469d2ffe7717810, type: 3}
+  clearClip: {fileID: 8300000, guid: b5c17f5037254468b3fa353fb4890cf4, type: 3}
+  pureClip: {fileID: 8300000, guid: f19b6bcf16d546be90fb755c7e878b92, type: 3}
+  popClip: {fileID: 8300000, guid: 08158a0a6c7b4de8a3f1b8cef2a57d45, type: 3}
+  gameOverClip: {fileID: 8300000, guid: 20a814e24e0d4411ab80900f44486719, type: 3}
+  comboSmallClip: {fileID: 8300000, guid: 1d55b55b0b444dc49904ca599548d658, type: 3}
+  comboBigClip: {fileID: 8300000, guid: f19b6bcf16d546be90fb755c7e878b92, type: 3}
+  toggleClip: {fileID: 8300000, guid: fefd870889f048afaa9c1b049d334bbf, type: 3}
 --- !u!114 &1477513781
 MonoBehaviour:
   m_ObjectHideFlags: 0

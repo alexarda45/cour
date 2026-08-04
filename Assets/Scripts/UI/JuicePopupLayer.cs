@@ -151,6 +151,15 @@ namespace ChromaBlast
                 activeComboPopup = null;
             }
 
+            if (tier >= ComboTier.Amazing)
+            {
+                AudioManager.Instance?.PlayComboBig();
+            }
+            else
+            {
+                AudioManager.Instance?.PlayComboSmall();
+            }
+
             ConfigureComboTier(
                 tier,
                 accentColor,

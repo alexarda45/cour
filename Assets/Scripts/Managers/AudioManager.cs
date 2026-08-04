@@ -22,6 +22,9 @@ namespace ChromaBlast
         [SerializeField] private AudioClip pureClip;
         [SerializeField] private AudioClip popClip;
         [SerializeField] private AudioClip gameOverClip;
+        [SerializeField] private AudioClip comboSmallClip;
+        [SerializeField] private AudioClip comboBigClip;
+        [SerializeField] private AudioClip toggleClip;
 
         public bool Muted { get; private set; }
         public bool SoundEnabled => !Muted;
@@ -141,6 +144,21 @@ namespace ChromaBlast
             PlayOneShot(gameOverClip, 0.72f);
         }
 
+        public void PlayComboSmall()
+        {
+            PlayOneShot(comboSmallClip, 0.72f);
+        }
+
+        public void PlayComboBig()
+        {
+            PlayOneShot(comboBigClip, 0.72f);
+        }
+
+        public void PlayToggle()
+        {
+            PlayOneShot(toggleClip, 0.32f);
+        }
+
         private void PlayMusic()
         {
             if (musicSource == null || musicClip == null)
@@ -246,6 +264,9 @@ namespace ChromaBlast
             pureClip ??= CreateChordClip("Soft_Pure", new[] { 392f, 493.88f, 587.33f, 783.99f }, 0.36f, 0.24f);
             popClip ??= CreatePopClip();
             gameOverClip ??= CreateDescendingClip();
+            comboSmallClip ??= clearClip;
+            comboBigClip ??= pureClip;
+            toggleClip ??= clickClip;
             musicClip ??= CreateMusicLoop();
         }
 

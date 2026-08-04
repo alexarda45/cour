@@ -682,7 +682,7 @@ namespace ChromaBlast
             AudioManager audio = AudioManager.Instance;
             if (audio != null)
             {
-                audio.PlayClick();
+                audio.PlayToggle();
                 audio.ToggleMusic();
             }
             else
@@ -701,8 +701,19 @@ namespace ChromaBlast
             bool soundOn;
             if (AudioManager.Instance != null)
             {
-                AudioManager.Instance.ToggleMute();
-                soundOn = !AudioManager.Instance.Muted;
+                AudioManager audio = AudioManager.Instance;
+                if (audio.Muted)
+                {
+                    audio.ToggleMute();
+                    audio.PlayToggle();
+                }
+                else
+                {
+                    audio.PlayToggle();
+                    audio.ToggleMute();
+                }
+
+                soundOn = !audio.Muted;
             }
             else
             {
@@ -725,6 +736,7 @@ namespace ChromaBlast
         {
             bool vibrationOn = !Haptics.IsEnabled();
             Haptics.SetEnabled(vibrationOn);
+            AudioManager.Instance?.PlayToggle();
 
             if (vibrationOn)
             {
