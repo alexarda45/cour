@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9f62d70398cd3264d9b8be9922b08083
+guid: ec53897888434087987b126e104ecc7a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7610229848948201902
-    second: bg_rewards_panel_0
+      213: 1489302983
+    second: BG_GameOver_Ocean_v2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -72,7 +72,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 0
@@ -126,44 +126,44 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: bg_rewards_panel_0
+      name: BG_GameOver_Ocean_v2_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1024
-        height: 1536
+        width: 941
+        height: 1672
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
+      customData:
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2562e5ae548036690800000000000000
-      internalID: -7610229848948201902
+      spriteID: 41a04f1ca1fa456bae5f35b2974a42ac
+      internalID: 1489302983
       vertices: []
-      indices: 
+      indices:
       edges: []
       weights: []
     outline: []
-    customData: 
+    customData:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
-    indices: 
+    indices:
     edges: []
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      bg_rewards_panel_0: -7610229848948201902
-  mipmapLimitGroupName: 
+      BG_GameOver_Ocean_v2_0: 1489302983
+  mipmapLimitGroupName:
   pSDRemoveMatte: 0
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
+  userData:
+  assetBundleName:
+  assetBundleVariant:
