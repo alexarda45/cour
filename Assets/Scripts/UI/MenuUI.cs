@@ -1357,7 +1357,7 @@ namespace ChromaBlast
             EnsureMenuCameraAndCanvas();
             EnsureOceanBackground();
             EnsureOceanLogo();
-            EnsurePremiumMenuStackFrame();
+            DisablePremiumMenuStackFrame();
 
             StyleMenuSpriteButton(classicButton, ClassicButtonPath, new Vector2(0.10f, 0.458f), new Vector2(0.90f, 0.553f));
             StyleMenuSpriteButton(blitzButton, BlitzButtonPath, new Vector2(0.10f, 0.351f), new Vector2(0.90f, 0.446f));
@@ -1379,50 +1379,13 @@ namespace ChromaBlast
             HideGameplaySceneObjects();
         }
 
-        private void EnsurePremiumMenuStackFrame()
+        private void DisablePremiumMenuStackFrame()
         {
-            RectTransform parentRect = transform as RectTransform;
-            if (parentRect == null)
+            Transform frame = transform.Find("PremiumMenuStackFrame");
+            if (frame != null)
             {
-                return;
+                frame.gameObject.SetActive(false);
             }
-
-            Image frame = EnsureMenuDecorationImage(parentRect, "PremiumMenuStackFrame");
-            SetRect(frame.rectTransform, new Vector2(0.065f, 0.108f), new Vector2(0.935f, 0.582f), Vector2.zero, Vector2.zero);
-            UISpriteFactory.ApplyRounded(frame, 0.10f);
-            frame.color = new Color(0.004f, 0.055f, 0.13f, 0.27f);
-            frame.raycastTarget = false;
-
-            Image border = EnsureMenuDecorationImage(frame.rectTransform, "Border");
-            Stretch(border.rectTransform, new Vector2(2f, 2f), new Vector2(-2f, -2f));
-            UISpriteFactory.ApplyFrame(border, 0.10f, 0.018f);
-            border.fillCenter = false;
-            border.color = new Color(0.30f, 0.91f, 1f, 0.17f);
-            border.raycastTarget = false;
-
-            Image gloss = EnsureMenuDecorationImage(frame.rectTransform, "TopGloss");
-            SetRect(gloss.rectTransform, new Vector2(0.025f, 0.70f), new Vector2(0.975f, 0.965f), Vector2.zero, Vector2.zero);
-            UISpriteFactory.ApplyRounded(gloss, 0.16f);
-            gloss.color = new Color(0.72f, 1f, 1f, 0.035f);
-            gloss.raycastTarget = false;
-
-            int backgroundSibling = oceanBackgroundImage == null ? 0 : oceanBackgroundImage.transform.GetSiblingIndex();
-            frame.transform.SetSiblingIndex(Mathf.Min(backgroundSibling + 1, parentRect.childCount - 1));
-        }
-
-        private static Image EnsureMenuDecorationImage(RectTransform parent, string objectName)
-        {
-            Transform existing = parent == null ? null : parent.Find(objectName);
-            Image image = existing == null ? null : existing.GetComponent<Image>();
-            if (image != null)
-            {
-                image.gameObject.SetActive(true);
-                return image;
-            }
-
-            GameObject imageObject = new GameObject(objectName, typeof(RectTransform), typeof(Image));
-            imageObject.transform.SetParent(parent, false);
-            return imageObject.GetComponent<Image>();
         }
 
         private void HideLegacyMenuSceneArtifacts()
