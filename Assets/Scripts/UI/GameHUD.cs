@@ -1017,7 +1017,7 @@ namespace ChromaBlast
             shadowRect.anchorMin = scoreRect.anchorMin;
             shadowRect.anchorMax = scoreRect.anchorMax;
             shadowRect.pivot = scoreRect.pivot;
-            shadowRect.anchoredPosition = new Vector2(0f, -7f);
+            shadowRect.anchoredPosition = new Vector2(5f, -8f);
             shadowRect.sizeDelta = scoreRect.sizeDelta;
             shadowRect.localScale = Vector3.one;
             scoreShadowText = shadowRect.GetComponent<TMP_Text>();
@@ -3333,7 +3333,9 @@ namespace ChromaBlast
                 scoreShadowText.fontSizeMin = scoreText.fontSizeMin;
                 scoreShadowText.characterSpacing = scoreText.characterSpacing;
                 scoreShadowText.alignment = TextAlignmentOptions.Center;
-                scoreShadowText.color = new Color(0.10f, 0.30f, 0.55f, 0.42f);
+                scoreShadowText.enableVertexGradient = false;
+                scoreShadowText.outlineWidth = 0f;
+                scoreShadowText.color = new Color(0f, 0.025f, 0.08f, 0.48f);
                 scoreShadowText.text = scoreText.text;
                 scoreShadowText.enabled = true;
                 scoreShadowText.gameObject.SetActive(true);
