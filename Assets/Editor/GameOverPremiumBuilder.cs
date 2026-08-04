@@ -13,7 +13,7 @@ public static class GameOverPremiumBuilder
 {
     private const string ScenePath = "Assets/Scenes/Game.unity";
     private const string ArtRoot = "Assets/Art/Ocean/UI/GameOver/";
-    private const string BackgroundPath = ArtRoot + "BG_GameOver_Ocean_v2.png";
+    private const string BackgroundPath = "Assets/Resources/Ocean/Backgrounds/BG_GameOver_New.png";
     private const string CrownPath = ArtRoot + "ChatGPT Image Jul 25, 2026, 02_06_15 AM (5).png";
     private const string NewBestPath = ArtRoot + "ChatGPT Image Jul 25, 2026, 02_06_15 AM (6).png";
     private const string CapsulePath = ArtRoot + "BestScoreCapsule_Cropped.png";

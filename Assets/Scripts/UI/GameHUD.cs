@@ -8,7 +8,7 @@ namespace ChromaBlast
 {
     public class GameHUD : MonoBehaviour
     {
-        private const string OceanBackgroundPath = "Ocean/Backgrounds/BG_Ocean";
+        private const string OceanBackgroundPath = "Ocean/Backgrounds/BG_Gameplay_New";
         private const string BestScoreCrownPath = "Ocean/UI/CrownIcon";
         private const string BestScoreCapsulePath = "Ocean/UI/BestScoreCapsule";
         private const string SettingsGearPath = "Ocean/UI/SettingsIcon";

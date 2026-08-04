@@ -9,7 +9,7 @@ namespace ChromaBlast
 {
     public class MenuUI : MonoBehaviour
     {
-        private const string OceanBackgroundPath = "Ocean/MainMenu/BG_MainMenu_Ocean_v2";
+        private const string OceanBackgroundPath = "Ocean/MainMenu/BG_MainMenu_New";
         private const string OceanLogoPath = "Ocean/MainMenu/Logo_ChromaBlast_Menu";
         private const string ClassicButtonPath = "Ocean/MainMenu/Buttons/classic_transparent_same_size";
         private const string BlitzButtonPath = "Ocean/MainMenu/Buttons/blitz_transparent_same_size";
