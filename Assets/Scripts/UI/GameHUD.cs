@@ -217,6 +217,7 @@ namespace ChromaBlast
             ResetNewBestFeedback();
             StyleGameplayButtons();
             EnsureOceanPauseMenu();
+            DisableLegacyChainText();
             HideFeedback();
             ShowPause(false);
         }
@@ -254,15 +255,7 @@ namespace ChromaBlast
 
             SetBestScoreTarget(highScore);
 
-            if (chainText != null)
-            {
-                bool chainActive = scoreManager.Chain >= 2;
-                chainText.gameObject.SetActive(chainActive);
-                if (chainActive)
-                {
-                    chainText.text = $"CHAIN x{scoreManager.Chain}";
-                }
-            }
+            DisableLegacyChainText();
 
             if (timerText != null)
             {
@@ -431,12 +424,19 @@ namespace ChromaBlast
                 premiumLineClearFx?.Play(boardRect, result, clearScreenPosition, accentColor, chain);
                 float alpha = Mathf.Clamp(0.12f + result.linesCleared * 0.04f + result.pureLines * 0.05f + styleBonus * 0.00016f, 0.12f, 0.34f);
                 Flash(Color.Lerp(accentColor, Color.white, 0.22f), alpha, 0.26f);
-                if (chainText != null && chain >= 2)
-                {
-                    chainText.transform.DOKill();
-                    chainText.transform.DOPunchScale(Vector3.one * Mathf.Clamp(0.08f + chain * 0.02f, 0.10f, 0.20f), 0.22f, 8, 0.75f);
-                }
             }
+        }
+
+        private void DisableLegacyChainText()
+        {
+            if (chainText == null)
+            {
+                return;
+            }
+
+            chainText.transform.DOKill();
+            chainText.transform.localScale = Vector3.one;
+            chainText.gameObject.SetActive(false);
         }
 
         public void ShowPopFeedback(ChromaColor color, int popped, int scoreAdded)
