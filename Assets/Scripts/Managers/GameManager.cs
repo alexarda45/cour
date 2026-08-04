@@ -239,12 +239,15 @@ namespace ChromaBlast
             }
 
             TickMoveHint();
-            blitzTimeRemaining -= Time.deltaTime;
-            if (blitzTimeRemaining <= 0f)
+            if (oceanRescueController == null || !oceanRescueController.IsBlockingInput)
             {
-                blitzTimeRemaining = 0f;
-                EndGame();
-                return;
+                blitzTimeRemaining -= Time.deltaTime;
+                if (blitzTimeRemaining <= 0f)
+                {
+                    blitzTimeRemaining = 0f;
+                    EndGame();
+                    return;
+                }
             }
 
             RefreshHud();
