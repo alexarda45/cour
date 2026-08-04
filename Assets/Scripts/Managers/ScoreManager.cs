@@ -72,8 +72,9 @@ namespace ChromaBlast
             Chain++;
             delta.hadClear = true;
             delta.hadPure = clearResult.pureLines > 0;
-            delta.lineScore = clearResult.linesCleared * LineScoreBase * Chain;
-            delta.pureBonus = clearResult.pureLines * PureLineBonusBase * Mathf.Max(1, Chain);
+            float chainMultiplier = GetChainScoreMultiplier(Chain);
+            delta.lineScore = Mathf.RoundToInt(clearResult.linesCleared * LineScoreBase * chainMultiplier);
+            delta.pureBonus = Mathf.RoundToInt(clearResult.pureLines * PureLineBonusBase * chainMultiplier);
             int cellBonus = clearResult.cellsCleared * ClearedCellBonus;
             delta.totalAdded = delta.placementScore + delta.lineScore + delta.pureBonus + cellBonus;
             Score += delta.totalAdded;
@@ -93,6 +94,25 @@ namespace ChromaBlast
 
             Changed?.Invoke();
             return delta;
+        }
+
+        public static float GetChainScoreMultiplier(int chain)
+        {
+            switch (Mathf.Max(1, chain))
+            {
+                case 1:
+                    return 1f;
+                case 2:
+                    return 1.6f;
+                case 3:
+                    return 2.4f;
+                case 4:
+                    return 3.4f;
+                case 5:
+                    return 4.6f;
+                default:
+                    return 4.6f + (chain - 5) * 1.4f;
+            }
         }
 
         public ScoreDelta ApplyPop(ChromaColor color, int cellsPopped)

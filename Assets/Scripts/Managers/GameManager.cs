@@ -1265,7 +1265,8 @@ namespace ChromaBlast
 
             if (chain >= 2)
             {
-                bonus += Mathf.Min(320, chain * 45);
+                float chainMultiplier = ScoreManager.GetChainScoreMultiplier(chain);
+                bonus += Mathf.RoundToInt(chainMultiplier * 100f);
             }
 
             if (clearResult.cellsCleared >= 16)
@@ -1273,7 +1274,7 @@ namespace ChromaBlast
                 bonus += 120;
             }
 
-            return Mathf.Clamp(bonus, 0, 900);
+            return Mathf.Max(0, bonus);
         }
 
         private void TryAwardScoreMilestones()
