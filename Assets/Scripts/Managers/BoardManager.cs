@@ -9,6 +9,7 @@ namespace ChromaBlast
     {
         private const float FinalBoardGridPaddingX = 16f;
         private const float FinalBoardGridPaddingY = 9.5f;
+        private const int MaxMagneticSnapRadius = 1;
 
         [Header("UI")]
         [SerializeField] private RectTransform boardRoot;
@@ -175,7 +176,7 @@ namespace ChromaBlast
 
             Vector2Int bestOrigin = origin;
             float bestDistance = float.MaxValue;
-            for (int radius = 1; radius <= 3; radius++)
+            for (int radius = 1; radius <= MaxMagneticSnapRadius; radius++)
             {
                 for (int dy = -radius; dy <= radius; dy++)
                 {

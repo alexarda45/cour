@@ -184,7 +184,15 @@ namespace ChromaBlast
             canvasGroup.blocksRaycasts = true;
             canvasGroup.alpha = 1f;
 
-            Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, GetLiftedScreenPosition(eventData), eventData.pressEventCamera);
+            Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
+            if (!gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera))
+            {
+                ReturnToSlot();
+                PlayInvalidDropFlash();
+                return;
+            }
+
+            Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, liftedPosition, eventData.pressEventCamera);
             bool placed = gameManager.TryPlacePiece(this, origin);
             if (!placed)
             {
