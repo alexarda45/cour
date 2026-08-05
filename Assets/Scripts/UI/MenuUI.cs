@@ -63,6 +63,7 @@ namespace ChromaBlast
         private TMP_Text themesCoinText;
         private TMP_Text themesFeedbackText;
         private Button themesCloseButton;
+        private Coroutine themesTransitionRoutine;
         private readonly List<ThemeCardRuntime> themeCards = new List<ThemeCardRuntime>();
         [SerializeField] private Button shopButton;
         [SerializeField] private GameObject shopRoot;
@@ -124,6 +125,9 @@ namespace ChromaBlast
             public TMP_Text Title;
             public TMP_Text Status;
             public Image Preview;
+            public Image PreviewFrame;
+            public Image Gloss;
+            public Image InnerRim;
             public Image[] Swatches;
         }
 
@@ -318,6 +322,7 @@ namespace ChromaBlast
         private void OnDisable()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            StopThemesTransition();
             StopRewardsRefreshRoutine();
             RestoreOceanLogoAfterRewards();
             RestoreGameplaySceneObjects();
@@ -326,6 +331,7 @@ namespace ChromaBlast
         private void OnDestroy()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            StopThemesTransition();
             StopRewardsRefreshRoutine();
             RestoreOceanLogoAfterRewards();
             RestoreGameplaySceneObjects();
@@ -430,6 +436,7 @@ namespace ChromaBlast
             }
 
             RefreshThemesOverlay(save);
+            StartThemesOpenTransition();
         }
 
         private void WireThemeButton()
@@ -448,10 +455,110 @@ namespace ChromaBlast
         private void CloseThemes()
         {
             AudioManager.Instance?.PlayClick();
-            if (themesRoot != null)
+            if (themesRoot != null && themesRoot.activeSelf)
             {
-                themesRoot.SetActive(false);
+                StopThemesTransition();
+                themesTransitionRoutine = StartCoroutine(AnimateThemesClosed());
             }
+        }
+
+        private void StartThemesOpenTransition()
+        {
+            if (themesRoot == null || themesPanel == null)
+            {
+                return;
+            }
+
+            StopThemesTransition();
+            themesTransitionRoutine = StartCoroutine(AnimateThemesOpened());
+        }
+
+        private IEnumerator AnimateThemesOpened()
+        {
+            CanvasGroup group = themesRoot.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = themesRoot.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            themesPanel.localScale = Vector3.one * 0.92f;
+
+            const float duration = 0.28f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float eased = EaseOutBack(t);
+                group.alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t * 1.35f));
+                themesPanel.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, eased);
+                yield return null;
+            }
+
+            group.alpha = 1f;
+            group.interactable = true;
+            group.blocksRaycasts = true;
+            themesPanel.localScale = Vector3.one;
+            themesTransitionRoutine = null;
+        }
+
+        private IEnumerator AnimateThemesClosed()
+        {
+            CanvasGroup group = themesRoot.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = themesRoot.AddComponent<CanvasGroup>();
+            }
+
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            float startAlpha = group.alpha;
+            Vector3 startScale = themesPanel == null ? Vector3.one : themesPanel.localScale;
+
+            const float duration = 0.16f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                group.alpha = Mathf.Lerp(startAlpha, 0f, t * t);
+                if (themesPanel != null)
+                {
+                    themesPanel.localScale = Vector3.Lerp(startScale, Vector3.one * 0.96f, t);
+                }
+
+                yield return null;
+            }
+
+            if (themesPanel != null)
+            {
+                themesPanel.localScale = Vector3.one;
+            }
+
+            group.alpha = 1f;
+            themesRoot.SetActive(false);
+            themesTransitionRoutine = null;
+        }
+
+        private void StopThemesTransition()
+        {
+            if (themesTransitionRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(themesTransitionRoutine);
+            themesTransitionRoutine = null;
+        }
+
+        private static float EaseOutBack(float value)
+        {
+            const float overshoot = 1.45f;
+            float shifted = value - 1f;
+            return 1f + (overshoot + 1f) * shifted * shifted * shifted + overshoot * shifted * shifted;
         }
 
         private void ChooseTheme(ThemeType theme)
@@ -913,7 +1020,7 @@ namespace ChromaBlast
                 dim = themesRoot.AddComponent<Image>();
             }
 
-            dim.color = new Color(0f, 0.025f, 0.09f, 0.78f);
+            dim.color = new Color(0f, 0.018f, 0.075f, 0.84f);
             dim.raycastTarget = true;
             Stretch(overlayRect, Vector2.zero, Vector2.zero);
 
@@ -939,19 +1046,60 @@ namespace ChromaBlast
             panelOutline.effectDistance = new Vector2(3f, -3f);
             panelOutline.useGraphicAlpha = true;
 
+            Shadow panelShadow = EnsureStandaloneShadow(themesPanel.gameObject);
+            panelShadow.effectColor = new Color(0f, 0.01f, 0.055f, 0.72f);
+            panelShadow.effectDistance = new Vector2(0f, -10f);
+            panelShadow.useGraphicAlpha = true;
+
+            Image panelRim = EnsureThemeImage(themesPanel, "ThemesPanelInnerRim");
+            SetRect(panelRim.rectTransform, Vector2.zero, Vector2.one, new Vector2(7f, 7f), new Vector2(-7f, -7f));
+            UISpriteFactory.ApplyFrame(panelRim, 0.075f, 0.025f);
+            panelRim.color = new Color(0.54f, 0.96f, 1f, 0.30f);
+            panelRim.raycastTarget = false;
+            panelRim.transform.SetAsFirstSibling();
+
+            Image panelGloss = EnsureThemeImage(themesPanel, "ThemesPanelGloss");
+            SetRect(panelGloss.rectTransform, new Vector2(0.025f, 0.72f), new Vector2(0.975f, 0.985f), Vector2.zero, Vector2.zero);
+            UISpriteFactory.ApplyRounded(panelGloss, 0.20f);
+            panelGloss.color = new Color(0.38f, 0.90f, 1f, 0.055f);
+            panelGloss.raycastTarget = false;
+            panelGloss.transform.SetSiblingIndex(1);
+
             TMP_Text title = EnsureThemeText(themesPanel, "ThemesTitle", "THEMES", 58f, TextAlignmentOptions.Center);
             SetRect(title.rectTransform, new Vector2(0.18f, 0.91f), new Vector2(0.82f, 0.975f), Vector2.zero, Vector2.zero);
             title.color = new Color(0.94f, 1f, 1f, 1f);
+            EnsureTextShadow(title, new Color(0f, 0.02f, 0.10f, 0.78f), new Vector2(0f, -3f));
+
+            Image coinPill = EnsureThemeImage(themesPanel, "ThemesCoinPill");
+            SetRect(coinPill.rectTransform, new Vector2(0.25f, 0.846f), new Vector2(0.75f, 0.90f), Vector2.zero, Vector2.zero);
+            UISpriteFactory.ApplyRounded(coinPill, 0.48f);
+            coinPill.color = new Color(0.025f, 0.19f, 0.40f, 0.96f);
+            coinPill.raycastTarget = false;
+            Outline coinOutline = coinPill.GetComponent<Outline>();
+            if (coinOutline == null)
+            {
+                coinOutline = coinPill.gameObject.AddComponent<Outline>();
+            }
+
+            coinOutline.effectColor = new Color(1f, 0.84f, 0.26f, 0.48f);
+            coinOutline.effectDistance = new Vector2(2f, -2f);
+            coinOutline.useGraphicAlpha = true;
 
             themesCoinText = EnsureThemeText(themesPanel, "ThemesCoinBalance", string.Empty, 32f, TextAlignmentOptions.Center);
             SetRect(themesCoinText.rectTransform, new Vector2(0.20f, 0.845f), new Vector2(0.80f, 0.90f), Vector2.zero, Vector2.zero);
             themesCoinText.color = new Color(1f, 0.86f, 0.35f, 1f);
+            EnsureTextShadow(themesCoinText, new Color(0f, 0.02f, 0.08f, 0.70f), new Vector2(0f, -2f));
 
             themesFeedbackText = EnsureThemeText(themesPanel, "ThemesFeedback", string.Empty, 27f, TextAlignmentOptions.Center);
             SetRect(themesFeedbackText.rectTransform, new Vector2(0.10f, 0.105f), new Vector2(0.90f, 0.16f), Vector2.zero, Vector2.zero);
 
             EnsureThemeCards();
             EnsureThemesCloseButton();
+            title.transform.SetAsLastSibling();
+            coinPill.transform.SetSiblingIndex(Mathf.Max(0, title.transform.GetSiblingIndex() - 1));
+            themesCoinText.transform.SetAsLastSibling();
+            themesFeedbackText.transform.SetAsLastSibling();
+            themesCloseButton.transform.SetAsLastSibling();
             themesRoot.transform.SetAsLastSibling();
         }
 
@@ -996,19 +1144,39 @@ namespace ChromaBlast
 
                 cardTitle.gameObject.SetActive(true);
                 cardTitle.text = ChromaPalette.GetThemeName(theme);
-                cardTitle.fontSize = 30f;
-                cardTitle.fontSizeMax = 30f;
-                cardTitle.fontSizeMin = 20f;
+                cardTitle.fontSize = 27f;
+                cardTitle.fontSizeMax = 27f;
+                cardTitle.fontSizeMin = 17f;
                 cardTitle.color = Color.white;
                 cardTitle.font = premiumFont != null ? premiumFont : cardTitle.font;
-                SetRect(cardTitle.rectTransform, new Vector2(0.05f, 0.61f), new Vector2(0.95f, 0.94f), Vector2.zero, Vector2.zero);
+                cardTitle.alignment = TextAlignmentOptions.MidlineLeft;
+                SetRect(cardTitle.rectTransform, new Vector2(0.35f, 0.53f), new Vector2(0.95f, 0.91f), Vector2.zero, Vector2.zero);
+                EnsureTextShadow(cardTitle, new Color(0f, 0.015f, 0.07f, 0.72f), new Vector2(0f, -2f));
 
-                TMP_Text status = EnsureThemeText(cardButton.transform, "Status", string.Empty, 20f, TextAlignmentOptions.Center);
+                TMP_Text status = EnsureThemeText(cardButton.transform, "Status", string.Empty, 18f, TextAlignmentOptions.MidlineLeft);
                 status.font = premiumFont != null ? premiumFont : status.font;
-                SetRect(status.rectTransform, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.30f), Vector2.zero, Vector2.zero);
+                SetRect(status.rectTransform, new Vector2(0.35f, 0.10f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
+                EnsureTextShadow(status, new Color(0f, 0.015f, 0.07f, 0.62f), new Vector2(0f, -1f));
+
+                Image cardGloss = EnsureThemeImage(cardButton.transform, "CardGloss");
+                SetRect(cardGloss.rectTransform, new Vector2(0.025f, 0.53f), new Vector2(0.975f, 0.95f), Vector2.zero, Vector2.zero);
+                UISpriteFactory.ApplyRounded(cardGloss, 0.28f);
+                cardGloss.color = new Color(1f, 1f, 1f, 0.10f);
+                cardGloss.raycastTarget = false;
+
+                Image cardInnerRim = EnsureThemeImage(cardButton.transform, "CardInnerRim");
+                SetRect(cardInnerRim.rectTransform, Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+                UISpriteFactory.ApplyFrame(cardInnerRim, 0.20f, 0.035f);
+                cardInnerRim.raycastTarget = false;
+
+                Image previewFrame = EnsureThemeImage(cardButton.transform, "ArtworkPreviewFrame");
+                SetRect(previewFrame.rectTransform, new Vector2(0.035f, 0.11f), new Vector2(0.315f, 0.89f), Vector2.zero, Vector2.zero);
+                UISpriteFactory.ApplyRounded(previewFrame, 0.25f);
+                previewFrame.color = new Color(0.005f, 0.035f, 0.095f, 0.78f);
+                previewFrame.raycastTarget = false;
 
                 Image artworkPreview = EnsureThemeImage(cardButton.transform, "ArtworkPreview");
-                SetRect(artworkPreview.rectTransform, new Vector2(0.08f, 0.33f), new Vector2(0.92f, 0.58f), Vector2.zero, Vector2.zero);
+                SetRect(artworkPreview.rectTransform, new Vector2(0.055f, 0.16f), new Vector2(0.295f, 0.84f), Vector2.zero, Vector2.zero);
                 artworkPreview.type = Image.Type.Simple;
                 artworkPreview.preserveAspect = true;
                 artworkPreview.raycastTarget = false;
@@ -1017,8 +1185,9 @@ namespace ChromaBlast
                 for (int colorIndex = 0; colorIndex < swatches.Length; colorIndex++)
                 {
                     swatches[colorIndex] = EnsureThemeImage(cardButton.transform, $"Swatch_{colorIndex}");
-                    float swatchMinX = 0.12f + colorIndex * 0.20f;
-                    SetRect(swatches[colorIndex].rectTransform, new Vector2(swatchMinX, 0.35f), new Vector2(swatchMinX + 0.16f, 0.56f), Vector2.zero, Vector2.zero);
+                    float swatchMinX = 0.055f + (colorIndex % 2) * 0.125f;
+                    float swatchMinY = colorIndex < 2 ? 0.53f : 0.22f;
+                    SetRect(swatches[colorIndex].rectTransform, new Vector2(swatchMinX, swatchMinY), new Vector2(swatchMinX + 0.105f, swatchMinY + 0.24f), Vector2.zero, Vector2.zero);
                     UISpriteFactory.ApplyRounded(swatches[colorIndex], 0.35f);
                     swatches[colorIndex].raycastTarget = false;
                 }
@@ -1045,6 +1214,9 @@ namespace ChromaBlast
                     Title = cardTitle,
                     Status = status,
                     Preview = artworkPreview,
+                    PreviewFrame = previewFrame,
+                    Gloss = cardGloss,
+                    InnerRim = cardInnerRim,
                     Swatches = swatches
                 });
             }
@@ -1116,9 +1288,29 @@ namespace ChromaBlast
                 Image cardImage = card.Button.image;
                 Color top = ChromaPalette.GetThemeTopColor(card.Theme);
                 Color bottom = ChromaPalette.GetThemeBottomColor(card.Theme);
-                Color background = Color.Lerp(top, bottom, 0.5f);
+                Color themeColor = Color.Lerp(top, bottom, 0.5f);
+                Color background = Color.Lerp(new Color(0.01f, 0.065f, 0.16f, 1f), themeColor, 0.48f);
                 background.a = 0.98f;
                 cardImage.color = background;
+
+                if (card.Gloss != null)
+                {
+                    card.Gloss.color = new Color(1f, 1f, 1f, selected ? 0.16f : 0.10f);
+                }
+
+                if (card.InnerRim != null)
+                {
+                    Color rim = definition == null ? new Color(0.34f, 0.91f, 1f, 1f) : definition.CapsuleTintColor;
+                    rim.a = selected ? 0.82f : (unlocked ? 0.38f : 0.22f);
+                    card.InnerRim.color = rim;
+                }
+
+                if (card.PreviewFrame != null)
+                {
+                    card.PreviewFrame.color = selected
+                        ? new Color(0.025f, 0.12f, 0.24f, 0.96f)
+                        : new Color(0.005f, 0.035f, 0.095f, 0.78f);
+                }
 
                 ColorBlock colors = card.Button.colors;
                 colors.normalColor = Color.white;
@@ -1611,6 +1803,7 @@ namespace ChromaBlast
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             EnsureOceanBackground();
+            StyleThemeMenuButton();
             if (themesRoot != null && themesRoot.activeSelf && SaveManager.Instance != null)
             {
                 RefreshThemesOverlay(SaveManager.Instance, false);
@@ -2140,7 +2333,10 @@ namespace ChromaBlast
             }
 
             UISpriteFactory.ApplyRounded(image, 0.46f);
-            image.color = new Color(0.025f, 0.26f, 0.55f, 0.98f);
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Color themeAccent = activeTheme == null ? new Color(0.16f, 0.78f, 1f, 1f) : activeTheme.CapsuleTintColor;
+            image.color = Color.Lerp(new Color(0.015f, 0.12f, 0.30f, 1f), themeAccent, 0.46f);
+            image.color = new Color(image.color.r, image.color.g, image.color.b, 0.98f);
             image.raycastTarget = true;
             themeButton.targetGraphic = image;
             themeButton.enabled = true;
@@ -2161,7 +2357,8 @@ namespace ChromaBlast
                 outline = themeButton.gameObject.AddComponent<Outline>();
             }
 
-            outline.effectColor = new Color(0.26f, 0.92f, 1f, 0.72f);
+            themeAccent.a = 0.76f;
+            outline.effectColor = themeAccent;
             outline.effectDistance = new Vector2(2f, -2f);
             outline.useGraphicAlpha = true;
 
@@ -2169,6 +2366,22 @@ namespace ChromaBlast
             shadow.effectColor = new Color(0f, 0.02f, 0.10f, 0.50f);
             shadow.effectDistance = new Vector2(0f, -5f);
             shadow.useGraphicAlpha = true;
+
+            Image buttonGloss = EnsureThemeImage(themeButton.transform, "ThemeButtonGloss");
+            SetRect(buttonGloss.rectTransform, new Vector2(0.025f, 0.50f), new Vector2(0.975f, 0.94f), Vector2.zero, Vector2.zero);
+            UISpriteFactory.ApplyRounded(buttonGloss, 0.46f);
+            buttonGloss.color = new Color(1f, 1f, 1f, 0.14f);
+            buttonGloss.raycastTarget = false;
+            buttonGloss.transform.SetAsFirstSibling();
+
+            Image buttonRim = EnsureThemeImage(themeButton.transform, "ThemeButtonInnerRim");
+            SetRect(buttonRim.rectTransform, Vector2.zero, Vector2.one, new Vector2(5f, 5f), new Vector2(-5f, -5f));
+            UISpriteFactory.ApplyFrame(buttonRim, 0.46f, 0.035f);
+            Color buttonRimColor = themeAccent;
+            buttonRimColor.a = 0.38f;
+            buttonRim.color = buttonRimColor;
+            buttonRim.raycastTarget = false;
+            buttonRim.transform.SetSiblingIndex(1);
 
             if (themeButtonText == null)
             {
@@ -2194,7 +2407,10 @@ namespace ChromaBlast
                 themeButtonText.font = premiumFont;
             }
 
+            EnsureTextShadow(themeButtonText, new Color(0f, 0.02f, 0.10f, 0.72f), new Vector2(0f, -2f));
+
             Stretch(themeButtonText.rectTransform, new Vector2(24f, 10f), new Vector2(-24f, -10f));
+            themeButtonText.transform.SetAsLastSibling();
             themeButton.gameObject.SetActive(true);
             WireThemeButton();
 

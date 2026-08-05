@@ -91,6 +91,9 @@ namespace ChromaBlast
         private Image bestScoreCapsuleImage;
         private Image bestScoreCrownImage;
         private Image bestScoreCrownGlowImage;
+        private Material bestScoreCapsuleTintMaterial;
+        private Material bestScoreCrownTintMaterial;
+        private static readonly int ThemeColorProperty = Shader.PropertyToID("_ThemeColor");
         private Image finalBoardVisualImage;
         private Image finalBoardShadowImage;
         private Image pauseOverlayImage;
@@ -232,6 +235,9 @@ namespace ChromaBlast
         private void OnDestroy()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+
+            DestroyRuntimeMaterial(ref bestScoreCapsuleTintMaterial);
+            DestroyRuntimeMaterial(ref bestScoreCrownTintMaterial);
 
             if (blitzUrgencyRoutine != null)
             {
@@ -1326,12 +1332,20 @@ namespace ChromaBlast
 
             if (bestScoreCapsuleImage != null)
             {
-                bestScoreCapsuleImage.color = capsuleTint;
+                ApplyLuminanceTint(
+                    bestScoreCapsuleImage,
+                    ref bestScoreCapsuleTintMaterial,
+                    capsuleTint,
+                    "BestScoreCapsule_ThemeTint");
             }
 
             if (bestScoreCrownImage != null)
             {
-                bestScoreCrownImage.color = crownTint;
+                ApplyLuminanceTint(
+                    bestScoreCrownImage,
+                    ref bestScoreCrownTintMaterial,
+                    crownTint,
+                    "BestScoreCrown_ThemeTint");
             }
 
             if (bestScoreCrownGlowImage != null)
@@ -1339,6 +1353,62 @@ namespace ChromaBlast
                 crownTint.a = 0.10f;
                 bestScoreCrownGlowImage.color = crownTint;
             }
+        }
+
+        private static void ApplyLuminanceTint(Image image, ref Material material, Color themeColor, string materialName)
+        {
+            if (image == null)
+            {
+                return;
+            }
+
+            if (material == null)
+            {
+                // Keep the shader in Resources so Android builds cannot strip a
+                // runtime-only Shader.Find reference.
+                Shader shader = Resources.Load<Shader>("Shaders/UIThemeLuminanceTint");
+                if (shader == null)
+                {
+                    shader = Shader.Find("ChromaBlast/UI/LuminanceTint");
+                }
+                if (shader != null)
+                {
+                    material = new Material(shader)
+                    {
+                        name = materialName,
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                }
+            }
+
+            // Image.color must stay white: a coloured Image tint would multiply
+            // the already coloured source PNG and shift every theme back to blue.
+            image.color = Color.white;
+            image.material = material;
+            if (material != null && material.HasProperty(ThemeColorProperty))
+            {
+                themeColor.a = 1f;
+                material.SetColor(ThemeColorProperty, themeColor);
+            }
+        }
+
+        private static void DestroyRuntimeMaterial(ref Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(material);
+            }
+            else
+            {
+                DestroyImmediate(material);
+            }
+
+            material = null;
         }
 
         private static void ConfigureHudLayerRect(
