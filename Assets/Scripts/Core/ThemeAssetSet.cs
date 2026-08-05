@@ -29,6 +29,10 @@ namespace ChromaBlast
         [SerializeField] private Color effectColorLime = new Color(0.0196f, 0.2863f, 0.9137f, 1f);
         [SerializeField] private Color effectColorAmber = new Color(0.9137f, 0.6980f, 0f, 1f);
 
+        [Header("HUD Theme Colours")]
+        [SerializeField] private Color capsuleTintColor = Color.white;
+        [SerializeField] private Color crownTintColor = Color.white;
+
         public ThemeType ThemeType => themeType;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? themeType.ToString().ToUpperInvariant() : displayName;
         public int CoinCost => Mathf.Max(0, coinCost);
@@ -37,6 +41,8 @@ namespace ChromaBlast
         public Sprite GameplayBackground => gameplayBackground;
         public Sprite GameOverBackground => gameOverBackground;
         public Sprite BoardSurfaceSprite => boardSurfaceSprite;
+        public Color CapsuleTintColor => WithOpaqueAlpha(capsuleTintColor);
+        public Color CrownTintColor => WithOpaqueAlpha(crownTintColor);
 
         public bool HasCompleteCoreArtwork =>
             menuBackground != null &&
@@ -116,6 +122,12 @@ namespace ChromaBlast
             }
 
             result = string.IsNullOrEmpty(result) ? label : $"{result}, {label}";
+        }
+
+        private static Color WithOpaqueAlpha(Color color)
+        {
+            color.a = 1f;
+            return color;
         }
     }
 }

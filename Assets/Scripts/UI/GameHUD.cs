@@ -88,7 +88,9 @@ namespace ChromaBlast
         private TMP_Text scoreShadowText;
         private TMP_Text newBestText;
         private RectTransform bestScoreHudRoot;
+        private Image bestScoreCapsuleImage;
         private Image bestScoreCrownImage;
+        private Image bestScoreCrownGlowImage;
         private Image finalBoardVisualImage;
         private Image finalBoardShadowImage;
         private Image pauseOverlayImage;
@@ -253,6 +255,7 @@ namespace ChromaBlast
         {
             EnsureOceanBranding();
             EnsureOceanBoardFrame();
+            ApplyBestScoreTheme(resolvedTheme);
         }
 
         public void Refresh(GameMode mode, ScoreManager scoreManager, int highScore, float blitzSeconds, bool undoAvailable, int nextScoreMilestone)
@@ -1233,14 +1236,13 @@ namespace ChromaBlast
             capsuleArtRect.anchoredPosition = Vector2.zero;
             capsuleArtRect.sizeDelta = new Vector2(358f, 238f);
             capsuleArtRect.localScale = Vector3.one;
-            Image capsuleArt = GetOrAddImage(capsuleArtRect.gameObject);
+            bestScoreCapsuleImage = GetOrAddImage(capsuleArtRect.gameObject);
             Sprite capsuleSprite = LoadOceanSprite(BestScoreCapsulePath);
-            capsuleArt.sprite = capsuleSprite;
-            capsuleArt.enabled = capsuleSprite != null;
-            capsuleArt.color = Color.white;
-            capsuleArt.type = Image.Type.Simple;
-            capsuleArt.preserveAspect = true;
-            capsuleArt.raycastTarget = false;
+            bestScoreCapsuleImage.sprite = capsuleSprite;
+            bestScoreCapsuleImage.enabled = capsuleSprite != null;
+            bestScoreCapsuleImage.type = Image.Type.Simple;
+            bestScoreCapsuleImage.preserveAspect = true;
+            bestScoreCapsuleImage.raycastTarget = false;
 
             RectTransform crownGlowRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownGlow");
             crownGlowRect.anchorMin = new Vector2(0f, 0.5f);
@@ -1249,12 +1251,11 @@ namespace ChromaBlast
             crownGlowRect.anchoredPosition = new Vector2(62f, -6.82f);
             crownGlowRect.sizeDelta = new Vector2(90f, 90f);
             crownGlowRect.localScale = Vector3.one;
-            Image crownGlow = GetOrAddImage(crownGlowRect.gameObject);
-            if (crownGlow != null)
+            bestScoreCrownGlowImage = GetOrAddImage(crownGlowRect.gameObject);
+            if (bestScoreCrownGlowImage != null)
             {
-                UISpriteFactory.ApplySoftCircle(crownGlow);
-                crownGlow.color = new Color(1f, 0.75f, 0.20f, 0.08f);
-                crownGlow.raycastTarget = false;
+                UISpriteFactory.ApplySoftCircle(bestScoreCrownGlowImage);
+                bestScoreCrownGlowImage.raycastTarget = false;
             }
 
             RectTransform crownRect = GetOrCreateChildRect(bestScoreHudRoot, "CrownIcon");
@@ -1276,9 +1277,6 @@ namespace ChromaBlast
                 Sprite crownSprite = LoadOceanSprite(BestScoreCrownPath);
                 bestScoreCrownImage.sprite = crownSprite;
                 bestScoreCrownImage.enabled = crownSprite != null;
-                // CrownIcon.png is full-color art, not a silhouette -- tinting it
-                // would multiply in an unwanted gold-on-gold shift, so leave it white.
-                bestScoreCrownImage.color = Color.white;
                 bestScoreCrownImage.preserveAspect = true;
                 bestScoreCrownImage.raycastTarget = false;
             }
@@ -1318,6 +1316,29 @@ namespace ChromaBlast
             crownGlowRect.SetSiblingIndex(6);
             crownRect.SetSiblingIndex(7);
             valueRect.SetAsLastSibling();
+            ApplyBestScoreTheme(ThemeCatalog.Current);
+        }
+
+        private void ApplyBestScoreTheme(ThemeAssetSet theme)
+        {
+            Color capsuleTint = theme == null ? Color.white : theme.CapsuleTintColor;
+            Color crownTint = theme == null ? Color.white : theme.CrownTintColor;
+
+            if (bestScoreCapsuleImage != null)
+            {
+                bestScoreCapsuleImage.color = capsuleTint;
+            }
+
+            if (bestScoreCrownImage != null)
+            {
+                bestScoreCrownImage.color = crownTint;
+            }
+
+            if (bestScoreCrownGlowImage != null)
+            {
+                crownTint.a = 0.10f;
+                bestScoreCrownGlowImage.color = crownTint;
+            }
         }
 
         private static void ConfigureHudLayerRect(

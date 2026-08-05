@@ -28,3 +28,5 @@ MonoBehaviour:
   effectColorMagenta: {r: 0, g: 0.9098039, b: 0.4509804, a: 1}
   effectColorLime: {r: 0.9098039, g: 0.75686276, b: 0, a: 1}
   effectColorAmber: {r: 0.53333336, g: 0, b: 0.9098039, a: 1}
+  capsuleTintColor: {r: 0.9529412, g: 0.6509804, b: 0.9098039, a: 1}
+  crownTintColor: {r: 1, g: 0.81960785, b: 0.9411765, a: 1}
