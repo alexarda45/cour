@@ -241,11 +241,7 @@ namespace ChromaBlast
                 achievementsCloseButton.onClick.AddListener(CloseAchievements);
             }
 
-            if (themeButton != null)
-            {
-                themeButton.onClick.RemoveAllListeners();
-                themeButton.onClick.AddListener(OpenThemes);
-            }
+            WireThemeButton();
 
             if (quitButton != null)
             {
@@ -434,6 +430,19 @@ namespace ChromaBlast
             }
 
             RefreshThemesOverlay(save);
+        }
+
+        private void WireThemeButton()
+        {
+            if (themeButton == null)
+            {
+                return;
+            }
+
+            themeButton.enabled = true;
+            themeButton.interactable = true;
+            themeButton.onClick.RemoveListener(OpenThemes);
+            themeButton.onClick.AddListener(OpenThemes);
         }
 
         private void CloseThemes()
@@ -2134,6 +2143,8 @@ namespace ChromaBlast
             image.color = new Color(0.025f, 0.26f, 0.55f, 0.98f);
             image.raycastTarget = true;
             themeButton.targetGraphic = image;
+            themeButton.enabled = true;
+            themeButton.interactable = true;
 
             ColorBlock colors = themeButton.colors;
             colors.normalColor = Color.white;
@@ -2176,6 +2187,7 @@ namespace ChromaBlast
             themeButtonText.fontSizeMax = 48f;
             themeButtonText.fontSizeMin = 30f;
             themeButtonText.fontStyle = FontStyles.Bold;
+            themeButtonText.raycastTarget = false;
             TMP_FontAsset premiumFont = Resources.Load<TMP_FontAsset>("Fonts/Fredoka-SemiBold SDF");
             if (premiumFont != null)
             {
@@ -2184,6 +2196,7 @@ namespace ChromaBlast
 
             Stretch(themeButtonText.rectTransform, new Vector2(24f, 10f), new Vector2(-24f, -10f));
             themeButton.gameObject.SetActive(true);
+            WireThemeButton();
 
             if (themeHintText != null)
             {
