@@ -678,6 +678,7 @@ namespace ChromaBlast
 
             Data.selectedTheme = clampedTheme;
             Save();
+            ThemeCatalog.NotifyThemeChanged();
             RefreshThemeBackdrops();
         }
 

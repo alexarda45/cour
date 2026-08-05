@@ -123,6 +123,7 @@ namespace ChromaBlast
             public Button Button;
             public TMP_Text Title;
             public TMP_Text Status;
+            public Image Preview;
             public Image[] Swatches;
         }
 
@@ -993,6 +994,12 @@ namespace ChromaBlast
                 status.font = premiumFont != null ? premiumFont : status.font;
                 SetRect(status.rectTransform, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.30f), Vector2.zero, Vector2.zero);
 
+                Image artworkPreview = EnsureThemeImage(cardButton.transform, "ArtworkPreview");
+                SetRect(artworkPreview.rectTransform, new Vector2(0.08f, 0.33f), new Vector2(0.92f, 0.58f), Vector2.zero, Vector2.zero);
+                artworkPreview.type = Image.Type.Simple;
+                artworkPreview.preserveAspect = true;
+                artworkPreview.raycastTarget = false;
+
                 Image[] swatches = new Image[4];
                 for (int colorIndex = 0; colorIndex < swatches.Length; colorIndex++)
                 {
@@ -1024,6 +1031,7 @@ namespace ChromaBlast
                     Button = cardButton,
                     Title = cardTitle,
                     Status = status,
+                    Preview = artworkPreview,
                     Swatches = swatches
                 });
             }
@@ -1089,6 +1097,8 @@ namespace ChromaBlast
                 bool unlocked = save.IsThemeUnlocked(card.Theme);
                 int cost = ChromaPalette.GetThemeCoinCost(card.Theme);
                 bool affordable = save.GetCoins() >= cost;
+                ThemeAssetSet definition = ThemeCatalog.GetDefinition(card.Theme);
+                Sprite previewSprite = definition == null ? null : definition.PreviewSprite;
 
                 Image cardImage = card.Button.image;
                 Color top = ChromaPalette.GetThemeTopColor(card.Theme);
@@ -1150,10 +1160,18 @@ namespace ChromaBlast
                     continue;
                 }
 
+                if (card.Preview != null)
+                {
+                    card.Preview.sprite = previewSprite;
+                    card.Preview.color = Color.white;
+                    card.Preview.gameObject.SetActive(previewSprite != null);
+                }
+
                 for (int colorIndex = 0; colorIndex < card.Swatches.Length; colorIndex++)
                 {
                     if (card.Swatches[colorIndex] != null)
                     {
+                        card.Swatches[colorIndex].gameObject.SetActive(previewSprite == null);
                         card.Swatches[colorIndex].color = ChromaPalette.GetColor((ChromaColor)colorIndex, card.Theme);
                     }
                 }

@@ -23,17 +23,6 @@ namespace ChromaBlast
         // full canvas. This nudges it back down by that same fraction.
         private const float TileVerticalCenteringNudge = -0.024f;
 
-        // Index order matches the ChromaColor enum (Cyan, Magenta, Lime, Amber).
-        private static readonly string[] TileResourcePaths =
-        {
-            "Ocean/Tiles/Tile_Reference_Cyan",
-            "Ocean/Tiles/Tile_Reference_Pink",
-            "Ocean/Tiles/Tile_Reference_Blue",
-            "Ocean/Tiles/Tile_Reference_Yellow"
-        };
-
-        private static readonly Sprite[] TileSprites = new Sprite[TileResourcePaths.Length];
-
         [SerializeField] private Image image;
         [SerializeField] private Image shadowImage;
         [SerializeField] private Image glowImage;
@@ -50,6 +39,7 @@ namespace ChromaBlast
         private Sprite completionPreviewTargetSprite;
         private Color completionPreviewOriginalColor;
         private bool completionSpritePreviewActive;
+        private bool initialized;
 
         private void Awake()
         {
@@ -78,15 +68,30 @@ namespace ChromaBlast
             }
         }
 
+        private void OnEnable()
+        {
+            ThemeCatalog.ThemeChanged += HandleThemeChanged;
+            if (initialized)
+            {
+                ApplyCurrentThemeArtwork(ThemeCatalog.Current);
+            }
+        }
+
+        private void OnDisable()
+        {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+        }
+
         public void Initialize(ChromaColor color, bool animate = true)
         {
             Color = color;
+            initialized = true;
             if (image == null)
             {
                 image = GetComponent<Image>();
             }
 
-            Sprite tileSprite = GetTileSprite(color) ?? ChromaPalette.GetTileSprite(color);
+            Sprite tileSprite = GetTileSprite(color);
             if (image != null)
             {
                 image.sprite = tileSprite;
@@ -252,13 +257,39 @@ namespace ChromaBlast
 
         private static Sprite GetTileSprite(ChromaColor color)
         {
-            int index = Mathf.Clamp((int)color, 0, TileResourcePaths.Length - 1);
-            if (TileSprites[index] == null)
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            return activeTheme == null ? null : activeTheme.GetTileSprite(color);
+        }
+
+        private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
+        {
+            if (initialized)
             {
-                TileSprites[index] = Resources.Load<Sprite>(TileResourcePaths[index]);
+                ApplyCurrentThemeArtwork(resolvedTheme);
+            }
+        }
+
+        private void ApplyCurrentThemeArtwork(ThemeAssetSet theme)
+        {
+            if (theme == null)
+            {
+                return;
             }
 
-            return TileSprites[index];
+            bool restoreTrayShadow = shadowImage != null && shadowImage.enabled;
+            EndCompletionSpritePreview();
+            Sprite tileSprite = theme.GetTileSprite(Color);
+            if (image != null)
+            {
+                image.sprite = tileSprite;
+                image.color = UnityEngine.Color.white;
+            }
+
+            ApplyTileSprite(tileSprite);
+            if (restoreTrayShadow)
+            {
+                SetTrayShadowVisible(true);
+            }
         }
 
         public bool BeginCompletionSpritePreview(ChromaColor targetColor)

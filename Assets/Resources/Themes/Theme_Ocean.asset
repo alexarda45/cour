@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
+  m_Name: Theme_Ocean
+  m_EditorClassIdentifier:
+  themeType: 2
+  displayName: OCEAN
+  coinCost: 700
+  previewSprite: {fileID: 21300000, guid: afa52a564a3511242825b9463f40a81e, type: 3}
+  gameplayBackground: {fileID: 21300000, guid: d167377547b04c1494ba08dfc8400dcb, type: 3}
+  boardSurfaceSprite: {fileID: 21300000, guid: afa52a564a3511242825b9463f40a81e, type: 3}
+  tileCyan: {fileID: 21300000, guid: 153eb13b1345443a836bb6cd1c508542, type: 3}
+  tileMagenta: {fileID: 21300000, guid: f25fd761c33e4c33a38993ea2ed42339, type: 3}
+  tileLime: {fileID: 21300000, guid: 7d9860ef9ab3492bba64ec841019b223, type: 3}
+  tileAmber: {fileID: 21300000, guid: 9b6e48dee0ab40b1967fa1addeb47bb8, type: 3}
+  effectColorCyan: {r: 0.023529412, g: 0.8352941, b: 0.9137255, a: 1}
+  effectColorMagenta: {r: 0.9137255, g: 0.019607844, b: 0.16862746, a: 1}
+  effectColorLime: {r: 0.019607844, g: 0.28627452, b: 0.9137255, a: 1}
+  effectColorAmber: {r: 0.9137255, g: 0.69803923, b: 0, a: 1}

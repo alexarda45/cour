@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
+  m_Name: Theme_Crystal
+  m_EditorClassIdentifier:
+  themeType: 4
+  displayName: CRYSTAL
+  coinCost: 2200
+  previewSprite: {fileID: 0}
+  gameplayBackground: {fileID: 0}
+  boardSurfaceSprite: {fileID: 0}
+  tileCyan: {fileID: 0}
+  tileMagenta: {fileID: 0}
+  tileLime: {fileID: 0}
+  tileAmber: {fileID: 0}
+  effectColorCyan: {r: 0.91764706, g: 0.972549, b: 1, a: 1}
+  effectColorMagenta: {r: 0.63529414, g: 0.42352942, b: 1, a: 1}
+  effectColorLime: {r: 0.13725491, g: 0.34117648, b: 0.84705883, a: 1}
+  effectColorAmber: {r: 0.9137255, g: 0.08235294, b: 0.36862746, a: 1}

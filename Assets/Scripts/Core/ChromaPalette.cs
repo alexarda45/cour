@@ -4,21 +4,8 @@ namespace ChromaBlast
 {
     public static class ChromaPalette
     {
-        // Index order matches the ChromaColor enum (Cyan, Magenta, Lime, Amber).
-        private static readonly string[] TileResourcePaths =
-        {
-            "Ocean/Tiles/Tile_Reference_Cyan",
-            "Ocean/Tiles/Tile_Reference_Pink",
-            "Ocean/Tiles/Tile_Reference_Blue",
-            "Ocean/Tiles/Tile_Reference_Yellow"
-        };
-
-        private static readonly Sprite[] TileSprites = new Sprite[TileResourcePaths.Length];
-        private static readonly bool[] MissingTileLogged = new bool[TileResourcePaths.Length];
-
         // Fixed colours sampled from the board's Tile_Reference_* artwork.
-        // Unlike ThemeColors, these stay aligned with the visual tile mapping:
-        // Cyan, Pink (Magenta), Blue (Lime), Yellow (Amber).
+        // Used only as a safe fallback if no complete ThemeAssetSet can load.
         private static readonly Color32[] TileArtworkColors =
         {
             new Color32(6, 213, 233, 255),
@@ -156,13 +143,14 @@ namespace ChromaBlast
 
         public static Color GetColor(ChromaColor color)
         {
-            return GetColor(color, CurrentTheme);
+            Color fallback = GetColor(color, CurrentTheme);
+            return ThemeCatalog.GetEffectColor(color, fallback);
         }
 
         public static Color GetTileArtworkColor(ChromaColor color)
         {
             int colorIndex = Mathf.Clamp((int)color, 0, TileArtworkColors.Length - 1);
-            return TileArtworkColors[colorIndex];
+            return ThemeCatalog.GetEffectColor(color, TileArtworkColors[colorIndex]);
         }
 
         public static Color GetColor(ChromaColor color, ThemeType theme)
@@ -179,27 +167,7 @@ namespace ChromaBlast
 
         public static Sprite GetTileSprite(ChromaColor color)
         {
-            int index = Mathf.Clamp((int)color, 0, TileResourcePaths.Length - 1);
-            if (TileSprites[index] != null)
-            {
-                return TileSprites[index];
-            }
-
-            string resourcePath = TileResourcePaths[index];
-            Sprite sprite = Resources.Load<Sprite>(resourcePath);
-            if (sprite == null)
-            {
-                if (!MissingTileLogged[index])
-                {
-                    Debug.LogError($"Missing Ocean tile sprite at Resources path: {resourcePath}");
-                    MissingTileLogged[index] = true;
-                }
-
-                return null;
-            }
-
-            TileSprites[index] = sprite;
-            return sprite;
+            return ThemeCatalog.GetTileSprite(color);
         }
 
         public static string GetRomanianName(ChromaColor color)
@@ -209,6 +177,12 @@ namespace ChromaBlast
 
         public static string GetThemeName(ThemeType theme)
         {
+            ThemeAssetSet definition = ThemeCatalog.GetDefinition(theme);
+            if (definition != null)
+            {
+                return definition.DisplayName;
+            }
+
             int index = Mathf.Clamp((int)theme, 0, ThemeNames.Length - 1);
             return ThemeNames[index];
         }
@@ -221,6 +195,12 @@ namespace ChromaBlast
 
         public static int GetThemeCoinCost(ThemeType theme)
         {
+            ThemeAssetSet definition = ThemeCatalog.GetDefinition(theme);
+            if (definition != null)
+            {
+                return definition.CoinCost;
+            }
+
             int index = Mathf.Clamp((int)theme, 0, ThemeCoinCosts.Length - 1);
             return ThemeCoinCosts[index];
         }

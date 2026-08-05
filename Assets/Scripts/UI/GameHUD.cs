@@ -120,6 +120,8 @@ namespace ChromaBlast
         {
             EnforceEnglishLanguage();
             gameManager = owner;
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            ThemeCatalog.ThemeChanged += HandleThemeChanged;
 
             if (undoButton != null)
             {
@@ -227,6 +229,8 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+
             if (blitzUrgencyRoutine != null)
             {
                 StopCoroutine(blitzUrgencyRoutine);
@@ -243,6 +247,12 @@ namespace ChromaBlast
         {
             RefreshMuteLabel();
             RefreshPauseLabels();
+        }
+
+        private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
+        {
+            EnsureOceanBranding();
+            EnsureOceanBoardFrame();
         }
 
         public void Refresh(GameMode mode, ScoreManager scoreManager, int highScore, float blitzSeconds, bool undoAvailable, int nextScoreMilestone)
@@ -872,7 +882,12 @@ namespace ChromaBlast
                 return;
             }
 
-            Sprite backgroundSprite = LoadOceanSprite(OceanBackgroundPath);
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite backgroundSprite = activeTheme == null ? null : activeTheme.GameplayBackground;
+            if (backgroundSprite == null)
+            {
+                backgroundSprite = LoadOceanSprite(OceanBackgroundPath);
+            }
             DisableGameplayLogo(hudRect);
 
             if (backgroundSprite != null)
@@ -913,7 +928,12 @@ namespace ChromaBlast
                 return;
             }
 
-            finalBoardVisualImage.sprite = LoadOceanSprite(FinalBoardVisualPath);
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            finalBoardVisualImage.sprite = activeTheme == null ? null : activeTheme.BoardSurfaceSprite;
+            if (finalBoardVisualImage.sprite == null)
+            {
+                finalBoardVisualImage.sprite = LoadOceanSprite(FinalBoardVisualPath);
+            }
             finalBoardVisualImage.color = Color.white;
             finalBoardVisualImage.type = Image.Type.Simple;
             finalBoardVisualImage.preserveAspect = true;
