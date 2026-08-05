@@ -82,6 +82,7 @@ namespace ChromaBlast
         private bool bestScoreInitialized;
         private bool suppressNextScoreAutoPunch;
         private int lastDisplayedBlitzSecond = -1;
+        private Coroutine blitzUrgencyRoutine;
         private Image oceanBackgroundImage;
         private TMP_Text scoreShadowText;
         private TMP_Text newBestText;
@@ -212,6 +213,7 @@ namespace ChromaBlast
             EnsureOceanBoardFrame();
             StyleGameplayHudText();
             StylePremiumScoreText();
+            StylePremiumBlitzTimer();
             EnsureBestScoreDisplay();
             EnsureNewBestFeedback();
             ResetNewBestFeedback();
@@ -224,6 +226,12 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+            if (blitzUrgencyRoutine != null)
+            {
+                StopCoroutine(blitzUrgencyRoutine);
+                blitzUrgencyRoutine = null;
+            }
+
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.MuteChanged -= OnMuteChanged;
@@ -264,16 +272,10 @@ namespace ChromaBlast
                 {
                     int seconds = Mathf.CeilToInt(blitzSeconds);
                     timerText.text = seconds.ToString();
-                    timerText.color = seconds <= 10
-                        ? new Color(1f, 0.18f, 0.28f, 1f)
-                        : seconds <= 20
-                        ? new Color(1f, 0.82f, 0.35f, 1f)
-                        : new Color(0.92f, 0.96f, 1f, 1f);
-
-                    if (seconds <= 10 && seconds != lastDisplayedBlitzSecond)
+                    if (seconds != lastDisplayedBlitzSecond)
                     {
-                        timerText.transform.DOKill();
-                        timerText.transform.DOPunchScale(Vector3.one * 0.16f, 0.16f, 6, 0.7f);
+                        ApplyBlitzTimerPalette(seconds);
+                        SetBlitzTimerUrgency(seconds <= 10);
                     }
 
                     lastDisplayedBlitzSecond = seconds;
@@ -281,6 +283,7 @@ namespace ChromaBlast
                 else
                 {
                     lastDisplayedBlitzSecond = -1;
+                    SetBlitzTimerUrgency(false);
                 }
             }
 
@@ -3366,6 +3369,133 @@ namespace ChromaBlast
             {
                 chainText.alignment = TextAlignmentOptions.Center;
             }
+        }
+
+        private void StylePremiumBlitzTimer()
+        {
+            if (timerText == null)
+            {
+                return;
+            }
+
+            TMP_FontAsset scoreFont = Resources.Load<TMP_FontAsset>(ScoreFontPath);
+            if (scoreFont != null)
+            {
+                timerText.font = scoreFont;
+            }
+
+            timerText.fontStyle |= FontStyles.Bold;
+            timerText.enableAutoSizing = true;
+            timerText.fontSize = 78f;
+            timerText.fontSizeMax = 78f;
+            timerText.fontSizeMin = 48f;
+            timerText.characterSpacing = -1f;
+            timerText.alignment = TextAlignmentOptions.Center;
+            timerText.color = Color.white;
+            timerText.enableVertexGradient = true;
+            timerText.outlineWidth = 0.055f;
+            timerText.outlineColor = new Color32(70, 145, 218, 230);
+            timerText.raycastTarget = false;
+            EnsureTextShadow(timerText, new Color(0f, 0.025f, 0.08f, 0.52f), new Vector2(4f, -6f));
+
+            RectTransform timerRect = timerText.transform as RectTransform;
+            if (timerRect != null)
+            {
+                timerRect.anchorMin = new Vector2(0.5f, 0.93f);
+                timerRect.anchorMax = timerRect.anchorMin;
+                timerRect.pivot = new Vector2(0.5f, 0.5f);
+                timerRect.anchoredPosition = Vector2.zero;
+                timerRect.sizeDelta = new Vector2(360f, 110f);
+                timerRect.localScale = Vector3.one;
+            }
+
+            ApplyBlitzTimerPalette(int.MaxValue);
+        }
+
+        private void ApplyBlitzTimerPalette(int seconds)
+        {
+            if (timerText == null)
+            {
+                return;
+            }
+
+            timerText.color = Color.white;
+            timerText.enableVertexGradient = true;
+            if (seconds <= 10)
+            {
+                timerText.colorGradient = new VertexGradient(
+                    new Color32(255, 244, 244, 255),
+                    new Color32(255, 244, 244, 255),
+                    new Color32(255, 45, 70, 255),
+                    new Color32(255, 45, 70, 255));
+                timerText.outlineColor = new Color32(126, 8, 28, 242);
+                return;
+            }
+
+            if (seconds <= 20)
+            {
+                timerText.colorGradient = new VertexGradient(
+                    new Color32(255, 255, 244, 255),
+                    new Color32(255, 255, 244, 255),
+                    new Color32(255, 187, 48, 255),
+                    new Color32(255, 187, 48, 255));
+                timerText.outlineColor = new Color32(150, 78, 5, 235);
+                return;
+            }
+
+            timerText.colorGradient = new VertexGradient(
+                new Color32(255, 255, 255, 255),
+                new Color32(255, 255, 255, 255),
+                new Color32(214, 241, 255, 255),
+                new Color32(214, 241, 255, 255));
+            timerText.outlineColor = new Color32(70, 145, 218, 230);
+        }
+
+        private void SetBlitzTimerUrgency(bool urgent)
+        {
+            if (timerText == null)
+            {
+                return;
+            }
+
+            if (urgent)
+            {
+                if (blitzUrgencyRoutine != null)
+                {
+                    return;
+                }
+
+                timerText.transform.DOKill();
+                timerText.transform.localScale = Vector3.one;
+                blitzUrgencyRoutine = StartCoroutine(BlitzUrgencyPulseRoutine());
+                return;
+            }
+
+            if (blitzUrgencyRoutine != null)
+            {
+                StopCoroutine(blitzUrgencyRoutine);
+                blitzUrgencyRoutine = null;
+            }
+
+            timerText.transform.localScale = Vector3.one;
+        }
+
+        private IEnumerator BlitzUrgencyPulseRoutine()
+        {
+            const float cycleDuration = 0.68f;
+            const float pulseScale = 0.10f;
+            float elapsed = 0f;
+
+            while (timerText != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float phase = Mathf.Repeat(elapsed, cycleDuration) / cycleDuration;
+                float strength = 0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f);
+                timerText.transform.localScale = Vector3.one * (1f + pulseScale * strength);
+                yield return null;
+            }
+
+            blitzUrgencyRoutine = null;
         }
 
         private void StyleGameplayButtons()
