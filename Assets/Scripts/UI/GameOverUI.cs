@@ -49,7 +49,20 @@ namespace ChromaBlast
             }
 
             DisableLegacyVisuals();
+            ApplyCurrentThemeBackground();
             CacheRestartFinalPosition();
+        }
+
+        private void OnEnable()
+        {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            ThemeCatalog.ThemeChanged += HandleThemeChanged;
+            ApplyCurrentThemeBackground();
+        }
+
+        private void OnDisable()
+        {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
         }
 
         public void Initialize(GameManager owner)
@@ -82,6 +95,7 @@ namespace ChromaBlast
             }
 
             DisableLegacyVisuals();
+            ApplyCurrentThemeBackground();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
             WireRestartButtonOnce();
@@ -315,6 +329,38 @@ namespace ChromaBlast
                 scoreValueText.text =
                     Mathf.Max(0, value).ToString(CultureInfo.InvariantCulture);
             }
+        }
+
+        private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
+        {
+            ApplyThemeBackground(resolvedTheme);
+        }
+
+        private void ApplyCurrentThemeBackground()
+        {
+            ApplyThemeBackground(ThemeCatalog.Current);
+        }
+
+        private void ApplyThemeBackground(ThemeAssetSet theme)
+        {
+            if (backgroundImage == null || theme == null || theme.GameOverBackground == null)
+            {
+                return;
+            }
+
+            backgroundImage.sprite = theme.GameOverBackground;
+            backgroundImage.color = Color.white;
+            backgroundImage.type = Image.Type.Simple;
+            backgroundImage.preserveAspect = true;
+
+            AspectRatioFitter fitter = backgroundImage.GetComponent<AspectRatioFitter>();
+            if (fitter == null)
+            {
+                fitter = backgroundImage.gameObject.AddComponent<AspectRatioFitter>();
+            }
+
+            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fitter.aspectRatio = theme.GameOverBackground.rect.width / theme.GameOverBackground.rect.height;
         }
 
         private static float GetScoreDuration(int finalScore)

@@ -13,16 +13,18 @@ MonoBehaviour:
   m_Name: Theme_Crystal
   m_EditorClassIdentifier:
   themeType: 4
-  displayName: CRYSTAL
+  displayName: Flower Garden
   coinCost: 2200
-  previewSprite: {fileID: 0}
-  gameplayBackground: {fileID: 0}
-  boardSurfaceSprite: {fileID: 0}
-  tileCyan: {fileID: 0}
-  tileMagenta: {fileID: 0}
-  tileLime: {fileID: 0}
-  tileAmber: {fileID: 0}
-  effectColorCyan: {r: 0.91764706, g: 0.972549, b: 1, a: 1}
-  effectColorMagenta: {r: 0.63529414, g: 0.42352942, b: 1, a: 1}
-  effectColorLime: {r: 0.13725491, g: 0.34117648, b: 0.84705883, a: 1}
-  effectColorAmber: {r: 0.9137255, g: 0.08235294, b: 0.36862746, a: 1}
+  previewSprite: {fileID: 21300000, guid: 9affb38af275457695deac72753a7a1b, type: 3}
+  menuBackground: {fileID: 21300000, guid: ac7ba4d6c7df491180d7857cb2eb9ec9, type: 3}
+  gameplayBackground: {fileID: 21300000, guid: 91fd26d9d168426a8bfa81db46d045c1, type: 3}
+  gameOverBackground: {fileID: 21300000, guid: 2e5f573a8f5e4ee894f2d8135ccf5e01, type: 3}
+  boardSurfaceSprite: {fileID: 21300000, guid: 9affb38af275457695deac72753a7a1b, type: 3}
+  tileCyan: {fileID: 21300000, guid: 930b1a19500e4278a1f5014e925b25cf, type: 3}
+  tileMagenta: {fileID: 21300000, guid: 7f353d1647b643e4b6ffa0d59353fa6c, type: 3}
+  tileLime: {fileID: 21300000, guid: 27d9d54074bc46f9baf833427b3f6675, type: 3}
+  tileAmber: {fileID: 21300000, guid: 95a42275bebb4660ac88c2a5e7f27777, type: 3}
+  effectColorCyan: {r: 0.9098039, g: 0, b: 0.4509804, a: 1}
+  effectColorMagenta: {r: 0.9098039, g: 0.75686276, b: 0, a: 1}
+  effectColorLime: {r: 0.4509804, g: 0, b: 0.9098039, a: 1}
+  effectColorAmber: {r: 0.29803923, g: 0.9098039, b: 0, a: 1}

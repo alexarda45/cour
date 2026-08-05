@@ -313,12 +313,15 @@ namespace ChromaBlast
 
         private void OnEnable()
         {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            ThemeCatalog.ThemeChanged += HandleThemeChanged;
             HideGameplaySceneObjects();
             Refresh();
         }
 
         private void OnDisable()
         {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
             StopRewardsRefreshRoutine();
             RestoreOceanLogoAfterRewards();
             RestoreGameplaySceneObjects();
@@ -326,6 +329,7 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
             StopRewardsRefreshRoutine();
             RestoreOceanLogoAfterRewards();
             RestoreGameplaySceneObjects();
@@ -1530,7 +1534,12 @@ namespace ChromaBlast
                 return;
             }
 
-            Sprite backgroundSprite = Resources.Load<Sprite>(OceanBackgroundPath);
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite backgroundSprite = activeTheme == null ? null : activeTheme.MenuBackground;
+            if (backgroundSprite == null)
+            {
+                backgroundSprite = Resources.Load<Sprite>(OceanBackgroundPath);
+            }
             if (backgroundSprite == null)
             {
                 Debug.LogError($"Missing Ocean sprite at Resources path: {OceanBackgroundPath}");
@@ -1588,6 +1597,15 @@ namespace ChromaBlast
             backgroundAspect.aspectRatio = backgroundSprite.rect.width / backgroundSprite.rect.height;
             oceanBackgroundImage.transform.SetAsFirstSibling();
             DisableLegacyBackground(menuRect);
+        }
+
+        private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
+        {
+            EnsureOceanBackground();
+            if (themesRoot != null && themesRoot.activeSelf && SaveManager.Instance != null)
+            {
+                RefreshThemesOverlay(SaveManager.Instance, false);
+            }
         }
 
         private void DisableLegacyBackground(RectTransform menuRect)

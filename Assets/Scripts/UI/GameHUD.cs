@@ -898,9 +898,10 @@ namespace ChromaBlast
                     oceanBackgroundImage.sprite = backgroundSprite;
                     oceanBackgroundImage.color = Color.white;
                     oceanBackgroundImage.type = Image.Type.Simple;
-                    oceanBackgroundImage.preserveAspect = false;
+                    oceanBackgroundImage.preserveAspect = true;
                     oceanBackgroundImage.raycastTarget = false;
                     StretchToFullPortrait(oceanBackgroundImage.rectTransform);
+                    ConfigureAspectCover(oceanBackgroundImage, backgroundSprite);
                     oceanBackgroundImage.transform.SetAsFirstSibling();
                 }
             }
@@ -3403,6 +3404,23 @@ namespace ChromaBlast
             {
                 chainText.alignment = TextAlignmentOptions.Center;
             }
+        }
+
+        private static void ConfigureAspectCover(Image image, Sprite sprite)
+        {
+            if (image == null || sprite == null)
+            {
+                return;
+            }
+
+            AspectRatioFitter fitter = image.GetComponent<AspectRatioFitter>();
+            if (fitter == null)
+            {
+                fitter = image.gameObject.AddComponent<AspectRatioFitter>();
+            }
+
+            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
         }
 
         private void StylePremiumBlitzTimer()

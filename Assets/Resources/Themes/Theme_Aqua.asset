@@ -13,16 +13,18 @@ MonoBehaviour:
   m_Name: Theme_Aqua
   m_EditorClassIdentifier:
   themeType: 5
-  displayName: AQUA
+  displayName: Tropical Beach
   coinCost: 3000
-  previewSprite: {fileID: 0}
-  gameplayBackground: {fileID: 0}
-  boardSurfaceSprite: {fileID: 0}
-  tileCyan: {fileID: 0}
-  tileMagenta: {fileID: 0}
-  tileLime: {fileID: 0}
-  tileAmber: {fileID: 0}
-  effectColorCyan: {r: 0.35686275, g: 0.90588236, b: 1, a: 1}
-  effectColorMagenta: {r: 0.4862745, g: 1, b: 0.87058824, a: 1}
-  effectColorLime: {r: 0.38431373, g: 0.9098039, b: 0.5411765, a: 1}
-  effectColorAmber: {r: 0.9647059, g: 0.96862745, b: 1, a: 1}
+  previewSprite: {fileID: 21300000, guid: ce2ee61e06374512b9f7e8661b72d2f3, type: 3}
+  menuBackground: {fileID: 21300000, guid: 82c5f76885d744d6ad379a2e4416d777, type: 3}
+  gameplayBackground: {fileID: 21300000, guid: c7d6b73349ca40d49761c80a4d4e9b7d, type: 3}
+  gameOverBackground: {fileID: 21300000, guid: 274362441cee489fa3692c70b1f4ffb0, type: 3}
+  boardSurfaceSprite: {fileID: 21300000, guid: ce2ee61e06374512b9f7e8661b72d2f3, type: 3}
+  tileCyan: {fileID: 21300000, guid: b03b0ab6bdae4fa3b52f54f9e6414419, type: 3}
+  tileMagenta: {fileID: 21300000, guid: a0de096925a3476c8292bec37907a019, type: 3}
+  tileLime: {fileID: 21300000, guid: a6499baec1a048e2bd0dcaa622cfbd2c, type: 3}
+  tileAmber: {fileID: 21300000, guid: daf0023927d3497f854ae18b1b5fda57, type: 3}
+  effectColorCyan: {r: 0, g: 0.9098039, b: 0.83137256, a: 1}
+  effectColorMagenta: {r: 0.9098039, g: 0.3764706, b: 0, a: 1}
+  effectColorLime: {r: 0.9098039, g: 0.7294118, b: 0, a: 1}
+  effectColorAmber: {r: 0, g: 0.9098039, b: 0.15294118, a: 1}

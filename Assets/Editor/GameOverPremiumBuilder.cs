@@ -109,12 +109,27 @@ public static class GameOverPremiumBuilder
         ConfigureStretch(overlay as RectTransform);
         overlay.name = "GameOverOverlay";
 
-        Image background = GetOrAdd<Image>(overlay.gameObject);
-        background.sprite = LoadSprite(BackgroundPath);
+        Image overlayRaycastImage = GetOrAdd<Image>(overlay.gameObject);
+        overlayRaycastImage.sprite = null;
+        overlayRaycastImage.color = Color.clear;
+        overlayRaycastImage.raycastTarget = true;
+
+        RectTransform backgroundRect = GetOrMoveRect(overlay, "ThemeGameOverBackground");
+        ConfigureStretch(backgroundRect);
+        ThemeAssetSet activeTheme = ThemeCatalog.Current;
+        Sprite themedBackground = activeTheme == null ? null : activeTheme.GameOverBackground;
+        Image background = GetOrAdd<Image>(backgroundRect.gameObject);
+        background.sprite = themedBackground != null ? themedBackground : LoadSprite(BackgroundPath);
         background.type = Image.Type.Simple;
-        background.preserveAspect = false;
+        background.preserveAspect = true;
         background.color = Color.white;
-        background.raycastTarget = true;
+        background.raycastTarget = false;
+        AspectRatioFitter backgroundFitter = GetOrAdd<AspectRatioFitter>(backgroundRect.gameObject);
+        backgroundFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        backgroundFitter.aspectRatio = background.sprite == null
+            ? 9f / 16f
+            : background.sprite.rect.width / background.sprite.rect.height;
+        backgroundRect.SetAsFirstSibling();
 
         RectTransform panel = GetOrMoveRect(overlay, "GameOverPanel");
         ConfigureStretch(panel);

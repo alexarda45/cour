@@ -12,7 +12,9 @@ namespace ChromaBlast
         [SerializeField] private Sprite previewSprite;
 
         [Header("Gameplay Artwork")]
+        [SerializeField] private Sprite menuBackground;
         [SerializeField] private Sprite gameplayBackground;
+        [SerializeField] private Sprite gameOverBackground;
         [SerializeField] private Sprite boardSurfaceSprite;
 
         [Header("Tile Artwork")]
@@ -31,11 +33,15 @@ namespace ChromaBlast
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? themeType.ToString().ToUpperInvariant() : displayName;
         public int CoinCost => Mathf.Max(0, coinCost);
         public Sprite PreviewSprite => previewSprite != null ? previewSprite : boardSurfaceSprite;
+        public Sprite MenuBackground => menuBackground;
         public Sprite GameplayBackground => gameplayBackground;
+        public Sprite GameOverBackground => gameOverBackground;
         public Sprite BoardSurfaceSprite => boardSurfaceSprite;
 
         public bool HasCompleteCoreArtwork =>
+            menuBackground != null &&
             gameplayBackground != null &&
+            gameOverBackground != null &&
             boardSurfaceSprite != null &&
             tileCyan != null &&
             tileMagenta != null &&
@@ -47,7 +53,9 @@ namespace ChromaBlast
             get
             {
                 string missing = string.Empty;
+                AppendMissing(ref missing, menuBackground, nameof(MenuBackground));
                 AppendMissing(ref missing, gameplayBackground, nameof(GameplayBackground));
+                AppendMissing(ref missing, gameOverBackground, nameof(GameOverBackground));
                 AppendMissing(ref missing, boardSurfaceSprite, nameof(BoardSurfaceSprite));
                 AppendMissing(ref missing, tileCyan, nameof(tileCyan));
                 AppendMissing(ref missing, tileMagenta, nameof(tileMagenta));

@@ -13,16 +13,18 @@ MonoBehaviour:
   m_Name: Theme_Neon
   m_EditorClassIdentifier:
   themeType: 0
-  displayName: NEON
+  displayName: Cherry Night
   coinCost: 0
-  previewSprite: {fileID: 0}
-  gameplayBackground: {fileID: 0}
-  boardSurfaceSprite: {fileID: 0}
-  tileCyan: {fileID: 0}
-  tileMagenta: {fileID: 0}
-  tileLime: {fileID: 0}
-  tileAmber: {fileID: 0}
-  effectColorCyan: {r: 0.09019608, g: 0.9019608, b: 1, a: 1}
-  effectColorMagenta: {r: 1, g: 0.30980393, b: 0.84705883, a: 1}
-  effectColorLime: {r: 0.6509804, g: 1, b: 0.25882354, a: 1}
-  effectColorAmber: {r: 1, g: 0.81960785, b: 0.4, a: 1}
+  previewSprite: {fileID: 21300000, guid: 3fb1eab40cd24e2db784ca4c59c4c22b, type: 3}
+  menuBackground: {fileID: 21300000, guid: c1655ee8fbf54881936b7f4c5677ec0a, type: 3}
+  gameplayBackground: {fileID: 21300000, guid: 3a22607b7b5b4bc2b7a6cd0a47f421ac, type: 3}
+  gameOverBackground: {fileID: 21300000, guid: 10049568fe134b6fb00f40f55979a7a1, type: 3}
+  boardSurfaceSprite: {fileID: 21300000, guid: 3fb1eab40cd24e2db784ca4c59c4c22b, type: 3}
+  tileCyan: {fileID: 21300000, guid: 1f2609086bf44efda48bca341ff49b84, type: 3}
+  tileMagenta: {fileID: 21300000, guid: 7e7d9158a5a347abaafd1f6457ef8d14, type: 3}
+  tileLime: {fileID: 21300000, guid: 25c3ddef056547a1afdd52bd7d0ee520, type: 3}
+  tileAmber: {fileID: 21300000, guid: d832a08084054f3eacb07ea9ada06138, type: 3}
+  effectColorCyan: {r: 0.9098039, g: 0, b: 0.14901961, a: 1}
+  effectColorMagenta: {r: 0.9098039, g: 0, b: 0.60784316, a: 1}
+  effectColorLime: {r: 0.60784316, g: 0, b: 0.9098039, a: 1}
+  effectColorAmber: {r: 0.9098039, g: 0.68235296, b: 0, a: 1}

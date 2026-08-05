@@ -13,16 +13,18 @@ MonoBehaviour:
   m_Name: Theme_Gold
   m_EditorClassIdentifier:
   themeType: 3
-  displayName: GOLD
+  displayName: Desert Sunset
   coinCost: 1500
-  previewSprite: {fileID: 0}
-  gameplayBackground: {fileID: 0}
-  boardSurfaceSprite: {fileID: 0}
-  tileCyan: {fileID: 0}
-  tileMagenta: {fileID: 0}
-  tileLime: {fileID: 0}
-  tileAmber: {fileID: 0}
-  effectColorCyan: {r: 1, g: 0.8784314, b: 0.4, a: 1}
-  effectColorMagenta: {r: 1, g: 0.62352943, b: 0.10980392, a: 1}
-  effectColorLime: {r: 0.96862745, g: 0.14509805, b: 0.52156866, a: 1}
-  effectColorAmber: {r: 0.5411765, g: 0.7882353, b: 0.14901961, a: 1}
+  previewSprite: {fileID: 21300000, guid: 139bd4434e6f48dcbf13566142f85fae, type: 3}
+  menuBackground: {fileID: 21300000, guid: d0780afd3db44c008986d9615dc4d80a, type: 3}
+  gameplayBackground: {fileID: 21300000, guid: 7cad7ac37f814713b026f5393d43625d, type: 3}
+  gameOverBackground: {fileID: 21300000, guid: 4cba1207e0194b8e9992a53f27c4870b, type: 3}
+  boardSurfaceSprite: {fileID: 21300000, guid: 139bd4434e6f48dcbf13566142f85fae, type: 3}
+  tileCyan: {fileID: 21300000, guid: 13c7f091752844c584caa9c033edea72, type: 3}
+  tileMagenta: {fileID: 21300000, guid: 5cd4ed2242f74ddfa0f1f4f74c0dc2a5, type: 3}
+  tileLime: {fileID: 21300000, guid: 2eb2a5b434854831b5243764bbfddbbf, type: 3}
+  tileAmber: {fileID: 21300000, guid: fb0ad40b0c064007beeba723aa2216ee, type: 3}
+  effectColorCyan: {r: 0.9098039, g: 0.29803923, b: 0, a: 1}
+  effectColorMagenta: {r: 0.9098039, g: 0, b: 0.14901961, a: 1}
+  effectColorLime: {r: 0.68235296, g: 0, b: 0.9098039, a: 1}
+  effectColorAmber: {r: 0.9098039, g: 0.6392157, b: 0, a: 1}
