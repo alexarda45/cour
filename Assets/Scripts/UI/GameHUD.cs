@@ -3430,7 +3430,7 @@ namespace ChromaBlast
                     capsuleRect.anchorMax = timerRect.anchorMax;
                     capsuleRect.pivot = timerRect.pivot;
                     capsuleRect.anchoredPosition = timerRect.anchoredPosition;
-                    capsuleRect.sizeDelta = new Vector2(350f, 232f);
+                    capsuleRect.sizeDelta = new Vector2(287f, 190f);
                     capsuleRect.localScale = Vector3.one;
 
                     blitzTimerCapsuleImage = GetOrAddImage(capsuleRect.gameObject);
