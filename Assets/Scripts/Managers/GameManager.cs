@@ -250,7 +250,7 @@ namespace ChromaBlast
                 }
             }
 
-            RefreshHud();
+            hud?.RefreshBlitzTimer(currentMode, blitzTimeRemaining);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

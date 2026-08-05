@@ -84,6 +84,7 @@ namespace ChromaBlast
         private int lastDisplayedBlitzSecond = -1;
         private Coroutine blitzUrgencyRoutine;
         private Image oceanBackgroundImage;
+        private Image blitzTimerCapsuleImage;
         private TMP_Text scoreShadowText;
         private TMP_Text newBestText;
         private RectTransform bestScoreHudRoot;
@@ -265,27 +266,7 @@ namespace ChromaBlast
 
             DisableLegacyChainText();
 
-            if (timerText != null)
-            {
-                timerText.gameObject.SetActive(mode == GameMode.Blitz);
-                if (mode == GameMode.Blitz)
-                {
-                    int seconds = Mathf.CeilToInt(blitzSeconds);
-                    timerText.text = seconds.ToString();
-                    if (seconds != lastDisplayedBlitzSecond)
-                    {
-                        ApplyBlitzTimerPalette(seconds);
-                        SetBlitzTimerUrgency(seconds <= 10);
-                    }
-
-                    lastDisplayedBlitzSecond = seconds;
-                }
-                else
-                {
-                    lastDisplayedBlitzSecond = -1;
-                    SetBlitzTimerUrgency(false);
-                }
-            }
+            RefreshBlitzTimer(mode, blitzSeconds);
 
             if (undoButton != null)
             {
@@ -339,6 +320,39 @@ namespace ChromaBlast
             {
                 rankProgressView.Refresh(SaveManager.Instance.Data.rankPoints);
             }
+        }
+
+        public void RefreshBlitzTimer(GameMode mode, float blitzSeconds)
+        {
+            bool visible = mode == GameMode.Blitz;
+            if (blitzTimerCapsuleImage != null)
+            {
+                blitzTimerCapsuleImage.gameObject.SetActive(visible);
+            }
+
+            if (timerText == null)
+            {
+                return;
+            }
+
+            timerText.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                lastDisplayedBlitzSecond = -1;
+                SetBlitzTimerUrgency(false);
+                return;
+            }
+
+            int seconds = Mathf.Max(0, Mathf.CeilToInt(blitzSeconds));
+            timerText.text = seconds.ToString();
+            if (seconds == lastDisplayedBlitzSecond)
+            {
+                return;
+            }
+
+            ApplyBlitzTimerPalette(seconds);
+            SetBlitzTimerUrgency(seconds <= 10);
+            lastDisplayedBlitzSecond = seconds;
         }
 
         public void PunchScore(bool pure)
@@ -3407,6 +3421,35 @@ namespace ChromaBlast
                 timerRect.anchoredPosition = Vector2.zero;
                 timerRect.sizeDelta = new Vector2(360f, 110f);
                 timerRect.localScale = Vector3.one;
+
+                RectTransform parentRect = timerRect.parent as RectTransform;
+                if (parentRect != null)
+                {
+                    RectTransform capsuleRect = GetOrCreateChildRect(parentRect, "BlitzTimerCapsule");
+                    capsuleRect.anchorMin = timerRect.anchorMin;
+                    capsuleRect.anchorMax = timerRect.anchorMax;
+                    capsuleRect.pivot = timerRect.pivot;
+                    capsuleRect.anchoredPosition = timerRect.anchoredPosition;
+                    capsuleRect.sizeDelta = new Vector2(350f, 232f);
+                    capsuleRect.localScale = Vector3.one;
+
+                    blitzTimerCapsuleImage = GetOrAddImage(capsuleRect.gameObject);
+                    Sprite capsuleSprite = LoadOceanSprite(BestScoreCapsulePath);
+                    blitzTimerCapsuleImage.sprite = capsuleSprite;
+                    blitzTimerCapsuleImage.color = Color.white;
+                    blitzTimerCapsuleImage.type = Image.Type.Simple;
+                    blitzTimerCapsuleImage.preserveAspect = true;
+                    blitzTimerCapsuleImage.raycastTarget = false;
+                    blitzTimerCapsuleImage.enabled = capsuleSprite != null;
+                    EnsureGraphicShadow(
+                        capsuleRect.gameObject,
+                        new Color(0f, 0.025f, 0.10f, 0.46f),
+                        new Vector2(0f, -6f));
+
+                    int timerSiblingIndex = timerRect.GetSiblingIndex();
+                    capsuleRect.SetSiblingIndex(timerSiblingIndex);
+                    timerRect.SetSiblingIndex(timerSiblingIndex + 1);
+                }
             }
 
             ApplyBlitzTimerPalette(int.MaxValue);
