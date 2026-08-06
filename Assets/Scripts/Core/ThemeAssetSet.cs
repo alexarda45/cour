@@ -17,6 +17,9 @@ namespace ChromaBlast
         [SerializeField] private Sprite gameOverBackground;
         [SerializeField] private Sprite boardSurfaceSprite;
 
+        [Header("UI Artwork")]
+        [SerializeField] private Sprite themesPanelBackgroundSprite;
+
         [Header("Tile Artwork")]
         [SerializeField] private Sprite tileCyan;
         [SerializeField] private Sprite tileMagenta;
@@ -41,6 +44,10 @@ namespace ChromaBlast
         public Sprite GameplayBackground => gameplayBackground;
         public Sprite GameOverBackground => gameOverBackground;
         public Sprite BoardSurfaceSprite => boardSurfaceSprite;
+        // Intentionally NOT part of HasCompleteCoreArtwork: Ocean is the ultimate
+        // fallback theme for every other incomplete theme, and doesn't have this
+        // art yet, so requiring it here would break that fallback chain entirely.
+        public Sprite ThemesPanelBackgroundSprite => themesPanelBackgroundSprite;
         public Color CapsuleTintColor => WithOpaqueAlpha(capsuleTintColor);
         public Color CrownTintColor => WithOpaqueAlpha(crownTintColor);
 

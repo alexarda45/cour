@@ -1032,9 +1032,8 @@ namespace ChromaBlast
 
             SetRect(themesPanel, new Vector2(0.045f, 0.04f), new Vector2(0.955f, 0.96f), Vector2.zero, Vector2.zero);
             Image panelImage = themesPanel.GetComponent<Image>();
-            UISpriteFactory.ApplyRounded(panelImage, 0.075f);
-            panelImage.color = new Color(0.015f, 0.075f, 0.18f, 0.985f);
             panelImage.raycastTarget = true;
+            ApplyThemesPanelBackground();
 
             Outline panelOutline = themesPanel.GetComponent<Outline>();
             if (panelOutline == null)
@@ -1800,9 +1799,43 @@ namespace ChromaBlast
             DisableLegacyBackground(menuRect);
         }
 
+        // Simple direct sprite swap, same pattern as the Best Score capsule/crown:
+        // assign the sprite, force Image.color = white, no material/shader. Falls
+        // back to the existing procedural rounded panel when a theme doesn't have
+        // this art yet (currently just Ocean).
+        private void ApplyThemesPanelBackground()
+        {
+            if (themesPanel == null)
+            {
+                return;
+            }
+
+            Image panelImage = themesPanel.GetComponent<Image>();
+            if (panelImage == null)
+            {
+                return;
+            }
+
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite backgroundSprite = activeTheme == null ? null : activeTheme.ThemesPanelBackgroundSprite;
+            if (backgroundSprite != null)
+            {
+                panelImage.sprite = backgroundSprite;
+                panelImage.type = Image.Type.Simple;
+                panelImage.preserveAspect = true;
+                panelImage.color = Color.white;
+            }
+            else
+            {
+                UISpriteFactory.ApplyRounded(panelImage, 0.075f);
+                panelImage.color = new Color(0.015f, 0.075f, 0.18f, 0.985f);
+            }
+        }
+
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             EnsureOceanBackground();
+            ApplyThemesPanelBackground();
             StyleThemeMenuButton();
             if (themesRoot != null && themesRoot.activeSelf && SaveManager.Instance != null)
             {
