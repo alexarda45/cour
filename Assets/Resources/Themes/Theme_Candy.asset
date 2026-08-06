@@ -31,3 +31,5 @@ MonoBehaviour:
   effectColorAmber: {r: 0.53333336, g: 0, b: 0.9098039, a: 1}
   capsuleTintColor: {r: 0.9529412, g: 0.6509804, b: 0.9098039, a: 1}
   crownTintColor: {r: 1, g: 0.81960785, b: 0.9411765, a: 1}
+  titleTextColor: {r: 0.22745098, g: 0.039215688, b: 0.13333334, a: 1}
+  popupButtonColor: {r: 0.88, g: 0.3, b: 0.68, a: 1}

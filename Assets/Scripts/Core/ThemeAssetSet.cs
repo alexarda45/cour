@@ -36,6 +36,10 @@ namespace ChromaBlast
         [SerializeField] private Color capsuleTintColor = Color.white;
         [SerializeField] private Color crownTintColor = Color.white;
 
+        [Header("Themes Popup Colours")]
+        [SerializeField] private Color titleTextColor = Color.white;
+        [SerializeField] private Color popupButtonColor = Color.white;
+
         public ThemeType ThemeType => themeType;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? themeType.ToString().ToUpperInvariant() : displayName;
         public int CoinCost => Mathf.Max(0, coinCost);
@@ -50,6 +54,8 @@ namespace ChromaBlast
         public Sprite ThemesPanelBackgroundSprite => themesPanelBackgroundSprite;
         public Color CapsuleTintColor => WithOpaqueAlpha(capsuleTintColor);
         public Color CrownTintColor => WithOpaqueAlpha(crownTintColor);
+        public Color TitleTextColor => WithOpaqueAlpha(titleTextColor);
+        public Color PopupButtonColor => WithOpaqueAlpha(popupButtonColor);
 
         public bool HasCompleteCoreArtwork =>
             menuBackground != null &&

@@ -60,8 +60,10 @@ namespace ChromaBlast
         [SerializeField] private Image[] themeSwatches;
         private GameObject themesRoot;
         private RectTransform themesPanel;
+        private TMP_Text themesTitleText;
         private TMP_Text themesCoinText;
         private TMP_Text themesFeedbackText;
+        private Button themesApplyButton;
         private Button themesCloseButton;
         private Coroutine themesTransitionRoutine;
         private readonly List<ThemeCardRuntime> themeCards = new List<ThemeCardRuntime>();
@@ -129,6 +131,7 @@ namespace ChromaBlast
             public Image Gloss;
             public Image InnerRim;
             public Image[] Swatches;
+            public Image UseButtonImage;
         }
 
         private void Awake()
@@ -421,9 +424,11 @@ namespace ChromaBlast
 
         private void OpenThemes()
         {
+            Debug.Log("[ThemeButton] OnClick fired - OpenThemes() called.");
             SaveManager save = SaveManager.Instance;
             if (save == null)
             {
+                Debug.LogWarning("[ThemeButton] OpenThemes() aborted: SaveManager.Instance is null.");
                 return;
             }
 
@@ -1064,10 +1069,10 @@ namespace ChromaBlast
             panelGloss.raycastTarget = false;
             panelGloss.transform.SetSiblingIndex(1);
 
-            TMP_Text title = EnsureThemeText(themesPanel, "ThemesTitle", "THEMES", 58f, TextAlignmentOptions.Center);
-            SetRect(title.rectTransform, new Vector2(0.18f, 0.91f), new Vector2(0.82f, 0.975f), Vector2.zero, Vector2.zero);
-            title.color = new Color(0.94f, 1f, 1f, 1f);
-            EnsureTextShadow(title, new Color(0f, 0.02f, 0.10f, 0.78f), new Vector2(0f, -3f));
+            themesTitleText = EnsureThemeText(themesPanel, "ThemesTitle", "THEMES", 58f, TextAlignmentOptions.Center);
+            SetRect(themesTitleText.rectTransform, new Vector2(0.18f, 0.91f), new Vector2(0.82f, 0.975f), Vector2.zero, Vector2.zero);
+            ApplyThemesTitleColor();
+            EnsureTextShadow(themesTitleText, new Color(0f, 0.02f, 0.10f, 0.78f), new Vector2(0f, -3f));
 
             Image coinPill = EnsureThemeImage(themesPanel, "ThemesCoinPill");
             SetRect(coinPill.rectTransform, new Vector2(0.25f, 0.846f), new Vector2(0.75f, 0.90f), Vector2.zero, Vector2.zero);
@@ -1094,11 +1099,13 @@ namespace ChromaBlast
 
             EnsureThemeCards();
             EnsureThemesCloseButton();
-            title.transform.SetAsLastSibling();
-            coinPill.transform.SetSiblingIndex(Mathf.Max(0, title.transform.GetSiblingIndex() - 1));
+            EnsureThemesApplyButton();
+            themesTitleText.transform.SetAsLastSibling();
+            coinPill.transform.SetSiblingIndex(Mathf.Max(0, themesTitleText.transform.GetSiblingIndex() - 1));
             themesCoinText.transform.SetAsLastSibling();
             themesFeedbackText.transform.SetAsLastSibling();
             themesCloseButton.transform.SetAsLastSibling();
+            themesApplyButton.transform.SetAsLastSibling();
             themesRoot.transform.SetAsLastSibling();
         }
 
@@ -1114,6 +1121,7 @@ namespace ChromaBlast
             for (int i = 0; i < ChromaPalette.ThemeCount; i++)
             {
                 ThemeType theme = (ThemeType)i;
+                ThemeType capturedTheme = theme;
                 string cardName = $"ThemeCard_{theme}";
                 Transform existing = themesPanel.Find(cardName);
                 Button cardButton = existing == null ? null : existing.GetComponent<Button>();
@@ -1152,9 +1160,32 @@ namespace ChromaBlast
                 SetRect(cardTitle.rectTransform, new Vector2(0.35f, 0.53f), new Vector2(0.95f, 0.91f), Vector2.zero, Vector2.zero);
                 EnsureTextShadow(cardTitle, new Color(0f, 0.015f, 0.07f, 0.72f), new Vector2(0f, -2f));
 
-                TMP_Text status = EnsureThemeText(cardButton.transform, "Status", string.Empty, 18f, TextAlignmentOptions.MidlineLeft);
+                // "Use" affordance: a small button occupying the same slot the plain
+                // status label used to sit in, so the card stays compact. It forwards
+                // to the exact same ChooseTheme() call the whole card already uses -
+                // no new selection logic, just a second, more obvious way to trigger it.
+                Transform existingUseButton = cardButton.transform.Find("UseButton");
+                Button useButton = existingUseButton == null ? null : existingUseButton.GetComponent<Button>();
+                if (useButton == null)
+                {
+                    useButton = CreateRuntimeButton("UseButton", cardButton.transform, string.Empty, Color.white, Color.white);
+                }
+
+                SetRect((RectTransform)useButton.transform, new Vector2(0.35f, 0.10f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
+                Image useButtonImage = useButton.image != null ? useButton.image : useButton.GetComponent<Image>();
+                UISpriteFactory.ApplyRounded(useButtonImage, 0.42f);
+                useButton.targetGraphic = useButtonImage;
+                useButton.onClick.RemoveAllListeners();
+                useButton.onClick.AddListener(() => ChooseTheme(capturedTheme));
+
+                TMP_Text status = useButton.GetComponentInChildren<TMP_Text>(true);
                 status.font = premiumFont != null ? premiumFont : status.font;
-                SetRect(status.rectTransform, new Vector2(0.35f, 0.10f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
+                status.fontSize = 18f;
+                status.fontSizeMax = 18f;
+                status.fontSizeMin = 12f;
+                status.alignment = TextAlignmentOptions.Center;
+                status.raycastTarget = false;
+                Stretch(status.rectTransform, new Vector2(6f, 3f), new Vector2(-6f, -3f));
                 EnsureTextShadow(status, new Color(0f, 0.015f, 0.07f, 0.62f), new Vector2(0f, -1f));
 
                 Image cardGloss = EnsureThemeImage(cardButton.transform, "CardGloss");
@@ -1174,11 +1205,37 @@ namespace ChromaBlast
                 previewFrame.color = new Color(0.005f, 0.035f, 0.095f, 0.78f);
                 previewFrame.raycastTarget = false;
 
-                Image artworkPreview = EnsureThemeImage(cardButton.transform, "ArtworkPreview");
-                SetRect(artworkPreview.rectTransform, new Vector2(0.055f, 0.16f), new Vector2(0.295f, 0.84f), Vector2.zero, Vector2.zero);
+                // Mask clips the artwork to the frame's own rounded-rect sprite shape,
+                // so the cover-cropped photo gets genuine rounded corners (not just an
+                // inset margin hiding square ones). Built-in Mask component, no shader.
+                Mask previewMask = previewFrame.GetComponent<Mask>();
+                if (previewMask == null)
+                {
+                    previewMask = previewFrame.gameObject.AddComponent<Mask>();
+                }
+
+                previewMask.showMaskGraphic = true;
+
+                Image artworkPreview = EnsureThemeImage(previewFrame.transform, "ArtworkPreview");
+                Stretch(artworkPreview.rectTransform, Vector2.zero, Vector2.zero);
+                artworkPreview.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                artworkPreview.rectTransform.anchoredPosition = Vector2.zero;
+                artworkPreview.rectTransform.localScale = Vector3.one;
                 artworkPreview.type = Image.Type.Simple;
-                artworkPreview.preserveAspect = true;
+                artworkPreview.preserveAspect = false;
                 artworkPreview.raycastTarget = false;
+
+                // EnvelopeParent scales the sprite to fully cover the frame while
+                // keeping its own aspect ratio, cropping any overflow via the Mask
+                // above - same center-crop pattern already used for the Ocean menu
+                // background (EnsureOceanBackground).
+                AspectRatioFitter artworkFitter = artworkPreview.GetComponent<AspectRatioFitter>();
+                if (artworkFitter == null)
+                {
+                    artworkFitter = artworkPreview.gameObject.AddComponent<AspectRatioFitter>();
+                }
+
+                artworkFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
 
                 Image[] swatches = new Image[4];
                 for (int colorIndex = 0; colorIndex < swatches.Length; colorIndex++)
@@ -1202,7 +1259,6 @@ namespace ChromaBlast
                 cardShadow.effectDistance = new Vector2(0f, -4f);
                 cardShadow.useGraphicAlpha = true;
 
-                ThemeType capturedTheme = theme;
                 cardButton.onClick.RemoveAllListeners();
                 cardButton.onClick.AddListener(() => ChooseTheme(capturedTheme));
 
@@ -1216,7 +1272,8 @@ namespace ChromaBlast
                     PreviewFrame = previewFrame,
                     Gloss = cardGloss,
                     InnerRim = cardInnerRim,
-                    Swatches = swatches
+                    Swatches = swatches,
+                    UseButtonImage = useButtonImage
                 });
             }
         }
@@ -1252,6 +1309,71 @@ namespace ChromaBlast
             themesCloseButton.onClick.AddListener(CloseThemes);
         }
 
+        // Selection already applies immediately when a card/Use button is tapped
+        // (ChooseTheme), so this button doesn't introduce a new pending/staged
+        // selection - it's just a big, obviously-styled way to confirm and close,
+        // same underlying action as the X button.
+        private void EnsureThemesApplyButton()
+        {
+            if (themesPanel == null)
+            {
+                return;
+            }
+
+            Transform existing = themesPanel.Find("ThemesApplyButton");
+            themesApplyButton = existing == null ? null : existing.GetComponent<Button>();
+            if (themesApplyButton == null)
+            {
+                themesApplyButton = CreateRuntimeButton("ThemesApplyButton", themesPanel, "APPLY THEME", Color.white, Color.white);
+            }
+
+            SetRect((RectTransform)themesApplyButton.transform, new Vector2(0.10f, 0.02f), new Vector2(0.90f, 0.095f), Vector2.zero, Vector2.zero);
+            Image applyImage = themesApplyButton.image != null ? themesApplyButton.image : themesApplyButton.GetComponent<Image>();
+            UISpriteFactory.ApplyRounded(applyImage, 0.42f);
+            themesApplyButton.targetGraphic = applyImage;
+
+            TMP_Text applyLabel = themesApplyButton.GetComponentInChildren<TMP_Text>(true);
+            if (applyLabel != null)
+            {
+                applyLabel.text = "APPLY THEME";
+                applyLabel.fontSize = 30f;
+                applyLabel.fontSizeMax = 30f;
+                applyLabel.fontSizeMin = 18f;
+                applyLabel.color = Color.white;
+                applyLabel.raycastTarget = false;
+                TMP_FontAsset premiumFont = Resources.Load<TMP_FontAsset>("Fonts/Fredoka-SemiBold SDF");
+                if (premiumFont != null)
+                {
+                    applyLabel.font = premiumFont;
+                }
+
+                EnsureTextShadow(applyLabel, new Color(0f, 0.02f, 0.10f, 0.72f), new Vector2(0f, -2f));
+            }
+
+            themesApplyButton.onClick.RemoveAllListeners();
+            themesApplyButton.onClick.AddListener(CloseThemes);
+            ApplyThemesApplyButtonColor();
+        }
+
+        // Point 5: Image.color only, active-theme colour - same safe pattern as
+        // ApplyThemesTitleColor / the capsule-crown tint swap.
+        private void ApplyThemesApplyButtonColor()
+        {
+            if (themesApplyButton == null)
+            {
+                return;
+            }
+
+            Image applyImage = themesApplyButton.image;
+            if (applyImage == null)
+            {
+                return;
+            }
+
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            applyImage.color = activeTheme == null ? new Color(0.90f, 0.55f, 0.10f, 1f) : activeTheme.PopupButtonColor;
+        }
+
         private void RefreshThemesOverlay(SaveManager save, bool clearFeedback = true)
         {
             if (save == null)
@@ -1282,7 +1404,7 @@ namespace ChromaBlast
                 int cost = ChromaPalette.GetThemeCoinCost(card.Theme);
                 bool affordable = save.GetCoins() >= cost;
                 ThemeAssetSet definition = ThemeCatalog.GetDefinition(card.Theme);
-                Sprite previewSprite = definition == null ? null : definition.PreviewSprite;
+                Sprite previewSprite = definition == null ? null : definition.MenuBackground;
 
                 Image cardImage = card.Button.image;
                 Color top = ChromaPalette.GetThemeTopColor(card.Theme);
@@ -1359,6 +1481,27 @@ namespace ChromaBlast
                     }
                 }
 
+                if (card.UseButtonImage != null)
+                {
+                    // Point 4: this button is colored with the theme it BELONGS to
+                    // (card.Theme via `definition`), not the globally active theme -
+                    // each card's Use pill reads as that theme's own accent colour.
+                    Color cardOwnThemeColor = definition == null
+                        ? new Color(0.34f, 0.91f, 1f, 1f)
+                        : definition.PopupButtonColor;
+
+                    if (selected)
+                    {
+                        cardOwnThemeColor = new Color(1f, 0.84f, 0.30f, 1f);
+                    }
+                    else if (!unlocked)
+                    {
+                        cardOwnThemeColor.a = affordable ? 0.75f : 0.35f;
+                    }
+
+                    card.UseButtonImage.color = cardOwnThemeColor;
+                }
+
                 if (card.Swatches == null)
                 {
                     continue;
@@ -1369,6 +1512,12 @@ namespace ChromaBlast
                     card.Preview.sprite = previewSprite;
                     card.Preview.color = Color.white;
                     card.Preview.gameObject.SetActive(previewSprite != null);
+
+                    AspectRatioFitter previewFitter = card.Preview.GetComponent<AspectRatioFitter>();
+                    if (previewFitter != null && previewSprite != null)
+                    {
+                        previewFitter.aspectRatio = previewSprite.rect.width / previewSprite.rect.height;
+                    }
                 }
 
                 for (int colorIndex = 0; colorIndex < card.Swatches.Length; colorIndex++)
@@ -1832,10 +1981,26 @@ namespace ChromaBlast
             }
         }
 
+        // TMP color only, same safe pattern as the capsule/crown tint swap above -
+        // no image or shader involved. Falls back to white if the active theme has
+        // no definition yet.
+        private void ApplyThemesTitleColor()
+        {
+            if (themesTitleText == null)
+            {
+                return;
+            }
+
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            themesTitleText.color = activeTheme == null ? Color.white : activeTheme.TitleTextColor;
+        }
+
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             EnsureOceanBackground();
             ApplyThemesPanelBackground();
+            ApplyThemesTitleColor();
+            ApplyThemesApplyButtonColor();
             StyleThemeMenuButton();
             if (themesRoot != null && themesRoot.activeSelf && SaveManager.Instance != null)
             {
