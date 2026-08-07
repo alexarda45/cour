@@ -39,7 +39,7 @@ namespace ChromaBlast
         {
             if (gameObject.name.Contains("Theme"))
             {
-                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerDown on '{gameObject.name}' (instanceID={GetInstanceID()}), button.interactable={(button == null ? "no Button component" : button.interactable.ToString())}.");
+                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerDown on '{gameObject.name}' (path={GetHierarchyPath(transform)}), button.interactable={(button == null ? "no Button component" : button.interactable.ToString())}.");
             }
 
             if (button != null && !button.interactable)
@@ -56,7 +56,7 @@ namespace ChromaBlast
         {
             if (gameObject.name.Contains("Theme"))
             {
-                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerUp on '{gameObject.name}' (instanceID={GetInstanceID()}).");
+                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerUp on '{gameObject.name}' (path={GetHierarchyPath(transform)}).");
             }
 
             Release();
@@ -65,6 +65,23 @@ namespace ChromaBlast
         public void OnPointerExit(PointerEventData eventData)
         {
             Release();
+        }
+
+        private static string GetHierarchyPath(Transform t)
+        {
+            if (t == null)
+            {
+                return "<null>";
+            }
+
+            string path = t.name;
+            while (t.parent != null)
+            {
+                t = t.parent;
+                path = t.name + "/" + path;
+            }
+
+            return path;
         }
 
         private void OnDisable()

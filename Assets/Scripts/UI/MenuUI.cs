@@ -518,7 +518,7 @@ namespace ChromaBlast
             themeButton.interactable = true;
             themeButton.onClick.RemoveListener(OpenThemes);
             themeButton.onClick.AddListener(OpenThemes);
-            Debug.Log($"[ThemeButton] Wired OpenThemes onto '{themeButton.name}' (instanceID={themeButton.GetInstanceID()}, path={GetHierarchyPath(themeButton.transform)}).");
+            Debug.Log($"[ThemeButton] Wired OpenThemes onto '{themeButton.name}' (path={GetHierarchyPath(themeButton.transform)}).");
         }
 
         private static string GetHierarchyPath(Transform t)
