@@ -37,6 +37,11 @@ namespace ChromaBlast
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (gameObject.name.Contains("Theme"))
+            {
+                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerDown on '{gameObject.name}' (instanceID={GetInstanceID()}), button.interactable={(button == null ? "no Button component" : button.interactable.ToString())}.");
+            }
+
             if (button != null && !button.interactable)
             {
                 return;
@@ -49,6 +54,11 @@ namespace ChromaBlast
 
         public void OnPointerUp(PointerEventData eventData)
         {
+            if (gameObject.name.Contains("Theme"))
+            {
+                Debug.Log($"[ThemeButton] UIButtonFeedback.OnPointerUp on '{gameObject.name}' (instanceID={GetInstanceID()}).");
+            }
+
             Release();
         }
 

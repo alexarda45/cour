@@ -435,21 +435,82 @@ namespace ChromaBlast
             }
 
             AudioManager.Instance?.PlayClick();
+            Debug.Log("[ThemeButton] Step 1/4: calling EnsureThemesUi()...");
             EnsureThemesUi();
+            Debug.Log($"[ThemeButton] Step 1/4 done. themesRoot={(themesRoot == null ? "NULL" : themesRoot.name)}, themesPanel={(themesPanel == null ? "NULL" : themesPanel.name)}.");
+
             if (themesRoot != null)
             {
                 themesRoot.SetActive(true);
                 themesRoot.transform.SetAsLastSibling();
+                Debug.Log($"[ThemeButton] Step 2/4: themesRoot.SetActive(true) called. activeSelf={themesRoot.activeSelf}, activeInHierarchy={themesRoot.activeInHierarchy}.");
+            }
+            else
+            {
+                Debug.LogError("[ThemeButton] Step 2/4 SKIPPED: themesRoot is null after EnsureThemesUi().");
             }
 
+            Debug.Log("[ThemeButton] Step 3/4: calling RefreshThemesOverlay(save)...");
             RefreshThemesOverlay(save);
+            Debug.Log("[ThemeButton] Step 3/4 done - RefreshThemesOverlay returned without throwing.");
+
+            Debug.Log("[ThemeButton] Step 4/4: calling StartThemesOpenTransition()...");
             StartThemesOpenTransition();
+            Debug.Log("[ThemeButton] Step 4/4 done - StartThemesOpenTransition returned.");
+
+            LogThemesPopupState("end of OpenThemes()");
+        }
+
+        // Point 3b diagnostic dump - not permanent, remove once the click bug is
+        // confirmed fixed. Prints everything that could make an active-in-hierarchy
+        // popup render as if it were closed: CanvasGroup alpha/interactable/
+        // blocksRaycasts up the parent chain, RectTransform scale/position, and the
+        // owning Canvas's render mode/sorting order vs any other Canvas in the scene.
+        private void LogThemesPopupState(string when)
+        {
+            if (themesRoot == null)
+            {
+                Debug.LogError($"[ThemeButton] State dump ({when}): themesRoot is null.");
+                return;
+            }
+
+            Debug.Log($"[ThemeButton] State dump ({when}): themesRoot.activeSelf={themesRoot.activeSelf}, activeInHierarchy={themesRoot.activeInHierarchy}.");
+
+            Transform t = themesRoot.transform;
+            while (t != null)
+            {
+                CanvasGroup cg = t.GetComponent<CanvasGroup>();
+                if (cg != null)
+                {
+                    Debug.Log($"[ThemeButton]   CanvasGroup on '{t.name}': alpha={cg.alpha}, interactable={cg.interactable}, blocksRaycasts={cg.blocksRaycasts}.");
+                }
+
+                Canvas canvas = t.GetComponent<Canvas>();
+                if (canvas != null)
+                {
+                    Debug.Log($"[ThemeButton]   Canvas on '{t.name}': renderMode={canvas.renderMode}, sortingOrder={canvas.sortingOrder}, overrideSorting={canvas.overrideSorting}, enabled={canvas.enabled}.");
+                }
+
+                t = t.parent;
+            }
+
+            if (themesPanel != null)
+            {
+                Debug.Log($"[ThemeButton]   themesPanel: localScale={themesPanel.localScale}, anchoredPosition={themesPanel.anchoredPosition}, sizeDelta={themesPanel.sizeDelta}, worldPos={themesPanel.position}.");
+            }
+
+            Canvas[] allCanvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (Canvas c in allCanvases)
+            {
+                Debug.Log($"[ThemeButton]   Scene Canvas '{c.name}': sortingOrder={c.sortingOrder}, renderMode={c.renderMode}, enabled={c.enabled}.");
+            }
         }
 
         private void WireThemeButton()
         {
             if (themeButton == null)
             {
+                Debug.LogWarning("[ThemeButton] WireThemeButton() called with themeButton == null - listener NOT attached.");
                 return;
             }
 
@@ -457,6 +518,24 @@ namespace ChromaBlast
             themeButton.interactable = true;
             themeButton.onClick.RemoveListener(OpenThemes);
             themeButton.onClick.AddListener(OpenThemes);
+            Debug.Log($"[ThemeButton] Wired OpenThemes onto '{themeButton.name}' (instanceID={themeButton.GetInstanceID()}, path={GetHierarchyPath(themeButton.transform)}).");
+        }
+
+        private static string GetHierarchyPath(Transform t)
+        {
+            if (t == null)
+            {
+                return "<null>";
+            }
+
+            string path = t.name;
+            while (t.parent != null)
+            {
+                t = t.parent;
+                path = t.name + "/" + path;
+            }
+
+            return path;
         }
 
         private void CloseThemes()
