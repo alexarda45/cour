@@ -1075,6 +1075,11 @@ namespace ChromaBlast
             SetRect(themesTitleText.rectTransform, new Vector2(0.18f, 0.91f), new Vector2(0.82f, 0.975f), Vector2.zero, Vector2.zero);
             ApplyThemesTitleColor();
             EnsureTextShadow(themesTitleText, new Color(0f, 0.02f, 0.10f, 0.78f), new Vector2(0f, -3f));
+            // The "Themes" / "Choose your style" title is now baked directly into
+            // ThemesPanelBackgroundSprite for every theme with that art, so the
+            // dynamic TMP title is redundant - disabled rather than deleted, in
+            // case a future theme ships panel art without a baked title.
+            themesTitleText.gameObject.SetActive(false);
 
             Image coinPill = EnsureThemeImage(themesPanel, "ThemesCoinPill");
             SetRect(coinPill.rectTransform, new Vector2(0.25f, 0.846f), new Vector2(0.75f, 0.90f), Vector2.zero, Vector2.zero);
