@@ -75,6 +75,8 @@ namespace ChromaBlast
         [SerializeField] private Button shopCosmeticsButton;
         [SerializeField] private Button shopRestoreButton;
         [SerializeField] private Button achievementsButton;
+        private Image streakBadgeImage;
+        private TMP_Text streakBadgeText;
         [SerializeField] private GameObject achievementsRoot;
         [SerializeField] private TMP_Text achievementsListText;
         [SerializeField] private Button achievementsCloseButton;
@@ -1736,6 +1738,73 @@ namespace ChromaBlast
             RefreshDailyGift(save);
         }
 
+        // Small notification-style badge on the corner of the Main Menu Rewards
+        // button, showing the current Daily Rewards streak. Source of truth is
+        // GetDailyRewardDayIndex() (system B from the audit - the login/claim
+        // calendar), NOT the separate Data.dailyStreak field (system A, tied to
+        // Daily-mode gameplay). Display only - never touches the streak math.
+        private void EnsureStreakBadge()
+        {
+            if (achievementsButton == null)
+            {
+                return;
+            }
+
+            Transform existing = achievementsButton.transform.Find("StreakBadge");
+            Image badge = existing == null ? null : existing.GetComponent<Image>();
+            if (badge == null)
+            {
+                GameObject badgeObject = new GameObject("StreakBadge", typeof(RectTransform), typeof(Image));
+                badgeObject.transform.SetParent(achievementsButton.transform, false);
+                badge = badgeObject.GetComponent<Image>();
+            }
+
+            streakBadgeImage = badge;
+
+            // Fixed pixel square anchored to the button's top-right corner, not a
+            // stretched anchor range - the Rewards button itself is a wide, short
+            // strip, so a width/height-fraction rect would render as an oval.
+            RectTransform badgeRect = badge.rectTransform;
+            badgeRect.anchorMin = new Vector2(1f, 1f);
+            badgeRect.anchorMax = new Vector2(1f, 1f);
+            badgeRect.pivot = new Vector2(0.5f, 0.5f);
+            badgeRect.sizeDelta = new Vector2(52f, 52f);
+            badgeRect.anchoredPosition = new Vector2(-16f, -16f);
+
+            UISpriteFactory.ApplySoftCircle(badge);
+            badge.color = new Color(1f, 0.40f, 0.08f, 1f);
+            badge.raycastTarget = false;
+            badge.transform.SetAsLastSibling();
+
+            Outline badgeOutline = badge.GetComponent<Outline>();
+            if (badgeOutline == null)
+            {
+                badgeOutline = badge.gameObject.AddComponent<Outline>();
+            }
+
+            badgeOutline.effectColor = new Color(1f, 0.86f, 0.56f, 0.85f);
+            badgeOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            badgeOutline.useGraphicAlpha = true;
+
+            streakBadgeText = EnsureThemeText(badge.transform, "StreakBadgeLabel", string.Empty, 24f, TextAlignmentOptions.Center);
+            Stretch(streakBadgeText.rectTransform, new Vector2(2f, 2f), new Vector2(-2f, -2f));
+            streakBadgeText.color = Color.white;
+            streakBadgeText.fontStyle = FontStyles.Bold;
+            EnsureTextShadow(streakBadgeText, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -1f));
+        }
+
+        private void RefreshStreakBadge(SaveManager save)
+        {
+            if (streakBadgeText == null || save == null)
+            {
+                return;
+            }
+
+            // dailyRewardDayIndex is 0-based (0 = day 1 of the cycle), so +1 for display.
+            int streakDay = save.GetDailyRewardDayIndex() + 1;
+            streakBadgeText.text = streakDay.ToString();
+        }
+
         private void RefreshDailyGift(SaveManager save)
         {
             EnsureDailyGiftUi();
@@ -1750,6 +1819,7 @@ namespace ChromaBlast
 
             RefreshRewardedAdButton(save);
             RefreshRewardCardStates(save);
+            RefreshStreakBadge(save);
         }
 
         private void RefreshRewardCardStates(SaveManager save)
@@ -2208,6 +2278,7 @@ namespace ChromaBlast
             StyleMenuSpriteButton(classicButton, ClassicButtonPath, new Vector2(0.10f, 0.458f), new Vector2(0.90f, 0.553f));
             StyleMenuSpriteButton(blitzButton, BlitzButtonPath, new Vector2(0.10f, 0.351f), new Vector2(0.90f, 0.446f));
             StyleMenuSpriteButton(achievementsButton, RewardsButtonPath, new Vector2(0.10f, 0.244f), new Vector2(0.90f, 0.339f));
+            EnsureStreakBadge();
             StyleMenuSpriteButton(settingsButton, SettingsButtonPath, new Vector2(0.10f, 0.137f), new Vector2(0.90f, 0.232f));
             StyleThemeMenuButton();
             SetButtonVisible(dailyButton, false);
