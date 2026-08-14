@@ -1777,6 +1777,7 @@ namespace ChromaBlast
             DisableLegacyPauseRows();
             ConfigureModernCloseButton();
             BuildModernPauseRows();
+            ConfigureDesertVisuals();
             ConfigureBlossomBakedVisuals();
             ConfigureBeachVisuals();
 
@@ -1818,7 +1819,7 @@ namespace ChromaBlast
                 pausePanelImage.sprite = blossom
                     ? LoadBlossomSettingsSprite("01_blossom_main_panel")
                     : beach ? LoadBeachSettingsSprite("01_beach_main_panel")
-                    : LoadDesertCleanSettingsSprite("desert_panel_vertical");
+                    : LoadDesertCleanSettingsSprite("desert_main_panel");
                 pausePanelImage.enabled = true;
                 pausePanelImage.color = Color.white;
                 pausePanelImage.material = null;
@@ -1872,7 +1873,7 @@ namespace ChromaBlast
                 pausePanelImage.sprite = blossom
                     ? LoadBlossomSettingsSprite("01_blossom_main_panel")
                     : beach ? LoadBeachSettingsSprite("01_beach_main_panel")
-                    : LoadDesertCleanSettingsSprite("desert_panel_vertical");
+                    : LoadDesertCleanSettingsSprite("desert_main_panel");
                 pausePanelImage.color = Color.white;
                 pausePanelImage.material = null;
                 pausePanelImage.type = Image.Type.Simple;
@@ -1917,6 +1918,7 @@ namespace ChromaBlast
             ConfigureSettingsTitle();
             ConfigureModernCloseButton();
             BuildModernPauseRows();
+            ConfigureDesertVisuals();
             UpdateSettingsToggleVisuals(false);
             ConfigureBlossomBakedVisuals();
             ConfigureBeachVisuals();
@@ -2171,8 +2173,9 @@ namespace ChromaBlast
             // the Settings lettering. Keep the legacy TMP title hidden there so
             // the header is rendered exactly once.
             // Garden and Ocean panels already contain the final Settings heading.
-            // Candy and the neutral Desert skin use a standalone runtime title.
-            pauseTitleText.text = candy || desert ? "Settings" : string.Empty;
+            // Candy keeps its runtime title. Desert uses the supplied standalone
+            // title sprite below so no TMP lettering is duplicated over it.
+            pauseTitleText.text = candy ? "Settings" : string.Empty;
             pauseTitleText.font = Resources.Load<TMP_FontAsset>(ScoreFontPath);
             pauseTitleText.alignment = TextAlignmentOptions.Center;
             pauseTitleText.enableAutoSizing = candy || desert;
@@ -2183,8 +2186,28 @@ namespace ChromaBlast
                 ? new Color(0.035f, 0.23f, 0.09f, 1f)
                 : desert ? new Color(0.30f, 0.13f, 0.055f, 1f) : new Color(0.48f, 0.015f, 0.18f, 1f);
             pauseTitleText.raycastTarget = false;
-            pauseTitleText.enabled = candy || desert;
-            pauseTitleText.gameObject.SetActive(candy || desert);
+            pauseTitleText.enabled = candy;
+            pauseTitleText.gameObject.SetActive(candy);
+
+            RectTransform desertTitleRect = GetOrCreateChildRect(pausePanelRoot, "DesertSettingsTitle");
+            desertTitleRect.anchorMin = desertTitleRect.anchorMax = new Vector2(0.5f, 1f);
+            desertTitleRect.pivot = new Vector2(0.5f, 1f);
+            desertTitleRect.anchoredPosition = new Vector2(0f, -72f);
+            desertTitleRect.sizeDelta = new Vector2(360f, 118f);
+            desertTitleRect.localScale = Vector3.one;
+            Image desertTitle = GetOrAddImage(desertTitleRect.gameObject);
+            desertTitle.sprite = desert ? LoadDesertCleanSettingsSprite("desert_settings_title") : null;
+            desertTitle.color = Color.white;
+            desertTitle.material = null;
+            desertTitle.type = Image.Type.Simple;
+            desertTitle.preserveAspect = true;
+            desertTitle.raycastTarget = false;
+            desertTitle.enabled = desert && desertTitle.sprite != null;
+            desertTitleRect.gameObject.SetActive(desertTitle.enabled);
+            if (desertTitle.enabled)
+            {
+                desertTitleRect.SetAsLastSibling();
+            }
             RectTransform blossomBannerRect = GetOrCreateChildRect(pausePanelRoot, "BlossomSettingsBanner");
             blossomBannerRect.anchorMin = blossomBannerRect.anchorMax = new Vector2(0.5f, 1f);
             blossomBannerRect.pivot = new Vector2(0.5f, 1f);
@@ -2222,7 +2245,7 @@ namespace ChromaBlast
             {
                 beachTitleRect.SetAsLastSibling();
             }
-            if (candy || ocean || desert)
+            if (candy || ocean)
             {
                 (ocean ? oceanTitleRect : rect).SetAsLastSibling();
             }
@@ -2343,8 +2366,8 @@ namespace ChromaBlast
             // The Candy close glyph is baked into the 1024x1536 panel at approximately
             // (838, 140). Keep this transparent Button centered over that artwork after
             // the panel is fitted to 900x1350; no second close sprite is rendered.
-            closeRect.anchoredPosition = ocean ? new Vector2(-34f, -34f) : candy ? new Vector2(-105f, -64f) : garden ? new Vector2(-48f, -50f) : blossom ? new Vector2(-24f, -26f) : beach ? new Vector2(-28f, -28f) : new Vector2(-28f, -28f);
-            closeRect.sizeDelta = ocean ? new Vector2(92f, 92f) : candy ? new Vector2(118f, 118f) : garden ? new Vector2(86f, 86f) : blossom ? new Vector2(92f, 115f) : beach ? new Vector2(88f, 88f) : new Vector2(68f, 68f);
+            closeRect.anchoredPosition = ocean ? new Vector2(-34f, -34f) : candy ? new Vector2(-105f, -64f) : garden ? new Vector2(-48f, -50f) : blossom ? new Vector2(-24f, -26f) : beach ? new Vector2(-28f, -28f) : desert ? new Vector2(-38f, -32f) : new Vector2(-28f, -28f);
+            closeRect.sizeDelta = ocean ? new Vector2(92f, 92f) : candy ? new Vector2(118f, 118f) : garden ? new Vector2(86f, 86f) : blossom ? new Vector2(92f, 115f) : beach ? new Vector2(88f, 88f) : desert ? new Vector2(86f, 86f) : new Vector2(68f, 68f);
             closeRect.localScale = Vector3.one;
 
             Image image = GetOrAddImage(closeRect.gameObject);
@@ -2376,7 +2399,7 @@ namespace ChromaBlast
             Outline closeOutline = closeRect.GetComponent<Outline>();
             if (desert)
             {
-                image.sprite = LoadDesertCleanSettingsSprite("desert_close");
+                image.sprite = LoadDesertCleanSettingsSprite("desert_close_x");
                 image.color = Color.white;
                 image.preserveAspect = true;
                 desertGlyph.gameObject.SetActive(false);
@@ -2435,7 +2458,7 @@ namespace ChromaBlast
             settingsRowsContainer.anchorMin = new Vector2(0.5f, 0.5f);
             settingsRowsContainer.anchorMax = new Vector2(0.5f, 0.5f);
             settingsRowsContainer.pivot = new Vector2(0.5f, 0.5f);
-            settingsRowsContainer.anchoredPosition = candy ? new Vector2(0f, -78f) : garden ? new Vector2(0f, -70f) : blossom ? new Vector2(0f, -80f) : beach ? new Vector2(0f, -72f) : desert ? new Vector2(0f, -100f) : new Vector2(0f, -62f);
+            settingsRowsContainer.anchoredPosition = candy ? new Vector2(0f, -78f) : garden ? new Vector2(0f, -70f) : blossom ? new Vector2(0f, -80f) : beach ? new Vector2(0f, -72f) : desert ? new Vector2(0f, 18f) : new Vector2(0f, -62f);
             settingsRowsContainer.sizeDelta = candy
                 ? new Vector2(CandySettingsRowsWidth, CandySettingsRowsHeight)
                 : garden
@@ -2492,6 +2515,75 @@ namespace ChromaBlast
             SetRowSiblingOrder("MainMenuRow", 7);
             DisableLanguageSelectionUi();
             settingsRowsContainer.gameObject.SetActive(true);
+        }
+
+        private void ConfigureDesertVisuals()
+        {
+            if (!IsDesertSettingsActive() || pausePanelRoot == null || settingsRowsContainer == null)
+            {
+                return;
+            }
+
+            string[] rowNames =
+            {
+                "MusicRow", "SoundRow", "VibrationRow", "PrivacyRow",
+                "TermsRow", "AboutRow", "RestartRow", "MainMenuRow"
+            };
+            for (int i = 0; i < rowNames.Length; i++)
+            {
+                Transform label = settingsRowsContainer.Find(rowNames[i] + "/Label");
+                TMP_Text labelText = label == null ? null : label.GetComponent<TMP_Text>();
+                if (labelText == null)
+                {
+                    continue;
+                }
+
+                labelText.enableAutoSizing = false;
+                labelText.fontSize = 32f;
+                labelText.fontSizeMin = 32f;
+                labelText.fontSizeMax = 32f;
+                labelText.fontStyle = FontStyles.Bold;
+                labelText.color = new Color(0.21f, 0.095f, 0.035f, 1f);
+                labelText.alignment = TextAlignmentOptions.MidlineLeft;
+            }
+
+            Transform about = settingsRowsContainer.Find("AboutRow");
+            RectTransform aboutStatus = about == null ? null : about.Find("Status") as RectTransform;
+            RectTransform versionRect = aboutStatus == null ? null : aboutStatus.Find("Text") as RectTransform;
+            if (versionRect != null)
+            {
+                versionRect.anchorMin = versionRect.anchorMax = new Vector2(1f, 0.5f);
+                versionRect.pivot = new Vector2(1f, 0.5f);
+                versionRect.anchoredPosition = new Vector2(-104f, 0f);
+                versionRect.sizeDelta = new Vector2(144f, 42f);
+
+                TMP_Text versionText = versionRect.GetComponent<TMP_Text>();
+                if (versionText != null)
+                {
+                    versionText.text = Application.version;
+                    versionText.alignment = TextAlignmentOptions.MidlineRight;
+                    versionText.enableAutoSizing = false;
+                    versionText.fontSize = 22f;
+                    versionText.fontStyle = FontStyles.Bold;
+                    versionText.color = new Color(0.27f, 0.12f, 0.04f, 0.92f);
+                    versionText.raycastTarget = false;
+                    versionText.enabled = true;
+                    versionText.gameObject.SetActive(true);
+                }
+            }
+
+            // The supplied main panel already contains its cactus, skull and sand
+            // border artwork. Keep loose decorations inactive to avoid duplicates.
+            DisableChild(pausePanelRoot, "DesertBottomDecor");
+            DisableChild(pausePanelRoot, "DesertCactusCluster");
+            DisableChild(pausePanelRoot, "DesertSkullCluster");
+            DisableChild(pausePanelRoot, "DesertFlowerCactus");
+
+            UpdateSettingsToggleVisuals(false);
+            Transform title = pausePanelRoot.Find("DesertSettingsTitle");
+            if (title != null) title.SetAsLastSibling();
+            Transform close = pausePanelRoot.Find("CloseButton");
+            if (close != null) close.SetAsLastSibling();
         }
 
         private void ConfigureBlossomBakedVisuals()
@@ -2863,8 +2955,8 @@ namespace ChromaBlast
             icon.anchorMin = new Vector2(0f, 0.5f);
             icon.anchorMax = new Vector2(0f, 0.5f);
             icon.pivot = new Vector2(0.5f, 0.5f);
-            icon.anchoredPosition = candy ? new Vector2(58f, 0f) : blossom ? new Vector2(62f, 0f) : beach ? new Vector2(64f, 0f) : new Vector2(52f, 0f);
-            icon.sizeDelta = candy ? new Vector2(70f, 70f) : blossom ? new Vector2(75f, 75f) : beach ? new Vector2(76f, 76f) : new Vector2(62f, 62f);
+            icon.anchoredPosition = candy ? new Vector2(58f, 0f) : blossom ? new Vector2(62f, 0f) : beach ? new Vector2(64f, 0f) : desert ? new Vector2(60f, 0f) : new Vector2(52f, 0f);
+            icon.sizeDelta = candy ? new Vector2(70f, 70f) : blossom ? new Vector2(75f, 75f) : beach ? new Vector2(76f, 76f) : desert ? new Vector2(70f, 70f) : new Vector2(62f, 62f);
             icon.localScale = Vector3.one;
             Image iconImage = GetOrAddImage(icon.gameObject);
             iconImage.sprite = blossom
@@ -2873,7 +2965,7 @@ namespace ChromaBlast
                 : ocean
                 ? GetOceanSettingsIconSprite(iconKey)
                 : garden ? GetGardenSettingsIconSprite(iconKey)
-                    : desert ? BuildSettingsIconSprite(iconKey, true)
+                    : desert ? GetDesertSettingsIconSprite(iconKey)
                         : candy ? GetCandySettingsIconSprite(ThemeCatalog.Current, iconKey) : null;
             iconImage.color = Color.white;
             iconImage.material = null;
@@ -2886,8 +2978,8 @@ namespace ChromaBlast
             labelRect.anchorMin = new Vector2(0f, 0.5f);
             labelRect.anchorMax = new Vector2(0f, 0.5f);
             labelRect.pivot = new Vector2(0f, 0.5f);
-            labelRect.anchoredPosition = candy ? new Vector2(105f, 0f) : garden ? new Vector2(104f, 0f) : blossom ? new Vector2(116f, 0f) : beach ? new Vector2(120f, 0f) : new Vector2(108f, 0f);
-            labelRect.sizeDelta = candy ? new Vector2(280f, 74f) : garden ? new Vector2(310f, 70f) : blossom ? new Vector2(350f, 82f) : beach ? new Vector2(350f, 78f) : new Vector2(245f, 70f);
+            labelRect.anchoredPosition = candy ? new Vector2(105f, 0f) : garden ? new Vector2(104f, 0f) : blossom ? new Vector2(116f, 0f) : beach ? new Vector2(120f, 0f) : desert ? new Vector2(112f, 0f) : new Vector2(108f, 0f);
+            labelRect.sizeDelta = candy ? new Vector2(280f, 74f) : garden ? new Vector2(310f, 70f) : blossom ? new Vector2(350f, 82f) : beach ? new Vector2(350f, 78f) : desert ? new Vector2(330f, 76f) : new Vector2(245f, 70f);
             labelRect.localScale = Vector3.one;
 
             TMP_Text labelText = GetOrAddText(labelRect.gameObject);
@@ -2915,6 +3007,17 @@ namespace ChromaBlast
                 labelText.fontSizeMax = 32f;
                 labelText.fontStyle = FontStyles.Bold;
                 labelText.color = Color.black;
+                labelText.alignment = TextAlignmentOptions.MidlineLeft;
+                labelText.characterSpacing = 0f;
+            }
+            else if (desert)
+            {
+                labelText.enableAutoSizing = false;
+                labelText.fontSize = 32f;
+                labelText.fontSizeMin = 32f;
+                labelText.fontSizeMax = 32f;
+                labelText.fontStyle = FontStyles.Bold;
+                labelText.color = new Color(0.21f, 0.095f, 0.035f, 1f);
                 labelText.alignment = TextAlignmentOptions.MidlineLeft;
                 labelText.characterSpacing = 0f;
             }
@@ -2976,6 +3079,23 @@ namespace ChromaBlast
                 "home" => LoadGardenSettingsSprite("garden_icon_home"),
                 _ => null
             };
+        }
+
+        private static Sprite GetDesertSettingsIconSprite(string iconKey)
+        {
+            string fileName = iconKey switch
+            {
+                "music" => "desert_icon_music",
+                "sound" => "desert_icon_sound",
+                "vibration" => "desert_icon_vibration",
+                "privacy" => "desert_icon_privacy",
+                "terms" => "desert_icon_terms",
+                "about" => "desert_icon_about",
+                "restart" => "desert_icon_restart",
+                "home" => "desert_icon_home",
+                _ => null
+            };
+            return string.IsNullOrEmpty(fileName) ? null : LoadDesertCleanSettingsSprite(fileName);
         }
 
         private static Sprite GetBlossomSettingsIconSprite(string iconKey)
@@ -3054,7 +3174,7 @@ namespace ChromaBlast
             if (desert)
             {
                 Image desertChevronImage = GetOrAddImage(desertChevronRect.gameObject);
-                desertChevronImage.sprite = LoadDesertCleanSettingsSprite("desert_chevron");
+                desertChevronImage.sprite = LoadDesertCleanSettingsSprite("desert_arrow_right");
                 desertChevronImage.color = Color.white;
                 desertChevronImage.material = null;
                 desertChevronImage.type = Image.Type.Simple;
@@ -4048,7 +4168,7 @@ namespace ChromaBlast
                 {
                     trackImage.gameObject.SetActive(true);
                     trackImage.enabled = true;
-                    trackImage.sprite = LoadDesertCleanSettingsSprite(enabledState ? "desert_toggle_on" : "desert_toggle_off");
+                    trackImage.sprite = LoadDesertCleanSettingsSprite(enabledState ? "desert_toggle_on_final" : "desert_toggle_off_final");
                     trackImage.color = Color.white;
                     trackImage.material = null;
                     trackImage.type = Image.Type.Simple;
