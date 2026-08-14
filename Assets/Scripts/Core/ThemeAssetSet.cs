@@ -10,11 +10,13 @@ namespace ChromaBlast
         [SerializeField] private string displayName;
         [Min(0)] [SerializeField] private int coinCost;
         [SerializeField] private Sprite previewSprite;
+        [SerializeField] private Sprite cardThumbnailSprite;
 
         [Header("Gameplay Artwork")]
         [SerializeField] private Sprite menuBackground;
         [SerializeField] private Sprite gameplayBackground;
         [SerializeField] private Sprite gameOverBackground;
+        [SerializeField] private Sprite themesPanelBackgroundSprite;
         [SerializeField] private Sprite boardSurfaceSprite;
 
         [Header("Tile Artwork")]
@@ -33,16 +35,82 @@ namespace ChromaBlast
         [SerializeField] private Color capsuleTintColor = Color.white;
         [SerializeField] private Color crownTintColor = Color.white;
 
+        [Header("HUD Theme Artwork")]
+        [SerializeField] private Sprite capsuleSprite;
+        [SerializeField] private Sprite crownSprite;
+
+        [Header("Themes Popup Artwork")]
+        [SerializeField] private Sprite themesCoinBalanceSprite;
+        [SerializeField] private Sprite themesCloseButtonSprite;
+        [SerializeField] private Sprite themesSelectedRibbonSprite;
+        [SerializeField] private Sprite themesApplyButtonSprite;
+
+        [Header("Settings Artwork")]
+        [SerializeField] private Sprite settingsPanelSprite;
+        [SerializeField] private Sprite settingsHeaderSprite;
+        [SerializeField] private Sprite settingsBackButtonSprite;
+        [SerializeField] private Sprite settingsToggleOnSprite;
+        [SerializeField] private Sprite settingsToggleOffSprite;
+        [SerializeField] private Sprite settingsBottomDecorationSprite;
+        [SerializeField] private Sprite settingsChevronSprite;
+        [SerializeField] private Sprite settingsMusicIconSprite;
+        [SerializeField] private Sprite settingsSoundIconSprite;
+        [SerializeField] private Sprite settingsVibrationIconSprite;
+        [SerializeField] private Sprite settingsPrivacyIconSprite;
+        [SerializeField] private Sprite settingsTermsIconSprite;
+        [SerializeField] private Sprite settingsAboutIconSprite;
+        [SerializeField] private Sprite settingsRestartIconSprite;
+        [SerializeField] private Sprite settingsMainMenuIconSprite;
+        [SerializeField] private Sprite settingsMusicRowSprite;
+        [SerializeField] private Sprite settingsSoundRowSprite;
+        [SerializeField] private Sprite settingsVibrationRowSprite;
+        [SerializeField] private Sprite settingsPrivacyRowSprite;
+        [SerializeField] private Sprite settingsTermsRowSprite;
+        [SerializeField] private Sprite settingsAboutRowSprite;
+        [SerializeField] private Sprite settingsRestartRowSprite;
+        [SerializeField] private Sprite settingsMainMenuRowSprite;
+
         public ThemeType ThemeType => themeType;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? themeType.ToString().ToUpperInvariant() : displayName;
         public int CoinCost => Mathf.Max(0, coinCost);
         public Sprite PreviewSprite => previewSprite != null ? previewSprite : boardSurfaceSprite;
+        public Sprite CardThumbnailSprite => cardThumbnailSprite;
         public Sprite MenuBackground => menuBackground;
         public Sprite GameplayBackground => gameplayBackground;
         public Sprite GameOverBackground => gameOverBackground;
+        public Sprite ThemesPanelBackgroundSprite => themesPanelBackgroundSprite;
         public Sprite BoardSurfaceSprite => boardSurfaceSprite;
         public Color CapsuleTintColor => WithOpaqueAlpha(capsuleTintColor);
         public Color CrownTintColor => WithOpaqueAlpha(crownTintColor);
+        public Sprite CapsuleSprite => capsuleSprite;
+        public Sprite CrownSprite => crownSprite;
+        public Sprite ThemesCoinBalanceSprite => themesCoinBalanceSprite;
+        public Sprite ThemesCloseButtonSprite => themesCloseButtonSprite;
+        public Sprite ThemesSelectedRibbonSprite => themesSelectedRibbonSprite;
+        public Sprite ThemesApplyButtonSprite => themesApplyButtonSprite;
+        public Sprite SettingsPanelSprite => settingsPanelSprite;
+        public Sprite SettingsHeaderSprite => settingsHeaderSprite;
+        public Sprite SettingsBackButtonSprite => settingsBackButtonSprite;
+        public Sprite SettingsToggleOnSprite => settingsToggleOnSprite;
+        public Sprite SettingsToggleOffSprite => settingsToggleOffSprite;
+        public Sprite SettingsBottomDecorationSprite => settingsBottomDecorationSprite;
+        public Sprite SettingsChevronSprite => settingsChevronSprite;
+        public Sprite SettingsMusicIconSprite => settingsMusicIconSprite;
+        public Sprite SettingsSoundIconSprite => settingsSoundIconSprite;
+        public Sprite SettingsVibrationIconSprite => settingsVibrationIconSprite;
+        public Sprite SettingsPrivacyIconSprite => settingsPrivacyIconSprite;
+        public Sprite SettingsTermsIconSprite => settingsTermsIconSprite;
+        public Sprite SettingsAboutIconSprite => settingsAboutIconSprite;
+        public Sprite SettingsRestartIconSprite => settingsRestartIconSprite;
+        public Sprite SettingsMainMenuIconSprite => settingsMainMenuIconSprite;
+        public Sprite SettingsMusicRowSprite => settingsMusicRowSprite;
+        public Sprite SettingsSoundRowSprite => settingsSoundRowSprite;
+        public Sprite SettingsVibrationRowSprite => settingsVibrationRowSprite;
+        public Sprite SettingsPrivacyRowSprite => settingsPrivacyRowSprite;
+        public Sprite SettingsTermsRowSprite => settingsTermsRowSprite;
+        public Sprite SettingsAboutRowSprite => settingsAboutRowSprite;
+        public Sprite SettingsRestartRowSprite => settingsRestartRowSprite;
+        public Sprite SettingsMainMenuRowSprite => settingsMainMenuRowSprite;
 
         public bool HasCompleteCoreArtwork =>
             menuBackground != null &&

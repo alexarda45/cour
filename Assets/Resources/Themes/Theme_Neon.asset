@@ -11,14 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
   m_Name: Theme_Neon
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   themeType: 0
   displayName: Cherry Night
   coinCost: 0
   previewSprite: {fileID: 21300000, guid: 3fb1eab40cd24e2db784ca4c59c4c22b, type: 3}
+  cardThumbnailSprite: {fileID: 21300000, guid: 5a5a6653f3394da19684c45fc3469e72, type: 3}
   menuBackground: {fileID: 21300000, guid: c1655ee8fbf54881936b7f4c5677ec0a, type: 3}
   gameplayBackground: {fileID: 21300000, guid: 3a22607b7b5b4bc2b7a6cd0a47f421ac, type: 3}
   gameOverBackground: {fileID: 21300000, guid: 10049568fe134b6fb00f40f55979a7a1, type: 3}
+  themesPanelBackgroundSprite: {fileID: 21300000, guid: b4db9e4511a940f8bad929fb695d64ab, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: 3fb1eab40cd24e2db784ca4c59c4c22b, type: 3}
   tileCyan: {fileID: 21300000, guid: 1f2609086bf44efda48bca341ff49b84, type: 3}
   tileMagenta: {fileID: 21300000, guid: 7e7d9158a5a347abaafd1f6457ef8d14, type: 3}
@@ -30,3 +32,10 @@ MonoBehaviour:
   effectColorAmber: {r: 0.9098039, g: 0.68235296, b: 0, a: 1}
   capsuleTintColor: {r: 0.81960785, g: 0.41960785, b: 0.80784315, a: 1}
   crownTintColor: {r: 1, g: 0.6117647, b: 0.7411765, a: 1}
+  capsuleSprite: {fileID: 21300000, guid: ed3f518598cb1ef4f86733af5ff7ec7b, type: 3}
+  crownSprite: {fileID: 0}
+  themesCoinBalanceSprite: {fileID: 21300000, guid: c284e2fdfdfe7f4478e9b9ca79602d0d, type: 3}
+  themesCloseButtonSprite: {fileID: 21300000, guid: 153686c1bf8c43c3abd8c06793fb294e, type: 3}
+  themesSelectedRibbonSprite: {fileID: 21300000, guid: abf5ea0db06541bea552d6d7548e20af, type: 3}
+  themesApplyButtonSprite: {fileID: 21300000, guid: 238f612550834ae8948bbc1b53e67b57, type: 3}
+  settingsPanelSprite: {fileID: 21300000, guid: 62addfdceab58c14bb0534299f8b91a8, type: 3}

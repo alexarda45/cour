@@ -11,14 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
   m_Name: Theme_Crystal
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   themeType: 4
   displayName: Flower Garden
   coinCost: 2200
   previewSprite: {fileID: 21300000, guid: 9affb38af275457695deac72753a7a1b, type: 3}
+  cardThumbnailSprite: {fileID: 21300000, guid: 7f6bb18bc2b54ff18a38ab4c4333cdd5, type: 3}
   menuBackground: {fileID: 21300000, guid: ac7ba4d6c7df491180d7857cb2eb9ec9, type: 3}
   gameplayBackground: {fileID: 21300000, guid: 91fd26d9d168426a8bfa81db46d045c1, type: 3}
   gameOverBackground: {fileID: 21300000, guid: 2e5f573a8f5e4ee894f2d8135ccf5e01, type: 3}
+  themesPanelBackgroundSprite: {fileID: 21300000, guid: 054ca6229c4f491b8642a0c6303cafa8, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: 9affb38af275457695deac72753a7a1b, type: 3}
   tileCyan: {fileID: 21300000, guid: 930b1a19500e4278a1f5014e925b25cf, type: 3}
   tileMagenta: {fileID: 21300000, guid: 7f353d1647b643e4b6ffa0d59353fa6c, type: 3}
@@ -30,3 +32,10 @@ MonoBehaviour:
   effectColorAmber: {r: 0.29803923, g: 0.9098039, b: 0, a: 1}
   capsuleTintColor: {r: 0.61960787, g: 0.85882354, b: 0.7176471, a: 1}
   crownTintColor: {r: 0.96862745, g: 0.7764706, b: 0.9098039, a: 1}
+  capsuleSprite: {fileID: 21300000, guid: fe9d1b590e6b07b4aaa13d531f126c93, type: 3}
+  crownSprite: {fileID: 0}
+  themesCoinBalanceSprite: {fileID: 21300000, guid: f4c894e967584c14a86d60973229a6da, type: 3}
+  themesCloseButtonSprite: {fileID: 21300000, guid: ec35bfa8940844b8a8c8b1d891c723a7, type: 3}
+  themesSelectedRibbonSprite: {fileID: 21300000, guid: abf5ea0db06541bea552d6d7548e20af, type: 3}
+  themesApplyButtonSprite: {fileID: 21300000, guid: e305a7b933254da99b48fcd5358c75c3, type: 3}
+  settingsPanelSprite: {fileID: 21300000, guid: cd120a53a07c4bc4494408126530a797, type: 3}

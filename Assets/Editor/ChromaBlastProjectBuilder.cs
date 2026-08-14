@@ -519,26 +519,21 @@ public static class ChromaBlastProjectBuilder
         RankProgressView rank = CreateRankProgress(safeRoot, new Vector2(0.09f, 0.142f), new Vector2(0.91f, 0.194f));
 
         Button theme = CreateButton("ThemeButton", safeRoot, "TEMA\nNEON", Hex("#10182E"), Hex("#17E6FF"));
-        SetRect((RectTransform)theme.transform, new Vector2(0.18f, 0.093f), new Vector2(0.82f, 0.137f), Vector2.zero, Vector2.zero);
-        SetButtonTextSize(theme, 18);
-        SetRect(theme.GetComponentInChildren<TMP_Text>().rectTransform, new Vector2(0f, 0.24f), Vector2.one, Vector2.zero, Vector2.zero);
+        SetRect((RectTransform)theme.transform, new Vector2(0.10f, 0.137f), new Vector2(0.49f, 0.232f), Vector2.zero, Vector2.zero);
+        SetButtonTextSize(theme, 22);
         Image[] themeSwatches = CreateThemeSwatches((RectTransform)theme.transform);
 
         TMP_Text themeHint = CreateText("ThemeHint", safeRoot, "Urmatoarea: CANDY  1,500 XP sau 250 monede", 14, FontStyles.Bold, TextAlignmentOptions.Center);
         SetRect(themeHint.rectTransform, new Vector2(0.08f, 0.077f), new Vector2(0.92f, 0.093f), Vector2.zero, Vector2.zero);
         themeHint.color = Hex("#A6FF42");
 
-        Button settings = CreateButton("SettingsButton", safeRoot, "SETARI", Hex("#10182E"), Hex("#FFD166"));
-        SetRect((RectTransform)settings.transform, new Vector2(0.05f, 0.020f), new Vector2(0.27f, 0.071f), Vector2.zero, Vector2.zero);
-        SetButtonTextSize(settings, 20);
-
         Button achievements = CreateButton("AchievementsButton", safeRoot, "REALIZARI", Hex("#10182E"), Hex("#FFD166"));
         SetRect((RectTransform)achievements.transform, new Vector2(0.29f, 0.020f), new Vector2(0.52f, 0.071f), Vector2.zero, Vector2.zero);
         SetButtonTextSize(achievements, 18);
 
         Button shop = CreateButton("ShopButton", safeRoot, "MAGAZIN", Hex("#10182E"), Hex("#EAF1FF"));
-        SetRect((RectTransform)shop.transform, new Vector2(0.54f, 0.020f), new Vector2(0.73f, 0.071f), Vector2.zero, Vector2.zero);
-        SetButtonTextSize(shop, 18);
+        SetRect((RectTransform)shop.transform, new Vector2(0.51f, 0.137f), new Vector2(0.90f, 0.232f), Vector2.zero, Vector2.zero);
+        SetButtonTextSize(shop, 22);
 
         Button quit = CreateButton("QuitButton", safeRoot, "IESIRE", Hex("#10182E"), Hex("#FF4FD8"));
         SetRect((RectTransform)quit.transform, new Vector2(0.75f, 0.020f), new Vector2(0.95f, 0.071f), Vector2.zero, Vector2.zero);
@@ -552,15 +547,6 @@ public static class ChromaBlastProjectBuilder
             out Button shopRestore,
             out TMP_Text shopStatus);
 
-        GameObject settingsOverlay = CreateSettingsOverlay(
-            safeRoot,
-            out Button settingsClose,
-            out Button settingsSound,
-            out Button settingsHaptics,
-            out Button settingsPerformance,
-            out Button settingsResetTutorial,
-            out TMP_Text settingsStatus);
-
         MenuUI menuUI = safeRoot.gameObject.AddComponent<MenuUI>();
         SetObject(menuUI, "classicButton", classic);
         SetObject(menuUI, "newClassicButton", newClassic);
@@ -569,19 +555,6 @@ public static class ChromaBlastProjectBuilder
         SetObject(menuUI, "dailyInfoText", dailyInfo);
         SetObject(menuUI, "dailyGiftButton", dailyGift);
         SetObject(menuUI, "dailyGiftButtonText", dailyGift.GetComponentInChildren<TMP_Text>());
-        SetObject(menuUI, "muteButton", settings);
-        SetObject(menuUI, "muteButtonText", settings.GetComponentInChildren<TMP_Text>());
-        SetObject(menuUI, "settingsButton", settings);
-        SetObject(menuUI, "settingsRoot", settingsOverlay);
-        SetObject(menuUI, "settingsStatusText", settingsStatus);
-        SetObject(menuUI, "settingsCloseButton", settingsClose);
-        SetObject(menuUI, "settingsSoundButton", settingsSound);
-        SetObject(menuUI, "settingsSoundButtonText", settingsSound.GetComponentInChildren<TMP_Text>());
-        SetObject(menuUI, "settingsHapticsButton", settingsHaptics);
-        SetObject(menuUI, "settingsHapticsButtonText", settingsHaptics.GetComponentInChildren<TMP_Text>());
-        SetObject(menuUI, "settingsPerformanceButton", settingsPerformance);
-        SetObject(menuUI, "settingsPerformanceButtonText", settingsPerformance.GetComponentInChildren<TMP_Text>());
-        SetObject(menuUI, "settingsResetTutorialButton", settingsResetTutorial);
         SetObject(menuUI, "themeButton", theme);
         SetObject(menuUI, "themeButtonText", theme.GetComponentInChildren<TMP_Text>());
         SetObject(menuUI, "themeHintText", themeHint);

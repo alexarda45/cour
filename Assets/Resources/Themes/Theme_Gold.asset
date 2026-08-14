@@ -11,14 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
   m_Name: Theme_Gold
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   themeType: 3
   displayName: Desert Sunset
   coinCost: 1500
   previewSprite: {fileID: 21300000, guid: 139bd4434e6f48dcbf13566142f85fae, type: 3}
+  cardThumbnailSprite: {fileID: 21300000, guid: 95726b3c685c4426b596e6966f613d48, type: 3}
   menuBackground: {fileID: 21300000, guid: d0780afd3db44c008986d9615dc4d80a, type: 3}
   gameplayBackground: {fileID: 21300000, guid: 7cad7ac37f814713b026f5393d43625d, type: 3}
   gameOverBackground: {fileID: 21300000, guid: 4cba1207e0194b8e9992a53f27c4870b, type: 3}
+  themesPanelBackgroundSprite: {fileID: 21300000, guid: f91c2d5b799c4971ad6b1603feac1ef1, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: 139bd4434e6f48dcbf13566142f85fae, type: 3}
   tileCyan: {fileID: 21300000, guid: 13c7f091752844c584caa9c033edea72, type: 3}
   tileMagenta: {fileID: 21300000, guid: 5cd4ed2242f74ddfa0f1f4f74c0dc2a5, type: 3}
@@ -30,3 +32,10 @@ MonoBehaviour:
   effectColorAmber: {r: 0.9098039, g: 0.6392157, b: 0, a: 1}
   capsuleTintColor: {r: 0.9411765, g: 0.6313726, b: 0.36862746, a: 1}
   crownTintColor: {r: 1, g: 0.8784314, b: 0.5411765, a: 1}
+  capsuleSprite: {fileID: 21300000, guid: 868acc31abb51ec4da54a9443e8cf8f7, type: 3}
+  crownSprite: {fileID: 0}
+  themesCoinBalanceSprite: {fileID: 21300000, guid: cbaeeafcd0365a048ae68133fa98e0ae, type: 3}
+  themesCloseButtonSprite: {fileID: 21300000, guid: a7fa21a23e4b4a5b8149a9c66fb0582d, type: 3}
+  themesSelectedRibbonSprite: {fileID: 21300000, guid: abf5ea0db06541bea552d6d7548e20af, type: 3}
+  themesApplyButtonSprite: {fileID: 21300000, guid: e82a32a410cb4326832cf4a7206eef5e, type: 3}
+  settingsPanelSprite: {fileID: 21300000, guid: 8cb2b79c9f0fd47448f1810f862d85bb, type: 3}

@@ -1,0 +1,242 @@
+{
+  "01_blossom_main_panel.png": {
+    "source_box": [
+      20,
+      15,
+      585,
+      1020
+    ],
+    "size": [
+      581,
+      1011
+    ]
+  },
+  "02_blossom_settings_banner.png": {
+    "source_box": [
+      590,
+      18,
+      1095,
+      185
+    ],
+    "size": [
+      521,
+      180
+    ]
+  },
+  "03_blossom_close_x.png": {
+    "source_box": [
+      1110,
+      20,
+      1220,
+      176
+    ],
+    "size": [
+      118,
+      147
+    ]
+  },
+  "04_blossom_row_toggle.png": {
+    "source_box": [
+      600,
+      212,
+      1190,
+      362
+    ],
+    "size": [
+      606,
+      166
+    ]
+  },
+  "05_blossom_row_arrow.png": {
+    "source_box": [
+      600,
+      370,
+      1190,
+      515
+    ],
+    "size": [
+      606,
+      161
+    ]
+  },
+  "06_blossom_toggle_on.png": {
+    "source_box": [
+      600,
+      520,
+      820,
+      640
+    ],
+    "size": [
+      236,
+      136
+    ]
+  },
+  "07_blossom_toggle_off.png": {
+    "source_box": [
+      845,
+      520,
+      1095,
+      640
+    ],
+    "size": [
+      256,
+      128
+    ]
+  },
+  "08_blossom_arrow_right.png": {
+    "source_box": [
+      1110,
+      520,
+      1220,
+      640
+    ],
+    "size": [
+      99,
+      125
+    ]
+  },
+  "09_blossom_icon_music.png": {
+    "source_box": [
+      625,
+      660,
+      785,
+      830
+    ],
+    "size": [
+      176,
+      186
+    ]
+  },
+  "10_blossom_icon_sound.png": {
+    "source_box": [
+      790,
+      660,
+      955,
+      830
+    ],
+    "size": [
+      181,
+      186
+    ]
+  },
+  "11_blossom_icon_vibration.png": {
+    "source_box": [
+      960,
+      660,
+      1125,
+      830
+    ],
+    "size": [
+      181,
+      186
+    ]
+  },
+  "12_blossom_icon_privacy.png": {
+    "source_box": [
+      1125,
+      660,
+      1224,
+      830
+    ],
+    "size": [
+      101,
+      186
+    ]
+  },
+  "13_blossom_icon_terms.png": {
+    "source_box": [
+      625,
+      830,
+      785,
+      1000
+    ],
+    "size": [
+      176,
+      184
+    ]
+  },
+  "14_blossom_icon_about.png": {
+    "source_box": [
+      790,
+      830,
+      955,
+      1000
+    ],
+    "size": [
+      181,
+      138
+    ]
+  },
+  "15_blossom_icon_restart.png": {
+    "source_box": [
+      960,
+      830,
+      1125,
+      1000
+    ],
+    "size": [
+      181,
+      134
+    ]
+  },
+  "16_blossom_icon_home.png": {
+    "source_box": [
+      1125,
+      830,
+      1224,
+      1000
+    ],
+    "size": [
+      101,
+      135
+    ]
+  },
+  "17_blossom_flower_large.png": {
+    "source_box": [
+      45,
+      1040,
+      470,
+      1285
+    ],
+    "size": [
+      380,
+      233
+    ]
+  },
+  "18_blossom_flower_small.png": {
+    "source_box": [
+      540,
+      1090,
+      720,
+      1265
+    ],
+    "size": [
+      191,
+      177
+    ]
+  },
+  "19_blossom_petal.png": {
+    "source_box": [
+      750,
+      1085,
+      915,
+      1240
+    ],
+    "size": [
+      129,
+      113
+    ]
+  },
+  "20_blossom_leaf.png": {
+    "source_box": [
+      955,
+      1075,
+      1210,
+      1275
+    ],
+    "size": [
+      248,
+      186
+    ]
+  }
+}

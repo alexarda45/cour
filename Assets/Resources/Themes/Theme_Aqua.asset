@@ -11,14 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
   m_Name: Theme_Aqua
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   themeType: 5
   displayName: Tropical Beach
   coinCost: 3000
   previewSprite: {fileID: 21300000, guid: ce2ee61e06374512b9f7e8661b72d2f3, type: 3}
+  cardThumbnailSprite: {fileID: 21300000, guid: 8a8828eb57164bc59df2bfc38cbc9fef, type: 3}
   menuBackground: {fileID: 21300000, guid: 82c5f76885d744d6ad379a2e4416d777, type: 3}
   gameplayBackground: {fileID: 21300000, guid: c7d6b73349ca40d49761c80a4d4e9b7d, type: 3}
   gameOverBackground: {fileID: 21300000, guid: 274362441cee489fa3692c70b1f4ffb0, type: 3}
+  themesPanelBackgroundSprite: {fileID: 21300000, guid: 321794d948d84937a4d69282a8c657c5, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: ce2ee61e06374512b9f7e8661b72d2f3, type: 3}
   tileCyan: {fileID: 21300000, guid: b03b0ab6bdae4fa3b52f54f9e6414419, type: 3}
   tileMagenta: {fileID: 21300000, guid: a0de096925a3476c8292bec37907a019, type: 3}
@@ -30,3 +32,10 @@ MonoBehaviour:
   effectColorAmber: {r: 0, g: 0.9098039, b: 0.15294118, a: 1}
   capsuleTintColor: {r: 0.4, g: 0.9019608, b: 0.8156863, a: 1}
   crownTintColor: {r: 1, g: 0.8156863, b: 0.47843137, a: 1}
+  capsuleSprite: {fileID: 21300000, guid: 2f235a8027ee5214aa69d8c7b6cc9631, type: 3}
+  crownSprite: {fileID: 0}
+  themesCoinBalanceSprite: {fileID: 21300000, guid: 481af6a3a967251408a8065ed967c3e0, type: 3}
+  themesCloseButtonSprite: {fileID: 21300000, guid: f18e487554ad4de4b3b293fd4a2bf02d, type: 3}
+  themesSelectedRibbonSprite: {fileID: 21300000, guid: abf5ea0db06541bea552d6d7548e20af, type: 3}
+  themesApplyButtonSprite: {fileID: 21300000, guid: 3f46b402330c4d8cb41bfe9304f6326a, type: 3}
+  settingsPanelSprite: {fileID: 21300000, guid: 5f072d1c95fef6749bccc93dfdc5f8e4, type: 3}

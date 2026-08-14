@@ -14,19 +14,64 @@ namespace ChromaBlast
         private const string SettingsGearPath = "Ocean/UI/SettingsIcon";
         private const string SettingsPanelPath = "Ocean/Settings/Settings_Panel";
         private const string SettingsClosePath = "Ocean/Settings/Close_X";
+        private const string OceanSettingsRoot = "Ocean/Settings";
+        private const string GardenSettingsRoot = "Themes/Settings/Garden";
+        private const string DesertCleanSettingsRoot = "Themes/Settings/DesertClean";
+        private const string BlossomSettingsRoot = "Themes/Settings/Blossom";
+        private const string BeachSettingsRoot = "Themes/Settings/Beach";
         private const string SettingsRestartIconPath = "Ocean/Icons/Icon_Restart";
         private const string FinalBoardVisualPath = "Ocean/Board/Board_LightBlue_Final_Square";
         private const string ScoreFontPath = "Fonts/Fredoka-SemiBold SDF";
         private const string SelectedLanguageKey = "SelectedLanguage";
         private const string EnglishLanguageCode = "en";
         private const float SettingsPanelWidth = 690f;
-        private const float SettingsPanelHeight = 750f;
+        private const float SettingsPanelHeight = 1060f;
         private const float SettingsRowsWidth = 580f;
-        private const float SettingsRowHeight = 100f;
-        private const float SettingsRowsSpacing = 10f;
-        private const float SettingsRowsHeight = SettingsRowHeight * 5f + SettingsRowsSpacing * 4f;
+        private const float SettingsRowHeight = 84f;
+        private const float SettingsRowsSpacing = 8f;
+        private const float SettingsRowsHeight = SettingsRowHeight * 8f + SettingsRowsSpacing * 7f;
         private const float SettingsControlWidth = 190f;
         private const float SettingsControlHeight = 60f;
+        private const float CandySettingsPanelWidth = 900f;
+        private const float CandySettingsPanelHeight = 1350f;
+        private const float CandySettingsRowsWidth = 640f;
+        private const float CandySettingsRowHeight = 108f;
+        private const float CandySettingsRowsSpacing = 8f;
+        private const float CandySettingsRowsHeight = CandySettingsRowHeight * 8f + CandySettingsRowsSpacing * 7f;
+        private const float CandySettingsControlWidth = 150f;
+        private const float CandySettingsControlHeight = 72f;
+        private const float GardenSettingsPanelWidth = 720f;
+        private const float GardenSettingsPanelHeight = 1250f;
+        private const float GardenSettingsRowsWidth = 620f;
+        private const float GardenSettingsRowHeight = 86f;
+        private const float GardenSettingsRowsSpacing = 10f;
+        private const float GardenSettingsRowsHeight = GardenSettingsRowHeight * 8f + GardenSettingsRowsSpacing * 7f;
+        private const float GardenSettingsControlWidth = 146f;
+        private const float GardenSettingsControlHeight = 68f;
+        private const float DesertSettingsPanelWidth = 800f;
+        private const float DesertSettingsPanelHeight = 1360f;
+        private const float DesertSettingsRowsWidth = 650f;
+        private const float DesertSettingsRowHeight = 92f;
+        private const float DesertSettingsRowsSpacing = 8f;
+        private const float DesertSettingsRowsHeight = DesertSettingsRowHeight * 8f + DesertSettingsRowsSpacing * 7f;
+        private const float DesertSettingsControlWidth = 166f;
+        private const float DesertSettingsControlHeight = 76f;
+        private const float BlossomSettingsPanelWidth = 840f;
+        private const float BlossomSettingsPanelHeight = 1330f;
+        private const float BlossomSettingsRowsWidth = 690f;
+        private const float BlossomSettingsRowHeight = 105f;
+        private const float BlossomSettingsRowsSpacing = 10f;
+        private const float BlossomSettingsRowsHeight = BlossomSettingsRowHeight * 8f + BlossomSettingsRowsSpacing * 7f;
+        private const float BlossomSettingsControlWidth = 238f;
+        private const float BlossomSettingsControlHeight = 86f;
+        private const float BeachSettingsPanelWidth = 800f;
+        private const float BeachSettingsPanelHeight = 1280f;
+        private const float BeachSettingsRowsWidth = 690f;
+        private const float BeachSettingsRowHeight = 100f;
+        private const float BeachSettingsRowsSpacing = 6f;
+        private const float BeachSettingsRowsHeight = BeachSettingsRowHeight * 8f + BeachSettingsRowsSpacing * 7f;
+        private const float BeachSettingsControlWidth = 220f;
+        private const float BeachSettingsControlHeight = 82f;
         private const float OceanBoardFrameRadius = 0.30f;
 
         [Header("Text")]
@@ -86,14 +131,17 @@ namespace ChromaBlast
         private Image oceanBackgroundImage;
         private Image blitzTimerCapsuleImage;
         private TMP_Text scoreShadowText;
+        private bool blossomScoreWasActive;
+        private bool blossomScoreShadowWasActive;
+        private bool blossomScoreVisibilityCaptured;
+        private bool beachScoreWasActive;
+        private bool beachScoreShadowWasActive;
+        private bool beachScoreVisibilityCaptured;
         private TMP_Text newBestText;
         private RectTransform bestScoreHudRoot;
         private Image bestScoreCapsuleImage;
         private Image bestScoreCrownImage;
         private Image bestScoreCrownGlowImage;
-        private Material bestScoreCapsuleTintMaterial;
-        private Material bestScoreCrownTintMaterial;
-        private static readonly int ThemeColorProperty = Shader.PropertyToID("_ThemeColor");
         private Image finalBoardVisualImage;
         private Image finalBoardShadowImage;
         private Image pauseOverlayImage;
@@ -104,6 +152,7 @@ namespace ChromaBlast
         private GameObject languagePopupRoot;
         private TMP_Text languageValueOverlay;
         private RectTransform settingsRowsContainer;
+        private Image settingsBottomDecorationImage;
         private Image musicToggleTrackImage;
         private Image musicToggleKnobImage;
         private TMP_Text musicToggleStateText;
@@ -236,9 +285,6 @@ namespace ChromaBlast
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
 
-            DestroyRuntimeMaterial(ref bestScoreCapsuleTintMaterial);
-            DestroyRuntimeMaterial(ref bestScoreCrownTintMaterial);
-
             if (blitzUrgencyRoutine != null)
             {
                 StopCoroutine(blitzUrgencyRoutine);
@@ -262,6 +308,7 @@ namespace ChromaBlast
             EnsureOceanBranding();
             EnsureOceanBoardFrame();
             ApplyBestScoreTheme(resolvedTheme);
+            ApplySettingsTheme(resolvedTheme);
         }
 
         public void Refresh(GameMode mode, ScoreManager scoreManager, int highScore, float blitzSeconds, bool undoAvailable, int nextScoreMilestone)
@@ -696,6 +743,26 @@ namespace ChromaBlast
 
         public void ShowPause(bool visible)
         {
+            bool blossomPause = IsBlossomSettingsActive();
+            if (blossomPause && visible && !blossomScoreVisibilityCaptured)
+            {
+                blossomScoreWasActive = scoreText != null && scoreText.gameObject.activeSelf;
+                blossomScoreShadowWasActive = scoreShadowText != null && scoreShadowText.gameObject.activeSelf;
+                blossomScoreVisibilityCaptured = true;
+                if (scoreText != null) scoreText.gameObject.SetActive(false);
+                if (scoreShadowText != null) scoreShadowText.gameObject.SetActive(false);
+            }
+
+            bool beachPause = IsBeachSettingsActive();
+            if (beachPause && visible && !beachScoreVisibilityCaptured)
+            {
+                beachScoreWasActive = scoreText != null && scoreText.gameObject.activeSelf;
+                beachScoreShadowWasActive = scoreShadowText != null && scoreShadowText.gameObject.activeSelf;
+                beachScoreVisibilityCaptured = true;
+                if (scoreText != null) scoreText.gameObject.SetActive(false);
+                if (scoreShadowText != null) scoreShadowText.gameObject.SetActive(false);
+            }
+
             if (pauseRoot != null)
             {
                 EnsureOceanPauseMenu();
@@ -710,6 +777,18 @@ namespace ChromaBlast
             if (visible)
             {
                 RefreshPauseLabels();
+            }
+            else if (blossomScoreVisibilityCaptured)
+            {
+                if (scoreText != null) scoreText.gameObject.SetActive(blossomScoreWasActive);
+                if (scoreShadowText != null) scoreShadowText.gameObject.SetActive(blossomScoreShadowWasActive);
+                blossomScoreVisibilityCaptured = false;
+            }
+            else if (beachScoreVisibilityCaptured)
+            {
+                if (scoreText != null) scoreText.gameObject.SetActive(beachScoreWasActive);
+                if (scoreShadowText != null) scoreShadowText.gameObject.SetActive(beachScoreShadowWasActive);
+                beachScoreVisibilityCaptured = false;
             }
         }
 
@@ -1327,88 +1406,43 @@ namespace ChromaBlast
 
         private void ApplyBestScoreTheme(ThemeAssetSet theme)
         {
-            Color capsuleTint = theme == null ? Color.white : theme.CapsuleTintColor;
-            Color crownTint = theme == null ? Color.white : theme.CrownTintColor;
+            Sprite capsuleSprite = theme == null ? null : theme.CapsuleSprite;
 
             if (bestScoreCapsuleImage != null)
             {
-                ApplyLuminanceTint(
-                    bestScoreCapsuleImage,
-                    ref bestScoreCapsuleTintMaterial,
-                    capsuleTint,
-                    "BestScoreCapsule_ThemeTint");
+                bestScoreCapsuleImage.material = null;
+                bestScoreCapsuleImage.color = Color.white;
+                bestScoreCapsuleImage.preserveAspect = true;
+                bestScoreCapsuleImage.sprite = capsuleSprite != null
+                    ? capsuleSprite
+                    : LoadOceanSprite(BestScoreCapsulePath);
+                bestScoreCapsuleImage.enabled = bestScoreCapsuleImage.sprite != null;
             }
 
             if (bestScoreCrownImage != null)
             {
-                ApplyLuminanceTint(
-                    bestScoreCrownImage,
-                    ref bestScoreCrownTintMaterial,
-                    crownTint,
-                    "BestScoreCrown_ThemeTint");
+                bestScoreCrownImage.material = null;
+                bestScoreCrownImage.color = Color.white;
+                bestScoreCrownImage.preserveAspect = true;
+                bestScoreCrownImage.sprite = LoadOceanSprite(BestScoreCrownPath);
+                bestScoreCrownImage.enabled = bestScoreCrownImage.sprite != null;
             }
 
             if (bestScoreCrownGlowImage != null)
             {
-                crownTint.a = 0.10f;
-                bestScoreCrownGlowImage.color = crownTint;
-            }
-        }
-
-        private static void ApplyLuminanceTint(Image image, ref Material material, Color themeColor, string materialName)
-        {
-            if (image == null)
-            {
-                return;
+                bestScoreCrownGlowImage.color = new Color(1f, 0.82f, 0.24f, 0.10f);
             }
 
-            if (material == null)
+            if (blitzTimerCapsuleImage != null)
             {
-                // Keep the shader in Resources so Android builds cannot strip a
-                // runtime-only Shader.Find reference.
-                Shader shader = Resources.Load<Shader>("Shaders/UIThemeLuminanceTint");
-                if (shader == null)
-                {
-                    shader = Shader.Find("ChromaBlast/UI/LuminanceTint");
-                }
-                if (shader != null)
-                {
-                    material = new Material(shader)
-                    {
-                        name = materialName,
-                        hideFlags = HideFlags.HideAndDontSave
-                    };
-                }
+                blitzTimerCapsuleImage.material = null;
+                blitzTimerCapsuleImage.color = Color.white;
+                blitzTimerCapsuleImage.preserveAspect = true;
+                blitzTimerCapsuleImage.sprite = capsuleSprite != null
+                    ? capsuleSprite
+                    : LoadOceanSprite(BestScoreCapsulePath);
+                blitzTimerCapsuleImage.enabled = blitzTimerCapsuleImage.sprite != null;
             }
-
-            // Image.color must stay white: a coloured Image tint would multiply
-            // the already coloured source PNG and shift every theme back to blue.
-            image.color = Color.white;
-            image.material = material;
-            if (material != null && material.HasProperty(ThemeColorProperty))
-            {
-                themeColor.a = 1f;
-                material.SetColor(ThemeColorProperty, themeColor);
-            }
-        }
-
-        private static void DestroyRuntimeMaterial(ref Material material)
-        {
-            if (material == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(material);
-            }
-            else
-            {
-                DestroyImmediate(material);
-            }
-
-            material = null;
         }
 
         private static void ConfigureHudLayerRect(
@@ -1730,11 +1764,12 @@ namespace ChromaBlast
             pausePanelRoot.anchorMin = new Vector2(0.5f, 0.5f);
             pausePanelRoot.anchorMax = new Vector2(0.5f, 0.5f);
             pausePanelRoot.anchoredPosition = Vector2.zero;
-            pausePanelRoot.sizeDelta = new Vector2(SettingsPanelWidth, SettingsPanelHeight);
+            ApplySettingsPanelGeometry();
             pausePanelRoot.localScale = Vector3.one;
             pausePanelRoot.pivot = new Vector2(0.5f, 0.5f);
 
             ConfigureSettingsPanelSprite();
+            ConfigureCandySettingsBottomDecoration();
             ConfigureSettingsTitle();
             DisableGeneratedPauseDecor();
             DisableObsoletePausePanelBackplates();
@@ -1742,6 +1777,8 @@ namespace ChromaBlast
             DisableLegacyPauseRows();
             ConfigureModernCloseButton();
             BuildModernPauseRows();
+            ConfigureBlossomBakedVisuals();
+            ConfigureBeachVisuals();
 
             EnsureSettingsRaycastPath();
             UpdateSettingsToggleVisuals(false);
@@ -1771,14 +1808,286 @@ namespace ChromaBlast
                 return;
             }
 
-            Sprite panelSprite = LoadSettingsSprite(SettingsPanelPath);
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            bool desert = IsDesertSettingsTheme(activeTheme);
+            bool blossom = IsBlossomSettingsTheme(activeTheme);
+            bool beach = IsBeachSettingsTheme(activeTheme);
+
+            if (desert || blossom || beach)
+            {
+                pausePanelImage.sprite = blossom
+                    ? LoadBlossomSettingsSprite("01_blossom_main_panel")
+                    : beach ? LoadBeachSettingsSprite("01_beach_main_panel")
+                    : LoadDesertCleanSettingsSprite("desert_panel_vertical");
+                pausePanelImage.enabled = true;
+                pausePanelImage.color = Color.white;
+                pausePanelImage.material = null;
+                pausePanelImage.raycastTarget = false;
+                pausePanelImage.type = Image.Type.Simple;
+                pausePanelImage.preserveAspect = true;
+                DisableSelectableDecor(pausePanelRoot.gameObject);
+                return;
+            }
+
+            Sprite panelSprite = IsOceanSettingsTheme(activeTheme)
+                ? LoadOceanSettingsSprite("ocean_panel")
+                : IsGardenSettingsTheme(activeTheme)
+                    ? LoadGardenSettingsSprite("garden_panel_medium")
+                    : null;
+            panelSprite ??= activeTheme != null && activeTheme.SettingsPanelSprite != null
+                ? activeTheme.SettingsPanelSprite
+                : LoadSettingsSprite(SettingsPanelPath);
             pausePanelImage.enabled = true;
             pausePanelImage.sprite = panelSprite;
             pausePanelImage.color = Color.white;
-            pausePanelImage.raycastTarget = true;
+            pausePanelImage.material = null;
+            pausePanelImage.raycastTarget = false;
             pausePanelImage.type = Image.Type.Simple;
-            pausePanelImage.preserveAspect = false;
+            pausePanelImage.preserveAspect = true;
+            Outline panelOutline = pausePanelRoot.GetComponent<Outline>();
+            if (panelOutline != null)
+            {
+                panelOutline.enabled = false;
+            }
             DisableSelectableDecor(pausePanelRoot.gameObject);
+        }
+
+        private void ApplySettingsTheme(ThemeAssetSet ignoredTheme)
+        {
+            if (pausePanelImage == null)
+            {
+                return;
+            }
+
+            // Settings follows only the applied/saved theme. The argument is
+            // intentionally ignored so a temporary Themes-card selection can
+            // never reskin this screen before APPLY is pressed.
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            bool desert = IsDesertSettingsTheme(activeTheme);
+            bool blossom = IsBlossomSettingsTheme(activeTheme);
+            bool beach = IsBeachSettingsTheme(activeTheme);
+
+            if (desert || blossom || beach)
+            {
+                pausePanelImage.sprite = blossom
+                    ? LoadBlossomSettingsSprite("01_blossom_main_panel")
+                    : beach ? LoadBeachSettingsSprite("01_beach_main_panel")
+                    : LoadDesertCleanSettingsSprite("desert_panel_vertical");
+                pausePanelImage.color = Color.white;
+                pausePanelImage.material = null;
+                pausePanelImage.type = Image.Type.Simple;
+                pausePanelImage.preserveAspect = true;
+                pausePanelImage.raycastTarget = false;
+                pausePanelImage.enabled = true;
+                Outline panelOutline = pausePanelRoot.GetComponent<Outline>();
+                if (panelOutline != null)
+                {
+                    panelOutline.enabled = false;
+                }
+            }
+
+            Sprite settingsSprite = IsOceanSettingsTheme(activeTheme)
+                ? LoadOceanSettingsSprite("ocean_panel")
+                : IsGardenSettingsTheme(activeTheme)
+                    ? LoadGardenSettingsSprite("garden_panel_medium")
+                    : activeTheme != null ? activeTheme.SettingsPanelSprite : null;
+            if (settingsSprite == null)
+            {
+                settingsSprite = LoadSettingsSprite(SettingsPanelPath);
+            }
+
+            if (!desert && !blossom && !beach)
+            {
+                pausePanelImage.sprite = settingsSprite;
+                pausePanelImage.color = Color.white;
+                pausePanelImage.material = null;
+                pausePanelImage.type = Image.Type.Simple;
+                pausePanelImage.preserveAspect = true;
+                pausePanelImage.raycastTarget = false;
+                pausePanelImage.enabled = settingsSprite != null;
+                Outline panelOutline = pausePanelRoot.GetComponent<Outline>();
+                if (panelOutline != null)
+                {
+                    panelOutline.enabled = false;
+                }
+            }
+
+            ApplySettingsPanelGeometry();
+            ConfigureCandySettingsBottomDecoration();
+            ConfigureSettingsTitle();
+            ConfigureModernCloseButton();
+            BuildModernPauseRows();
+            UpdateSettingsToggleVisuals(false);
+            ConfigureBlossomBakedVisuals();
+            ConfigureBeachVisuals();
+        }
+
+        private static bool IsCandySettingsTheme(ThemeAssetSet theme)
+        {
+            return theme != null && theme.ThemeType == ThemeType.Candy;
+        }
+
+        private static bool IsOceanSettingsTheme(ThemeAssetSet theme)
+        {
+            return theme == null || theme.ThemeType == ThemeType.Ocean;
+        }
+
+        private static bool IsGardenSettingsTheme(ThemeAssetSet theme)
+        {
+            return theme != null && theme.ThemeType == ThemeType.Crystal;
+        }
+
+        private static bool IsDesertSettingsTheme(ThemeAssetSet theme)
+        {
+            return theme != null && theme.ThemeType == ThemeType.Gold;
+        }
+
+        private static bool IsBlossomSettingsTheme(ThemeAssetSet theme)
+        {
+            return theme != null && theme.ThemeType == ThemeType.Neon;
+        }
+
+        private static bool IsBeachSettingsTheme(ThemeAssetSet theme)
+        {
+            return theme != null && theme.ThemeType == ThemeType.Aqua;
+        }
+
+        private bool IsDesertSettingsActive()
+        {
+            return IsDesertSettingsTheme(ThemeCatalog.Current);
+        }
+
+        private bool IsBlossomSettingsActive()
+        {
+            return IsBlossomSettingsTheme(ThemeCatalog.Current);
+        }
+
+        private bool IsBeachSettingsActive()
+        {
+            return IsBeachSettingsTheme(ThemeCatalog.Current);
+        }
+
+        private static Sprite LoadOceanSettingsSprite(string fileName)
+        {
+            return Resources.Load<Sprite>($"{OceanSettingsRoot}/{fileName}");
+        }
+
+        private static Sprite LoadGardenSettingsSprite(string fileName)
+        {
+            string resourcePath = $"{GardenSettingsRoot}/{fileName}";
+            Sprite sprite = Resources.Load<Sprite>(resourcePath);
+            // The supplied Garden controls can be imported as multiple sprites.
+            // Always pick the largest artwork rect, even when Unity returns a tiny
+            // alpha fragment as the path's implicit Sprite.
+            Sprite[] sprites = Resources.LoadAll<Sprite>(resourcePath);
+            Sprite largest = sprite;
+            float largestArea = sprite != null ? sprite.rect.width * sprite.rect.height : 0f;
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                Sprite candidate = sprites[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                float area = candidate.rect.width * candidate.rect.height;
+                if (largest == null || area > largestArea)
+                {
+                    largest = candidate;
+                    largestArea = area;
+                }
+            }
+
+            return largest;
+        }
+
+        private static Sprite LoadDesertCleanSettingsSprite(string fileName)
+        {
+            return Resources.Load<Sprite>($"{DesertCleanSettingsRoot}/{fileName}");
+        }
+
+        private static Sprite LoadBlossomSettingsSprite(string fileName)
+        {
+            return Resources.Load<Sprite>($"{BlossomSettingsRoot}/{fileName}");
+        }
+
+        private static Sprite LoadBeachSettingsSprite(string fileName)
+        {
+            return Resources.Load<Sprite>($"{BeachSettingsRoot}/{fileName}");
+        }
+
+        private bool IsCandySettingsActive()
+        {
+            return IsCandySettingsTheme(ThemeCatalog.Current);
+        }
+
+        private bool IsGardenSettingsActive()
+        {
+            return IsGardenSettingsTheme(ThemeCatalog.Current);
+        }
+
+        private void ApplySettingsPanelGeometry()
+        {
+            if (pausePanelRoot == null)
+            {
+                return;
+            }
+
+            pausePanelRoot.sizeDelta = IsCandySettingsActive()
+                ? new Vector2(CandySettingsPanelWidth, CandySettingsPanelHeight)
+                : IsGardenSettingsActive()
+                    ? new Vector2(GardenSettingsPanelWidth, GardenSettingsPanelHeight)
+                    : IsDesertSettingsActive()
+                        ? new Vector2(DesertSettingsPanelWidth, DesertSettingsPanelHeight)
+                        : IsBlossomSettingsActive()
+                            ? new Vector2(BlossomSettingsPanelWidth, BlossomSettingsPanelHeight)
+                            : IsBeachSettingsActive()
+                                ? new Vector2(BeachSettingsPanelWidth, BeachSettingsPanelHeight)
+                        : new Vector2(SettingsPanelWidth, SettingsPanelHeight);
+        }
+
+        private void ConfigureCandySettingsBottomDecoration()
+        {
+            if (pausePanelRoot == null)
+            {
+                return;
+            }
+
+            RectTransform decorationRect = GetOrCreateChildRect(pausePanelRoot, "CandyBottomDecoration");
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite decorationSprite = activeTheme != null ? activeTheme.SettingsBottomDecorationSprite : null;
+            // The enlarged separated Candy rows use the full lower panel area.
+            // Keep the optional footer hidden so it cannot compress or cover them.
+            bool showDecoration = false;
+
+            decorationRect.anchorMin = new Vector2(0.5f, 0f);
+            decorationRect.anchorMax = new Vector2(0.5f, 0f);
+            decorationRect.pivot = new Vector2(0.5f, 0f);
+            decorationRect.anchoredPosition = new Vector2(0f, 0f);
+            decorationRect.sizeDelta = new Vector2(570f, 194f);
+            decorationRect.localScale = Vector3.one;
+
+            settingsBottomDecorationImage = GetOrAddImage(decorationRect.gameObject);
+            settingsBottomDecorationImage.sprite = decorationSprite;
+            settingsBottomDecorationImage.color = Color.white;
+            settingsBottomDecorationImage.material = null;
+            settingsBottomDecorationImage.type = Image.Type.Simple;
+            settingsBottomDecorationImage.preserveAspect = true;
+            settingsBottomDecorationImage.raycastTarget = false;
+            settingsBottomDecorationImage.enabled = showDecoration;
+            decorationRect.gameObject.SetActive(showDecoration);
+            if (showDecoration)
+            {
+                decorationRect.SetAsFirstSibling();
+            }
+
+            // The final Blossom panel already contains its border flowers and
+            // petals. Keep the optional loose pieces inactive so they cannot
+            // duplicate the baked decoration or cover the bottom rows.
+            DisableChild(pausePanelRoot, "BlossomFlowerLarge");
+            DisableChild(pausePanelRoot, "BlossomFlowerSmall");
+            DisableChild(pausePanelRoot, "BlossomPetal");
+            DisableChild(pausePanelRoot, "BlossomLeaf");
         }
 
         private void ConfigureSettingsTitle()
@@ -1812,28 +2121,111 @@ namespace ChromaBlast
                 titleButton.interactable = false;
             }
 
+            bool candy = IsCandySettingsActive();
+            bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
+            // ocean_panel already contains the final Settings lettering. Keep this
+            // legacy standalone title permanently inactive so Ocean renders it once.
+            RectTransform oceanTitleRect = GetOrCreateChildRect(pausePanelRoot, "OceanSettingsTitle");
+            Image oceanTitleImage = GetOrAddImage(oceanTitleRect.gameObject);
+            oceanTitleImage.sprite = null;
+            oceanTitleImage.enabled = false;
+            oceanTitleImage.raycastTarget = false;
+            oceanTitleRect.gameObject.SetActive(false);
+
+            RectTransform coverRect = GetOrCreateChildRect(pausePanelRoot, "CandyTitleCover");
+            coverRect.anchorMin = new Vector2(0.5f, 0.5f);
+            coverRect.anchorMax = new Vector2(0.5f, 0.5f);
+            coverRect.pivot = new Vector2(0.5f, 0.5f);
+            coverRect.anchoredPosition = new Vector2(0f, 360f);
+            coverRect.sizeDelta = new Vector2(490f, 82f);
+            coverRect.localScale = Vector3.one;
+            Image cover = GetOrAddImage(coverRect.gameObject);
+            UISpriteFactory.ApplyRounded(cover, 0.42f);
+            cover.color = new Color(1f, 0.91f, 0.95f, 1f);
+            cover.raycastTarget = false;
+            // The final Candy panel has a clean header area. The legacy cover was
+            // only needed to hide the title baked into the previous artwork.
+            cover.enabled = false;
+            coverRect.gameObject.SetActive(false);
+
             RectTransform rect = pauseTitleText.transform as RectTransform;
             if (rect != null)
             {
                 rect.anchorMin = new Vector2(0.5f, 0.5f);
                 rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.anchoredPosition = new Vector2(0f, 292f);
-                rect.sizeDelta = new Vector2(520f, 76f);
+                rect.anchoredPosition = candy
+                    ? new Vector2(0f, 548f)
+                    : garden ? new Vector2(0f, 486f) : blossom ? new Vector2(0f, 492f) : desert ? new Vector2(0f, 430f) : new Vector2(0f, 292f);
+                rect.sizeDelta = candy
+                    ? new Vector2(520f, 86f)
+                    : garden ? new Vector2(500f, 80f) : blossom ? new Vector2(500f, 92f) : desert ? new Vector2(500f, 82f) : new Vector2(520f, 76f);
                 rect.localScale = Vector3.one;
                 rect.pivot = new Vector2(0.5f, 0.5f);
             }
 
-            pauseTitleText.text = "Settings";
-
+            // OceanSettingsTitle uses the supplied artwork, which already contains
+            // the Settings lettering. Keep the legacy TMP title hidden there so
+            // the header is rendered exactly once.
+            // Garden and Ocean panels already contain the final Settings heading.
+            // Candy and the neutral Desert skin use a standalone runtime title.
+            pauseTitleText.text = candy || desert ? "Settings" : string.Empty;
+            pauseTitleText.font = Resources.Load<TMP_FontAsset>(ScoreFontPath);
             pauseTitleText.alignment = TextAlignmentOptions.Center;
-            pauseTitleText.fontSize = 46f;
-            pauseTitleText.characterSpacing = 0.5f;
+            pauseTitleText.enableAutoSizing = candy || desert;
+            pauseTitleText.fontSizeMin = candy ? 50f : desert ? 44f : garden ? 42f : 44f;
+            pauseTitleText.fontSizeMax = candy ? 66f : desert ? 58f : garden ? 56f : 58f;
             pauseTitleText.fontStyle = FontStyles.Bold;
-            pauseTitleText.color = new Color(0.92f, 1f, 1f, 1f);
+            pauseTitleText.color = garden
+                ? new Color(0.035f, 0.23f, 0.09f, 1f)
+                : desert ? new Color(0.30f, 0.13f, 0.055f, 1f) : new Color(0.48f, 0.015f, 0.18f, 1f);
             pauseTitleText.raycastTarget = false;
-            pauseTitleText.enabled = true;
-            pauseTitleText.gameObject.SetActive(true);
-            EnsureTextShadow(pauseTitleText, new Color(0f, 0.07f, 0.18f, 0.82f), new Vector2(0f, -2.5f));
+            pauseTitleText.enabled = candy || desert;
+            pauseTitleText.gameObject.SetActive(candy || desert);
+            RectTransform blossomBannerRect = GetOrCreateChildRect(pausePanelRoot, "BlossomSettingsBanner");
+            blossomBannerRect.anchorMin = blossomBannerRect.anchorMax = new Vector2(0.5f, 1f);
+            blossomBannerRect.pivot = new Vector2(0.5f, 1f);
+            blossomBannerRect.anchoredPosition = new Vector2(32f, -116f);
+            blossomBannerRect.sizeDelta = new Vector2(300f, 100f);
+            blossomBannerRect.localScale = Vector3.one;
+            Image blossomBanner = GetOrAddImage(blossomBannerRect.gameObject);
+            blossomBanner.sprite = blossom ? LoadBlossomSettingsSprite("23_blossom_settings_title") : null;
+            blossomBanner.color = Color.white;
+            blossomBanner.preserveAspect = true;
+            blossomBanner.raycastTarget = false;
+            blossomBanner.enabled = blossom && blossomBanner.sprite != null;
+            blossomBannerRect.gameObject.SetActive(blossomBanner.enabled);
+            if (blossomBanner.enabled)
+            {
+                blossomBannerRect.SetAsLastSibling();
+            }
+
+            RectTransform beachTitleRect = GetOrCreateChildRect(pausePanelRoot, "BeachSettingsTitle");
+            beachTitleRect.anchorMin = beachTitleRect.anchorMax = new Vector2(0.5f, 1f);
+            beachTitleRect.pivot = new Vector2(0.5f, 1f);
+            beachTitleRect.anchoredPosition = new Vector2(0f, -50f);
+            beachTitleRect.sizeDelta = new Vector2(520f, 154f);
+            beachTitleRect.localScale = Vector3.one;
+            Image beachTitle = GetOrAddImage(beachTitleRect.gameObject);
+            beachTitle.sprite = beach ? LoadBeachSettingsSprite("02_beach_settings_title") : null;
+            beachTitle.color = Color.white;
+            beachTitle.material = null;
+            beachTitle.type = Image.Type.Simple;
+            beachTitle.preserveAspect = true;
+            beachTitle.raycastTarget = false;
+            beachTitle.enabled = beach && beachTitle.sprite != null;
+            beachTitleRect.gameObject.SetActive(beachTitle.enabled);
+            if (beachTitle.enabled)
+            {
+                beachTitleRect.SetAsLastSibling();
+            }
+            if (candy || ocean || desert)
+            {
+                (ocean ? oceanTitleRect : rect).SetAsLastSibling();
+            }
         }
 
         private void ConfigureSettingsHeaderAccent()
@@ -1847,8 +2239,7 @@ namespace ChromaBlast
             accentRect.localScale = Vector3.one;
 
             Image accent = GetOrAddImage(accentRect.gameObject);
-            UISpriteFactory.ApplyRounded(accent, 1f);
-            accent.color = new Color(0.30f, 0.92f, 1f, 0.42f);
+            accent.enabled = false;
             accent.raycastTarget = false;
             accentRect.SetSiblingIndex(Mathf.Min(1, pausePanelRoot.childCount - 1));
         }
@@ -1939,20 +2330,65 @@ namespace ChromaBlast
 
         private void ConfigureModernCloseButton()
         {
+            bool candy = IsCandySettingsActive();
+            bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
             RectTransform closeRect = GetOrCreateChildRect(pausePanelRoot, "CloseButton");
             closeRect.anchorMin = new Vector2(1f, 1f);
             closeRect.anchorMax = new Vector2(1f, 1f);
             closeRect.pivot = new Vector2(1f, 1f);
-            closeRect.anchoredPosition = new Vector2(-28f, -28f);
-            closeRect.sizeDelta = new Vector2(68f, 68f);
+            // The Candy close glyph is baked into the 1024x1536 panel at approximately
+            // (838, 140). Keep this transparent Button centered over that artwork after
+            // the panel is fitted to 900x1350; no second close sprite is rendered.
+            closeRect.anchoredPosition = ocean ? new Vector2(-34f, -34f) : candy ? new Vector2(-105f, -64f) : garden ? new Vector2(-48f, -50f) : blossom ? new Vector2(-24f, -26f) : beach ? new Vector2(-28f, -28f) : new Vector2(-28f, -28f);
+            closeRect.sizeDelta = ocean ? new Vector2(92f, 92f) : candy ? new Vector2(118f, 118f) : garden ? new Vector2(86f, 86f) : blossom ? new Vector2(92f, 115f) : beach ? new Vector2(88f, 88f) : new Vector2(68f, 68f);
             closeRect.localScale = Vector3.one;
 
             Image image = GetOrAddImage(closeRect.gameObject);
-            image.sprite = LoadSettingsSprite(SettingsClosePath);
-            image.color = Color.white;
+            // Candy and Ocean panels already contain their final X artwork. The
+            // retained Image is fully transparent and serves only as the Button's
+            // raycastable hitbox; no second close graphic is drawn over either panel.
+            bool usesBakedCloseArtwork = ocean || candy;
+            image.sprite = blossom ? LoadBlossomSettingsSprite("03_blossom_close_x") : beach ? LoadBeachSettingsSprite("03_beach_close_x") : garden ? LoadGardenSettingsSprite("garden_x") : usesBakedCloseArtwork ? null : LoadSettingsSprite(SettingsClosePath);
+            image.color = usesBakedCloseArtwork ? new Color(1f, 1f, 1f, 0f) : Color.white;
             image.type = Image.Type.Simple;
-            image.preserveAspect = true;
+            image.preserveAspect = blossom || beach || garden || !usesBakedCloseArtwork;
             image.raycastTarget = true;
+
+            RectTransform desertGlyphRect = GetOrCreateChildRect(closeRect, "DesertCloseGlyph");
+            desertGlyphRect.anchorMin = Vector2.zero;
+            desertGlyphRect.anchorMax = Vector2.one;
+            desertGlyphRect.offsetMin = Vector2.zero;
+            desertGlyphRect.offsetMax = Vector2.zero;
+            TMP_Text desertGlyph = GetOrAddText(desertGlyphRect.gameObject);
+            desertGlyph.text = "X";
+            desertGlyph.font = Resources.Load<TMP_FontAsset>(ScoreFontPath);
+            desertGlyph.alignment = TextAlignmentOptions.Center;
+            desertGlyph.fontSize = 48f;
+            desertGlyph.fontStyle = FontStyles.Bold;
+            desertGlyph.color = new Color(0.94f, 0.42f, 0.04f, 1f);
+            desertGlyph.raycastTarget = false;
+            desertGlyph.gameObject.SetActive(desert);
+
+            Outline closeOutline = closeRect.GetComponent<Outline>();
+            if (desert)
+            {
+                image.sprite = LoadDesertCleanSettingsSprite("desert_close");
+                image.color = Color.white;
+                image.preserveAspect = true;
+                desertGlyph.gameObject.SetActive(false);
+                if (closeOutline != null)
+                {
+                    closeOutline.enabled = false;
+                }
+            }
+            else if (closeOutline != null)
+            {
+                closeOutline.enabled = false;
+            }
 
             resumeButton = GetOrAddButton(closeRect.gameObject, image);
             ConfigureButtonNoTransition(resumeButton);
@@ -1990,12 +2426,27 @@ namespace ChromaBlast
 
         private void BuildModernPauseRows()
         {
+            bool candy = IsCandySettingsActive();
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
             settingsRowsContainer = GetOrCreateChildRect(pausePanelRoot, "RowsContainer");
             settingsRowsContainer.anchorMin = new Vector2(0.5f, 0.5f);
             settingsRowsContainer.anchorMax = new Vector2(0.5f, 0.5f);
             settingsRowsContainer.pivot = new Vector2(0.5f, 0.5f);
-            settingsRowsContainer.anchoredPosition = new Vector2(0f, -46f);
-            settingsRowsContainer.sizeDelta = new Vector2(SettingsRowsWidth, SettingsRowsHeight);
+            settingsRowsContainer.anchoredPosition = candy ? new Vector2(0f, -78f) : garden ? new Vector2(0f, -70f) : blossom ? new Vector2(0f, -80f) : beach ? new Vector2(0f, -72f) : desert ? new Vector2(0f, -100f) : new Vector2(0f, -62f);
+            settingsRowsContainer.sizeDelta = candy
+                ? new Vector2(CandySettingsRowsWidth, CandySettingsRowsHeight)
+                : garden
+                    ? new Vector2(GardenSettingsRowsWidth, GardenSettingsRowsHeight)
+                    : blossom
+                        ? new Vector2(BlossomSettingsRowsWidth, BlossomSettingsRowsHeight)
+                    : beach
+                        ? new Vector2(BeachSettingsRowsWidth, BeachSettingsRowsHeight)
+                    : desert
+                        ? new Vector2(DesertSettingsRowsWidth, DesertSettingsRowsHeight)
+                        : new Vector2(SettingsRowsWidth, SettingsRowsHeight);
             settingsRowsContainer.localScale = Vector3.one;
 
             VerticalLayoutGroup layout = settingsRowsContainer.GetComponent<VerticalLayoutGroup>();
@@ -2004,8 +2455,11 @@ namespace ChromaBlast
                 layout = settingsRowsContainer.gameObject.AddComponent<VerticalLayoutGroup>();
             }
 
+            // Blossom positions its supplied rows explicitly over its own panel.
+            // Re-enable the shared layout immediately when any other theme opens.
+            layout.enabled = !blossom && !beach;
             layout.padding = new RectOffset(0, 0, 0, 0);
-            layout.spacing = SettingsRowsSpacing;
+            layout.spacing = candy ? CandySettingsRowsSpacing : garden ? GardenSettingsRowsSpacing : blossom ? BlossomSettingsRowsSpacing : beach ? BeachSettingsRowsSpacing : desert ? DesertSettingsRowsSpacing : SettingsRowsSpacing;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -2021,16 +2475,219 @@ namespace ChromaBlast
             BuildToggleRow("MusicRow", "Music", "music", false, true);
             BuildToggleRow("SoundRow", "Sound", "sound", true, false);
             BuildToggleRow("VibrationRow", "Vibration", "vibration", false, false);
-            BuildActionRow("RestartRow", "Restart", "restart", "RESTART", true);
+            BuildStatusRow("PrivacyRow", "Privacy Policy", "privacy", string.Empty, HandleSettingsPrivacy);
+            BuildStatusRow("TermsRow", "Terms & Conditions", "terms", string.Empty, HandleSettingsTerms);
+            BuildStatusRow("AboutRow", "About / Version", "about", $"v{Application.version}", HandleSettingsAbout);
+            bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
+            BuildActionRow("RestartRow", candy || garden || ocean || desert || blossom || beach ? "Restart Game" : "Restart", "restart", "RESTART", true);
             BuildActionRow("MainMenuRow", "Main Menu", "home", "MENU", false);
 
             SetRowSiblingOrder("MusicRow", 0);
             SetRowSiblingOrder("SoundRow", 1);
             SetRowSiblingOrder("VibrationRow", 2);
-            SetRowSiblingOrder("RestartRow", 3);
-            SetRowSiblingOrder("MainMenuRow", 4);
+            SetRowSiblingOrder("PrivacyRow", 3);
+            SetRowSiblingOrder("TermsRow", 4);
+            SetRowSiblingOrder("AboutRow", 5);
+            SetRowSiblingOrder("RestartRow", 6);
+            SetRowSiblingOrder("MainMenuRow", 7);
             DisableLanguageSelectionUi();
             settingsRowsContainer.gameObject.SetActive(true);
+        }
+
+        private void ConfigureBlossomBakedVisuals()
+        {
+            if (!IsBlossomSettingsActive() || pausePanelRoot == null || settingsRowsContainer == null)
+            {
+                return;
+            }
+
+            VerticalLayoutGroup layout = settingsRowsContainer.GetComponent<VerticalLayoutGroup>();
+            if (layout != null) layout.enabled = false;
+            settingsRowsContainer.anchoredPosition = Vector2.zero;
+            settingsRowsContainer.sizeDelta = pausePanelRoot.sizeDelta;
+
+            string[] rowNames =
+            {
+                "MusicRow", "SoundRow", "VibrationRow", "PrivacyRow",
+                "TermsRow", "AboutRow", "RestartRow", "MainMenuRow"
+            };
+
+            // Blossom uses the supplied blank panel as its only backplate. Keep
+            // the eight functional rows absolute so no shared Layout Group can
+            // alter another theme, and render each supplied Blossom element once.
+            for (int i = 0; i < rowNames.Length; i++)
+            {
+                RectTransform row = settingsRowsContainer.Find(rowNames[i]) as RectTransform;
+                if (row == null) continue;
+                row.anchorMin = row.anchorMax = new Vector2(0.5f, 1f);
+                row.pivot = new Vector2(0.5f, 1f);
+                row.anchoredPosition = new Vector2(0f, -(242f + i * 106f));
+                row.sizeDelta = new Vector2(690f, 96f);
+
+                LayoutElement element = row.GetComponent<LayoutElement>();
+                if (element != null) element.enabled = false;
+                Image rootImage = row.GetComponent<Image>();
+                if (rootImage != null) { rootImage.enabled = false; rootImage.raycastTarget = false; }
+
+                SetChildActive(row, "RowBackground", true);
+                SetChildActive(row, "RowHighlight", false);
+                SetChildActive(row, "CandyContentCover", false);
+                SetChildActive(row, "Icon", true);
+                SetChildActive(row, "Label", true);
+                SetChildActive(row, "CandyChevron", false);
+                SetChildActive(row, "DesertChevronGlyph", false);
+                SetChildActive(row, "BlossomChevron", false);
+                SetChildActive(row, "BeachChevron", false);
+                SetChildActive(row, "BeachChevron", false);
+
+                RectTransform toggle = row.Find("ToggleControl") as RectTransform;
+                if (toggle != null)
+                {
+                    toggle.anchorMin = toggle.anchorMax = new Vector2(1f, 0.5f);
+                    toggle.pivot = new Vector2(1f, 0.5f);
+                    toggle.anchoredPosition = new Vector2(-14f, 0f);
+                    toggle.sizeDelta = new Vector2(238f, 86f);
+                }
+
+                RectTransform status = row.Find("Status") as RectTransform;
+                if (status != null)
+                {
+                    status.anchorMin = Vector2.zero;
+                    status.anchorMax = Vector2.one;
+                    status.offsetMin = Vector2.zero;
+                    status.offsetMax = Vector2.zero;
+                }
+
+                RectTransform action = row.Find("ActionButton") as RectTransform;
+                if (action != null)
+                {
+                    action.anchorMin = Vector2.zero;
+                    action.anchorMax = Vector2.one;
+                    action.offsetMin = Vector2.zero;
+                    action.offsetMax = Vector2.zero;
+                }
+            }
+
+            ConfigureBlossomVersionOverlay();
+            UpdateSettingsToggleVisuals(false);
+            Transform banner = pausePanelRoot.Find("BlossomSettingsBanner");
+            if (banner != null) banner.SetAsLastSibling();
+            Transform close = pausePanelRoot.Find("CloseButton");
+            if (close != null) close.SetAsLastSibling();
+        }
+
+        private void ConfigureBlossomVersionOverlay()
+        {
+            Transform about = settingsRowsContainer.Find("AboutRow");
+            RectTransform status = about == null ? null : about.Find("Status") as RectTransform;
+            RectTransform textRect = status == null ? null : status.Find("Text") as RectTransform;
+            if (textRect == null) return;
+            textRect.anchorMin = textRect.anchorMax = new Vector2(1f, 0.5f);
+            textRect.pivot = new Vector2(1f, 0.5f);
+            textRect.anchoredPosition = new Vector2(-112f, 12f);
+            textRect.sizeDelta = new Vector2(116f, 42f);
+            TMP_Text text = textRect.GetComponent<TMP_Text>();
+            if (text == null) return;
+            text.text = Application.version;
+            text.alignment = TextAlignmentOptions.MidlineRight;
+            text.fontSizeMin = 12f;
+            text.fontSizeMax = 18f;
+            text.color = Color.black;
+            text.enabled = true;
+            text.gameObject.SetActive(true);
+        }
+
+        private void ConfigureBeachVisuals()
+        {
+            if (!IsBeachSettingsActive() || pausePanelRoot == null || settingsRowsContainer == null)
+            {
+                return;
+            }
+
+            VerticalLayoutGroup layout = settingsRowsContainer.GetComponent<VerticalLayoutGroup>();
+            if (layout != null) layout.enabled = false;
+            settingsRowsContainer.anchoredPosition = Vector2.zero;
+            settingsRowsContainer.sizeDelta = pausePanelRoot.sizeDelta;
+
+            string[] rowNames =
+            {
+                "MusicRow", "SoundRow", "VibrationRow", "PrivacyRow",
+                "TermsRow", "AboutRow", "RestartRow", "MainMenuRow"
+            };
+
+            for (int i = 0; i < rowNames.Length; i++)
+            {
+                RectTransform row = settingsRowsContainer.Find(rowNames[i]) as RectTransform;
+                if (row == null) continue;
+                row.anchorMin = row.anchorMax = new Vector2(0.5f, 1f);
+                row.pivot = new Vector2(0.5f, 1f);
+                row.anchoredPosition = new Vector2(0f, -(210f + i * 104f));
+                row.sizeDelta = new Vector2(690f, 96f);
+
+                LayoutElement element = row.GetComponent<LayoutElement>();
+                if (element != null) element.enabled = false;
+                Image rootImage = row.GetComponent<Image>();
+                if (rootImage != null) { rootImage.enabled = false; rootImage.raycastTarget = false; }
+
+                SetChildActive(row, "RowBackground", true);
+                SetChildActive(row, "RowHighlight", false);
+                SetChildActive(row, "CandyContentCover", false);
+                SetChildActive(row, "Icon", true);
+                SetChildActive(row, "Label", true);
+                SetChildActive(row, "CandyChevron", false);
+                SetChildActive(row, "DesertChevronGlyph", false);
+                SetChildActive(row, "BlossomChevron", false);
+
+                RectTransform toggle = row.Find("ToggleControl") as RectTransform;
+                if (toggle != null)
+                {
+                    toggle.anchorMin = toggle.anchorMax = new Vector2(1f, 0.5f);
+                    toggle.pivot = new Vector2(1f, 0.5f);
+                    toggle.anchoredPosition = new Vector2(-18f, 0f);
+                    toggle.sizeDelta = new Vector2(220f, 82f);
+                }
+
+                RectTransform status = row.Find("Status") as RectTransform;
+                if (status != null)
+                {
+                    status.anchorMin = Vector2.zero;
+                    status.anchorMax = Vector2.one;
+                    status.offsetMin = Vector2.zero;
+                    status.offsetMax = Vector2.zero;
+                }
+
+                RectTransform action = row.Find("ActionButton") as RectTransform;
+                if (action != null)
+                {
+                    action.anchorMin = Vector2.zero;
+                    action.anchorMax = Vector2.one;
+                    action.offsetMin = Vector2.zero;
+                    action.offsetMax = Vector2.zero;
+                }
+            }
+
+            Transform about = settingsRowsContainer.Find("AboutRow");
+            RectTransform aboutStatus = about == null ? null : about.Find("Status") as RectTransform;
+            RectTransform versionRect = aboutStatus == null ? null : aboutStatus.Find("Text") as RectTransform;
+            if (versionRect != null)
+            {
+                versionRect.anchorMin = versionRect.anchorMax = new Vector2(1f, 0.5f);
+                versionRect.pivot = new Vector2(1f, 0.5f);
+                versionRect.anchoredPosition = new Vector2(-92f, 0f);
+                versionRect.sizeDelta = new Vector2(116f, 42f);
+            }
+
+            UpdateSettingsToggleVisuals(false);
+            Transform title = pausePanelRoot.Find("BeachSettingsTitle");
+            if (title != null) title.SetAsLastSibling();
+            Transform close = pausePanelRoot.Find("CloseButton");
+            if (close != null) close.SetAsLastSibling();
+        }
+
+        private static void SetChildActive(Transform root, string childName, bool active)
+        {
+            Transform child = root.Find(childName);
+            if (child != null) child.gameObject.SetActive(active);
         }
 
         private void EnforceEnglishLanguage()
@@ -2090,19 +2747,24 @@ namespace ChromaBlast
 
         private RectTransform BuildRowBase(string rowName, string label, string iconKey)
         {
+            bool candy = IsCandySettingsActive();
+            bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
+            bool separatedArtwork = candy || ocean || garden || desert || blossom || beach;
+            float rowWidth = candy ? CandySettingsRowsWidth : garden ? GardenSettingsRowsWidth : blossom ? BlossomSettingsRowsWidth : beach ? BeachSettingsRowsWidth : desert ? DesertSettingsRowsWidth : SettingsRowsWidth;
+            float rowHeight = candy ? CandySettingsRowHeight : garden ? GardenSettingsRowHeight : blossom ? BlossomSettingsRowHeight : beach ? BeachSettingsRowHeight : desert ? DesertSettingsRowHeight : SettingsRowHeight;
             RectTransform row = GetOrCreateChildRect(settingsRowsContainer, rowName);
             row.localScale = Vector3.one;
-            row.sizeDelta = new Vector2(SettingsRowsWidth, SettingsRowHeight);
+            row.sizeDelta = new Vector2(rowWidth, rowHeight);
             row.anchorMin = new Vector2(0.5f, 0.5f);
             row.anchorMax = new Vector2(0.5f, 0.5f);
             row.pivot = new Vector2(0.5f, 0.5f);
 
-            Image rowRootImage = row.GetComponent<Image>();
-            if (rowRootImage != null)
-            {
-                rowRootImage.enabled = false;
-                rowRootImage.raycastTarget = false;
-            }
+            Image rowRootImage = GetOrAddImage(row.gameObject);
+            ApplySettingsRowArtwork(rowName, rowRootImage);
 
             Button rowButton = row.GetComponent<Button>();
             if (rowButton != null)
@@ -2117,10 +2779,10 @@ namespace ChromaBlast
                 layoutElement = row.gameObject.AddComponent<LayoutElement>();
             }
 
-            layoutElement.preferredWidth = SettingsRowsWidth;
-            layoutElement.preferredHeight = SettingsRowHeight;
-            layoutElement.minWidth = SettingsRowsWidth;
-            layoutElement.minHeight = SettingsRowHeight;
+            layoutElement.preferredWidth = rowWidth;
+            layoutElement.preferredHeight = rowHeight;
+            layoutElement.minWidth = rowWidth;
+            layoutElement.minHeight = rowHeight;
             layoutElement.flexibleWidth = 0f;
             layoutElement.flexibleHeight = 0f;
 
@@ -2131,12 +2793,43 @@ namespace ChromaBlast
             background.offsetMax = Vector2.zero;
             background.localScale = Vector3.one;
             Image backgroundImage = GetOrAddImage(background.gameObject);
-            UISpriteFactory.ApplyRounded(backgroundImage, 0.18f);
-            backgroundImage.color = new Color(0.015f, 0.13f, 0.29f, 0.90f);
+            if (blossom)
+            {
+                bool toggleRow = rowName == "MusicRow" || rowName == "SoundRow" || rowName == "VibrationRow";
+                backgroundImage.sprite = LoadBlossomSettingsSprite(toggleRow ? "22_blossom_row_toggle_clean" : "05_blossom_row_arrow");
+                backgroundImage.color = Color.white;
+                backgroundImage.material = null;
+                backgroundImage.type = Image.Type.Simple;
+                // Rows are authored as complete wide elements. Fit them to the
+                // stable Settings row rect instead of shrinking them by aspect.
+                backgroundImage.preserveAspect = false;
+            }
+            else if (beach)
+            {
+                backgroundImage.sprite = LoadBeachSettingsSprite("21_beach_row_clean");
+                backgroundImage.color = Color.white;
+                backgroundImage.material = null;
+                backgroundImage.type = Image.Type.Simple;
+                backgroundImage.preserveAspect = false;
+            }
+            else if (desert)
+            {
+                UISpriteFactory.ApplyRounded(backgroundImage, 0.18f);
+                backgroundImage.color = new Color(1f, 0.94f, 0.80f, 0.96f);
+            }
+            backgroundImage.enabled = desert || blossom || beach;
             backgroundImage.raycastTarget = false;
             background.SetAsFirstSibling();
-            EnsureGraphicOutline(background.gameObject, new Color(0.22f, 0.86f, 1f, 0.30f), new Vector2(1.1f, -1.1f));
-            EnsureGraphicShadow(background.gameObject, new Color(0f, 0.02f, 0.07f, 0.42f), new Vector2(0f, -1.8f));
+            EnsureGraphicOutline(background.gameObject,
+                desert ? new Color(0.92f, 0.50f, 0.12f, 0.55f) : new Color(0.22f, 0.86f, 1f, 0.30f),
+                new Vector2(1.1f, -1.1f));
+            EnsureGraphicShadow(background.gameObject,
+                desert ? new Color(0.30f, 0.14f, 0.04f, 0.20f) : new Color(0f, 0.02f, 0.07f, 0.42f),
+                new Vector2(0f, -1.8f));
+            Outline blossomOutline = background.GetComponent<Outline>();
+            Shadow blossomShadow = background.GetComponent<Shadow>();
+            if (blossom && blossomOutline != null) blossomOutline.enabled = false;
+            if (blossom && blossomShadow != null) blossomShadow.enabled = false;
 
             RectTransform highlight = GetOrCreateChildRect(row, "RowHighlight");
             highlight.anchorMin = new Vector2(0.045f, 0.58f);
@@ -2145,57 +2838,372 @@ namespace ChromaBlast
             highlight.offsetMax = Vector2.zero;
             highlight.localScale = Vector3.one;
             Image highlightImage = GetOrAddImage(highlight.gameObject);
-            UISpriteFactory.ApplyRounded(highlightImage, 0.25f);
-            highlightImage.color = new Color(0.58f, 0.95f, 1f, 0.055f);
+            highlightImage.enabled = false;
             highlightImage.raycastTarget = false;
             highlight.SetSiblingIndex(1);
+
+            RectTransform contentCover = GetOrCreateChildRect(row, "CandyContentCover");
+            contentCover.anchorMin = Vector2.zero;
+            contentCover.anchorMax = Vector2.one;
+            contentCover.offsetMin = new Vector2(8f, 7f);
+            contentCover.offsetMax = new Vector2(-8f, -7f);
+            contentCover.localScale = Vector3.one;
+            Image contentCoverImage = GetOrAddImage(contentCover.gameObject);
+            UISpriteFactory.ApplyRounded(contentCoverImage, 0.24f);
+            contentCoverImage.color = new Color(1f, 0.965f, 0.978f, 0.995f);
+            contentCoverImage.raycastTarget = false;
+            contentCoverImage.enabled = candy;
+            contentCover.gameObject.SetActive(candy);
+            if (candy)
+            {
+                contentCover.SetSiblingIndex(2);
+            }
 
             RectTransform icon = GetOrCreateChildRect(row, "Icon");
             icon.anchorMin = new Vector2(0f, 0.5f);
             icon.anchorMax = new Vector2(0f, 0.5f);
             icon.pivot = new Vector2(0.5f, 0.5f);
-            icon.anchoredPosition = new Vector2(52f, 0f);
-            icon.sizeDelta = new Vector2(62f, 62f);
+            icon.anchoredPosition = candy ? new Vector2(58f, 0f) : blossom ? new Vector2(62f, 0f) : beach ? new Vector2(64f, 0f) : new Vector2(52f, 0f);
+            icon.sizeDelta = candy ? new Vector2(70f, 70f) : blossom ? new Vector2(75f, 75f) : beach ? new Vector2(76f, 76f) : new Vector2(62f, 62f);
             icon.localScale = Vector3.one;
             Image iconImage = GetOrAddImage(icon.gameObject);
-            iconImage.sprite = GetSettingsIconSprite(iconKey);
+            iconImage.sprite = blossom
+                ? GetBlossomSettingsIconSprite(iconKey)
+                : beach ? GetBeachSettingsIconSprite(iconKey)
+                : ocean
+                ? GetOceanSettingsIconSprite(iconKey)
+                : garden ? GetGardenSettingsIconSprite(iconKey)
+                    : desert ? BuildSettingsIconSprite(iconKey, true)
+                        : candy ? GetCandySettingsIconSprite(ThemeCatalog.Current, iconKey) : null;
             iconImage.color = Color.white;
+            iconImage.material = null;
             iconImage.type = Image.Type.Simple;
             iconImage.preserveAspect = true;
+            iconImage.enabled = separatedArtwork && iconImage.sprite != null;
             iconImage.raycastTarget = false;
 
             RectTransform labelRect = GetOrCreateChildRect(row, "Label");
             labelRect.anchorMin = new Vector2(0f, 0.5f);
             labelRect.anchorMax = new Vector2(0f, 0.5f);
             labelRect.pivot = new Vector2(0f, 0.5f);
-            labelRect.anchoredPosition = new Vector2(108f, 0f);
-            labelRect.sizeDelta = new Vector2(245f, 70f);
+            labelRect.anchoredPosition = candy ? new Vector2(105f, 0f) : garden ? new Vector2(104f, 0f) : blossom ? new Vector2(116f, 0f) : beach ? new Vector2(120f, 0f) : new Vector2(108f, 0f);
+            labelRect.sizeDelta = candy ? new Vector2(280f, 74f) : garden ? new Vector2(310f, 70f) : blossom ? new Vector2(350f, 82f) : beach ? new Vector2(350f, 78f) : new Vector2(245f, 70f);
             labelRect.localScale = Vector3.one;
 
             TMP_Text labelText = GetOrAddText(labelRect.gameObject);
-            labelText.text = label;
+            labelText.text = separatedArtwork ? label : string.Empty;
+            labelText.font = Resources.Load<TMP_FontAsset>(ScoreFontPath);
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
-            labelText.fontSize = 34f;
-            labelText.characterSpacing = 0f;
+            labelText.enableAutoSizing = separatedArtwork && !blossom && !beach;
+            labelText.textWrappingMode = garden || desert || blossom || beach ? TextWrappingModes.NoWrap : TextWrappingModes.Normal;
+            labelText.fontSize = blossom || beach ? 32f : labelText.fontSize;
+            labelText.fontSizeMin = garden ? 17f : blossom || beach ? 32f : 22f;
+            labelText.fontSizeMax = garden ? 28f : blossom || beach ? 32f : 31f;
             labelText.fontStyle = FontStyles.Bold;
-            labelText.color = Color.white;
+            labelText.color = ocean
+                ? new Color(0.03f, 0.16f, 0.38f, 1f)
+                : garden ? new Color(0.035f, 0.23f, 0.09f, 1f)
+                    : blossom ? Color.black
+                    : beach ? Color.black
+                    : desert ? new Color(0.33f, 0.15f, 0.055f, 1f)
+                        : new Color(0.27f, 0.025f, 0.13f, 1f);
+            if (beach)
+            {
+                labelText.enableAutoSizing = false;
+                labelText.fontSize = 32f;
+                labelText.fontSizeMin = 32f;
+                labelText.fontSizeMax = 32f;
+                labelText.fontStyle = FontStyles.Bold;
+                labelText.color = Color.black;
+                labelText.alignment = TextAlignmentOptions.MidlineLeft;
+                labelText.characterSpacing = 0f;
+            }
+            labelText.enabled = separatedArtwork;
             labelText.raycastTarget = false;
-            EnsureTextShadow(labelText, new Color(0f, 0.04f, 0.10f, 0.66f), new Vector2(0f, -1.2f));
 
             row.gameObject.SetActive(true);
             return row;
         }
 
+        private static Sprite GetCandySettingsIconSprite(ThemeAssetSet theme, string iconKey)
+        {
+            if (!IsCandySettingsTheme(theme))
+            {
+                return null;
+            }
+
+            return iconKey switch
+            {
+                "music" => theme.SettingsMusicIconSprite,
+                "sound" => theme.SettingsSoundIconSprite,
+                "vibration" => theme.SettingsVibrationIconSprite,
+                "privacy" => theme.SettingsPrivacyIconSprite,
+                "terms" => theme.SettingsTermsIconSprite,
+                "about" => theme.SettingsAboutIconSprite,
+                "restart" => theme.SettingsRestartIconSprite,
+                "home" => theme.SettingsMainMenuIconSprite,
+                _ => null
+            };
+        }
+
+        private static Sprite GetOceanSettingsIconSprite(string iconKey)
+        {
+            return iconKey switch
+            {
+                "music" => LoadOceanSettingsSprite("ocean_icon_music"),
+                "sound" => LoadOceanSettingsSprite("ocean_icon_sound"),
+                "vibration" => LoadOceanSettingsSprite("ocean_icon_vibration"),
+                "privacy" => LoadOceanSettingsSprite("ocean_icon_privacy"),
+                "terms" => LoadOceanSettingsSprite("ocean_icon_terms"),
+                "about" => LoadOceanSettingsSprite("ocean_icon_about"),
+                "restart" => LoadOceanSettingsSprite("ocean_icon_restart"),
+                "home" => LoadOceanSettingsSprite("ocean_icon_home"),
+                _ => null
+            };
+        }
+
+        private static Sprite GetGardenSettingsIconSprite(string iconKey)
+        {
+            return iconKey switch
+            {
+                "music" => LoadGardenSettingsSprite("garden_icon_music"),
+                "sound" => LoadGardenSettingsSprite("garden_icon_sound"),
+                "vibration" => LoadGardenSettingsSprite("garden_icon_vibration"),
+                "privacy" => LoadGardenSettingsSprite("garden_icon_privacy"),
+                "terms" => LoadGardenSettingsSprite("garden_icon_terms"),
+                "about" => LoadGardenSettingsSprite("garden_icon_about"),
+                "restart" => LoadGardenSettingsSprite("garden_icon_restart"),
+                "home" => LoadGardenSettingsSprite("garden_icon_home"),
+                _ => null
+            };
+        }
+
+        private static Sprite GetBlossomSettingsIconSprite(string iconKey)
+        {
+            string fileName = iconKey switch
+            {
+                "music" => "09_blossom_icon_music",
+                "sound" => "10_blossom_icon_sound",
+                "vibration" => "11_blossom_icon_vibration",
+                "privacy" => "12_blossom_icon_privacy",
+                "terms" => "13_blossom_icon_terms",
+                "about" => "14_blossom_icon_about",
+                "restart" => "15_blossom_icon_restart",
+                "home" => "16_blossom_icon_home",
+                _ => null
+            };
+            return string.IsNullOrEmpty(fileName) ? null : LoadBlossomSettingsSprite(fileName);
+        }
+
+        private static Sprite GetBeachSettingsIconSprite(string iconKey)
+        {
+            string fileName = iconKey switch
+            {
+                "music" => "09_beach_icon_music",
+                "sound" => "10_beach_icon_sound",
+                "vibration" => "11_beach_icon_vibration",
+                "privacy" => "12_beach_icon_privacy",
+                "terms" => "13_beach_icon_terms",
+                "about" => "14_beach_icon_about",
+                "restart" => "15_beach_icon_restart",
+                "home" => "16_beach_icon_home",
+                _ => null
+            };
+            return string.IsNullOrEmpty(fileName) ? null : LoadBeachSettingsSprite(fileName);
+        }
+
+        private void ConfigureCandyRowChevron(RectTransform row)
+        {
+            RectTransform chevron = GetOrCreateChildRect(row, "CandyChevron");
+            bool candy = IsCandySettingsActive();
+            bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
+            ThemeAssetSet theme = ThemeCatalog.Current;
+            chevron.anchorMin = new Vector2(1f, 0.5f);
+            chevron.anchorMax = new Vector2(1f, 0.5f);
+            chevron.pivot = new Vector2(1f, 0.5f);
+            chevron.anchoredPosition = new Vector2(-24f, 0f);
+            chevron.sizeDelta = new Vector2(34f, 48f);
+            chevron.localScale = Vector3.one;
+            Image image = GetOrAddImage(chevron.gameObject);
+            image.sprite = ocean
+                ? LoadOceanSettingsSprite("ocean_chevron_light")
+                : garden ? LoadGardenSettingsSprite("garden_chevron")
+                    : candy && theme != null ? theme.SettingsChevronSprite : null;
+            image.color = Color.white;
+            image.material = null;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.enabled = (ocean || candy || garden) && image.sprite != null;
+            chevron.gameObject.SetActive(image.enabled);
+            if (image.enabled)
+            {
+                chevron.SetAsLastSibling();
+            }
+
+            RectTransform desertChevronRect = GetOrCreateChildRect(row, "DesertChevronGlyph");
+            desertChevronRect.anchorMin = new Vector2(1f, 0.5f);
+            desertChevronRect.anchorMax = new Vector2(1f, 0.5f);
+            desertChevronRect.pivot = new Vector2(1f, 0.5f);
+            desertChevronRect.anchoredPosition = new Vector2(-22f, 0f);
+            desertChevronRect.sizeDelta = new Vector2(38f, 58f);
+            if (desert)
+            {
+                Image desertChevronImage = GetOrAddImage(desertChevronRect.gameObject);
+                desertChevronImage.sprite = LoadDesertCleanSettingsSprite("desert_chevron");
+                desertChevronImage.color = Color.white;
+                desertChevronImage.material = null;
+                desertChevronImage.type = Image.Type.Simple;
+                desertChevronImage.preserveAspect = true;
+                desertChevronImage.raycastTarget = false;
+                desertChevronRect.sizeDelta = new Vector2(34f, 42f);
+                desertChevronRect.SetAsLastSibling();
+            }
+            desertChevronRect.gameObject.SetActive(desert);
+
+            // Blossom arrow rows already contain their final arrow artwork.
+            // Never add the standalone arrow on top of that baked arrow.
+            Transform blossomChevron = row.Find("BlossomChevron");
+            if (blossomChevron != null) blossomChevron.gameObject.SetActive(false);
+
+            RectTransform beachChevron = GetOrCreateChildRect(row, "BeachChevron");
+            beachChevron.anchorMin = beachChevron.anchorMax = new Vector2(1f, 0.5f);
+            beachChevron.pivot = new Vector2(1f, 0.5f);
+            beachChevron.anchoredPosition = new Vector2(-26f, 0f);
+            beachChevron.sizeDelta = new Vector2(38f, 54f);
+            Image beachChevronImage = GetOrAddImage(beachChevron.gameObject);
+            beachChevronImage.sprite = beach ? LoadBeachSettingsSprite("08_beach_arrow_right") : null;
+            beachChevronImage.color = Color.white;
+            beachChevronImage.material = null;
+            beachChevronImage.type = Image.Type.Simple;
+            beachChevronImage.preserveAspect = true;
+            beachChevronImage.raycastTarget = false;
+            beachChevronImage.enabled = beach && beachChevronImage.sprite != null;
+            beachChevron.gameObject.SetActive(beachChevronImage.enabled);
+            if (beachChevronImage.enabled) beachChevron.SetAsLastSibling();
+        }
+
+        private void RefreshSettingsRowArtwork()
+        {
+            if (settingsRowsContainer == null)
+            {
+                return;
+            }
+
+            string[] rowNames =
+            {
+                "MusicRow", "SoundRow", "VibrationRow", "PrivacyRow",
+                "TermsRow", "AboutRow", "RestartRow", "MainMenuRow"
+            };
+
+            foreach (string rowName in rowNames)
+            {
+                Transform row = settingsRowsContainer.Find(rowName);
+                if (row != null)
+                {
+                    ApplySettingsRowArtwork(rowName, GetOrAddImage(row.gameObject));
+                }
+            }
+        }
+
+        private void ApplySettingsRowArtwork(string rowName, Image rowImage)
+        {
+            if (rowImage == null)
+            {
+                return;
+            }
+
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite rowSprite = GetSettingsRowSprite(activeTheme, rowName);
+            bool useSeparatedCandyArtwork = activeTheme != null
+                && activeTheme.ThemeType == ThemeType.Candy
+                && rowSprite != null;
+
+            rowImage.sprite = rowSprite;
+            rowImage.color = Color.white;
+            rowImage.material = null;
+            rowImage.type = Image.Type.Simple;
+            rowImage.preserveAspect = true;
+            rowImage.raycastTarget = false;
+            rowImage.enabled = useSeparatedCandyArtwork;
+        }
+
+        private static Sprite GetSettingsRowSprite(ThemeAssetSet theme, string rowName)
+        {
+            if (theme == null || theme.ThemeType != ThemeType.Candy)
+            {
+                return null;
+            }
+
+            return rowName switch
+            {
+                "MusicRow" => theme.SettingsMusicRowSprite,
+                "SoundRow" => theme.SettingsSoundRowSprite,
+                "VibrationRow" => theme.SettingsVibrationRowSprite,
+                "PrivacyRow" => theme.SettingsPrivacyRowSprite,
+                "TermsRow" => theme.SettingsTermsRowSprite,
+                "AboutRow" => theme.SettingsAboutRowSprite,
+                "RestartRow" => theme.SettingsRestartRowSprite,
+                "MainMenuRow" => theme.SettingsMainMenuRowSprite,
+                _ => null
+            };
+        }
+
         private void BuildToggleRow(string rowName, string label, string iconKey, bool sound, bool music)
         {
+            bool candy = IsCandySettingsActive();
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
             RectTransform row = BuildRowBase(rowName, label, iconKey);
+
+            // Keep the three Garden control rows proportionate to the action rows.
+            // This is intentionally local to Music/Sound/Vibration.
+            if (garden)
+            {
+                RectTransform labelRect = row.Find("Label") as RectTransform;
+                TMP_Text labelText = labelRect == null ? null : labelRect.GetComponent<TMP_Text>();
+                if (labelText != null)
+                {
+                    labelText.enableAutoSizing = true;
+                    labelText.fontSizeMin = 19f;
+                    labelText.fontSizeMax = 27f;
+                    labelText.fontSize = 27f;
+                }
+
+                RectTransform iconRect = row.Find("Icon") as RectTransform;
+                if (iconRect != null)
+                {
+                    iconRect.sizeDelta = new Vector2(61f, 61f);
+                }
+            }
+
             RectTransform toggle = GetOrCreateChildRect(row, "ToggleControl");
             toggle.anchorMin = new Vector2(1f, 0.5f);
             toggle.anchorMax = new Vector2(1f, 0.5f);
             toggle.pivot = new Vector2(1f, 0.5f);
-            toggle.anchoredPosition = new Vector2(-24f, 0f);
-            toggle.sizeDelta = new Vector2(SettingsControlWidth, SettingsControlHeight);
+            toggle.anchoredPosition = candy ? new Vector2(-20f, 0f) : garden ? new Vector2(-22f, 0f) : blossom ? new Vector2(-20f, 0f) : beach ? new Vector2(-18f, 0f) : desert ? new Vector2(-20f, 0f) : new Vector2(-24f, 0f);
+            toggle.sizeDelta = candy
+                ? new Vector2(CandySettingsControlWidth, CandySettingsControlHeight)
+                : garden
+                    ? new Vector2(GardenSettingsControlWidth, GardenSettingsControlHeight)
+                    : blossom
+                        ? new Vector2(BlossomSettingsControlWidth, BlossomSettingsControlHeight)
+                    : beach
+                        ? new Vector2(BeachSettingsControlWidth, BeachSettingsControlHeight)
+                    : desert
+                        ? new Vector2(DesertSettingsControlWidth, DesertSettingsControlHeight)
+                        : new Vector2(SettingsControlWidth, SettingsControlHeight);
             toggle.localScale = Vector3.one;
+            if (garden)
+            {
+                toggle.SetAsLastSibling();
+            }
 
             Image hitImage = GetOrAddImage(toggle.gameObject);
             hitImage.sprite = null;
@@ -2294,7 +3302,7 @@ namespace ChromaBlast
         {
             RectTransform row = BuildRowBase(rowName, label, iconKey);
             RectTransform buttonRect = GetOrCreateChildRect(row, "ActionButton");
-            ConfigureRightActionButton(buttonRect, buttonLabel, restart ? RestartFromPauseSettings : MainMenuFromPauseSettings);
+            ConfigureTransparentRowButton(buttonRect, restart ? RestartFromPauseSettings : MainMenuFromPauseSettings);
             if (restart)
             {
                 pauseRestartButton = buttonRect.GetComponent<Button>();
@@ -2302,6 +3310,33 @@ namespace ChromaBlast
             else
             {
                 pauseMenuButton = buttonRect.GetComponent<Button>();
+            }
+
+            ConfigureCandyRowChevron(row);
+        }
+
+        private void ConfigureTransparentRowButton(RectTransform buttonRect, UnityEngine.Events.UnityAction action)
+        {
+            buttonRect.anchorMin = Vector2.zero;
+            buttonRect.anchorMax = Vector2.one;
+            buttonRect.offsetMin = Vector2.zero;
+            buttonRect.offsetMax = Vector2.zero;
+            buttonRect.localScale = Vector3.one;
+
+            Image image = GetOrAddImage(buttonRect.gameObject);
+            image.sprite = null;
+            image.color = new Color(1f, 1f, 1f, 0f);
+            image.raycastTarget = true;
+
+            Button button = GetOrAddButton(buttonRect.gameObject, image);
+            ConfigureButtonNoTransition(button);
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(action);
+
+            Transform text = buttonRect.Find("Text");
+            if (text != null)
+            {
+                text.gameObject.SetActive(false);
             }
         }
 
@@ -2537,7 +3572,7 @@ namespace ChromaBlast
             }
         }
 
-        private Sprite BuildSettingsIconSprite(string iconKey)
+        private Sprite BuildSettingsIconSprite(string iconKey, bool desert = false)
         {
             const int size = 96;
             Color32[] pixels = new Color32[size * size];
@@ -2547,10 +3582,10 @@ namespace ChromaBlast
                 pixels[i] = clear;
             }
 
-            Color32 circle = new Color32(4, 108, 178, 245);
-            Color32 circleDark = new Color32(1, 45, 96, 210);
-            Color32 cyan = new Color32(76, 232, 255, 230);
-            Color32 white = new Color32(245, 252, 255, 255);
+            Color32 circle = desert ? new Color32(238, 126, 24, 255) : new Color32(4, 108, 178, 245);
+            Color32 circleDark = desert ? new Color32(178, 76, 12, 235) : new Color32(1, 45, 96, 210);
+            Color32 cyan = desert ? new Color32(255, 190, 80, 245) : new Color32(76, 232, 255, 230);
+            Color32 white = desert ? new Color32(255, 244, 218, 255) : new Color32(245, 252, 255, 255);
 
             DrawFilledCircle(pixels, size, 48, 48, 42, circle);
             DrawFilledCircle(pixels, size, 48, 38, 30, circleDark);
@@ -2927,11 +3962,181 @@ namespace ChromaBlast
 
         private void ApplyModernToggleVisual(Image trackImage, Image knobImage, TMP_Text stateText, bool enabledState)
         {
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            bool ocean = IsOceanSettingsTheme(activeTheme);
+            bool garden = IsGardenSettingsTheme(activeTheme);
+            bool desert = IsDesertSettingsTheme(activeTheme);
+            bool blossom = IsBlossomSettingsTheme(activeTheme);
+            bool beach = IsBeachSettingsTheme(activeTheme);
+            Sprite candyToggleSprite = activeTheme != null && activeTheme.ThemeType == ThemeType.Candy
+                ? (enabledState ? activeTheme.SettingsToggleOnSprite : activeTheme.SettingsToggleOffSprite)
+                : ocean
+                    ? LoadOceanSettingsSprite(enabledState ? "ocean_toggle_on_light" : "ocean_toggle_off_light")
+                    : garden
+                        ? LoadGardenSettingsSprite(enabledState ? "garden_toggle_on" : "garden_toggle_off")
+                        : null;
+
+            if (blossom)
+            {
+                if (trackImage != null)
+                {
+                    // Cover the baked ON region with the corresponding final
+                    // ON/OFF control so exactly one complete toggle is visible.
+                    trackImage.gameObject.SetActive(true);
+                    trackImage.enabled = true;
+                    trackImage.sprite = LoadBlossomSettingsSprite(enabledState ? "06_blossom_toggle_on" : "24_blossom_toggle_off_clean");
+                    trackImage.color = Color.white;
+                    trackImage.material = null;
+                    trackImage.type = Image.Type.Simple;
+                    trackImage.preserveAspect = true;
+                    trackImage.raycastTarget = false;
+                    Outline outline = trackImage.GetComponent<Outline>();
+                    Shadow shadow = trackImage.GetComponent<Shadow>();
+                    if (outline != null) outline.enabled = false;
+                    if (shadow != null) shadow.enabled = false;
+                }
+                if (stateText != null)
+                {
+                    stateText.text = string.Empty;
+                    stateText.enabled = false;
+                    stateText.gameObject.SetActive(false);
+                }
+                if (knobImage != null)
+                {
+                    knobImage.enabled = false;
+                    knobImage.gameObject.SetActive(false);
+                    knobImage.raycastTarget = false;
+                }
+                return;
+            }
+
+            if (beach)
+            {
+                if (trackImage != null)
+                {
+                    trackImage.gameObject.SetActive(true);
+                    trackImage.enabled = true;
+                    trackImage.sprite = LoadBeachSettingsSprite(enabledState ? "06_beach_toggle_on" : "07_beach_toggle_off");
+                    trackImage.color = Color.white;
+                    trackImage.material = null;
+                    trackImage.type = Image.Type.Simple;
+                    trackImage.preserveAspect = true;
+                    trackImage.raycastTarget = false;
+                    Outline outline = trackImage.GetComponent<Outline>();
+                    Shadow shadow = trackImage.GetComponent<Shadow>();
+                    if (outline != null) outline.enabled = false;
+                    if (shadow != null) shadow.enabled = false;
+                }
+                if (stateText != null)
+                {
+                    stateText.text = string.Empty;
+                    stateText.enabled = false;
+                    stateText.gameObject.SetActive(false);
+                }
+                if (knobImage != null)
+                {
+                    knobImage.enabled = false;
+                    knobImage.gameObject.SetActive(false);
+                    knobImage.raycastTarget = false;
+                }
+                return;
+            }
+
+            if (desert)
+            {
+                if (trackImage != null)
+                {
+                    trackImage.gameObject.SetActive(true);
+                    trackImage.enabled = true;
+                    trackImage.sprite = LoadDesertCleanSettingsSprite(enabledState ? "desert_toggle_on" : "desert_toggle_off");
+                    trackImage.color = Color.white;
+                    trackImage.material = null;
+                    trackImage.type = Image.Type.Simple;
+                    trackImage.preserveAspect = true;
+                    trackImage.raycastTarget = false;
+                    Outline outline = trackImage.GetComponent<Outline>();
+                    if (outline != null)
+                    {
+                        outline.enabled = false;
+                    }
+                }
+
+                if (stateText != null)
+                {
+                    RectTransform stateRect = stateText.rectTransform;
+                    stateRect.offsetMin = enabledState ? new Vector2(10f, 0f) : new Vector2(58f, 0f);
+                    stateRect.offsetMax = enabledState ? new Vector2(-58f, 0f) : new Vector2(-10f, 0f);
+                    stateText.text = string.Empty;
+                    stateText.enabled = false;
+                    stateText.gameObject.SetActive(false);
+                }
+
+                if (knobImage != null)
+                {
+                    knobImage.gameObject.SetActive(false);
+                    knobImage.enabled = false;
+                    knobImage.raycastTarget = false;
+                }
+
+                return;
+            }
+
+            if (candyToggleSprite != null)
+            {
+                if (trackImage != null)
+                {
+                    trackImage.gameObject.SetActive(true);
+                    trackImage.enabled = true;
+                    trackImage.sprite = candyToggleSprite;
+                    trackImage.color = Color.white;
+                    trackImage.material = null;
+                    trackImage.type = Image.Type.Simple;
+                    trackImage.preserveAspect = true;
+                    trackImage.raycastTarget = false;
+                    if (garden)
+                    {
+                        trackImage.transform.SetAsLastSibling();
+                        trackImage.canvasRenderer.SetAlpha(1f);
+                        trackImage.SetAllDirty();
+                    }
+
+                    Outline outline = trackImage.GetComponent<Outline>();
+                    if (outline != null)
+                    {
+                        outline.enabled = false;
+                    }
+
+                    Shadow shadow = trackImage.GetComponent<Shadow>();
+                    if (shadow != null)
+                    {
+                        shadow.enabled = false;
+                    }
+                }
+
+                if (stateText != null)
+                {
+                    stateText.text = string.Empty;
+                    stateText.enabled = false;
+                    stateText.gameObject.SetActive(false);
+                }
+
+                if (knobImage != null)
+                {
+                    knobImage.enabled = false;
+                    knobImage.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
             if (trackImage != null)
             {
-                trackImage.color = enabledState
-                    ? new Color(0.00f, 0.66f, 0.98f, 0.96f)
-                    : new Color(0.025f, 0.17f, 0.31f, 0.98f);
+                // The themed Settings artwork already contains the complete ON
+                // toggle.  Keep that artwork unobstructed while enabled, and
+                // only draw a rounded, theme-coloured replacement for OFF.
+                trackImage.gameObject.SetActive(!enabledState);
+                trackImage.enabled = !enabledState;
+                trackImage.color = GetInactiveSettingsToggleColor();
                 trackImage.raycastTarget = false;
             }
 
@@ -2940,14 +4145,14 @@ namespace ChromaBlast
                 RectTransform stateRect = stateText.rectTransform;
                 if (stateRect != null)
                 {
-                    stateRect.offsetMin = enabledState ? new Vector2(10f, 0f) : new Vector2(58f, 0f);
-                    stateRect.offsetMax = enabledState ? new Vector2(-58f, 0f) : new Vector2(-10f, 0f);
+                    stateRect.offsetMin = new Vector2(58f, 0f);
+                    stateRect.offsetMax = new Vector2(-10f, 0f);
                     stateRect.localScale = Vector3.one;
                 }
 
-                stateText.text = enabledState ? "ON" : "OFF";
-                stateText.color = enabledState ? Color.white : new Color(0.78f, 0.93f, 1f, 1f);
-                stateText.gameObject.SetActive(true);
+                stateText.text = "OFF";
+                stateText.color = Color.white;
+                stateText.gameObject.SetActive(!enabledState);
             }
 
             if (knobImage != null)
@@ -2955,13 +4160,42 @@ namespace ChromaBlast
                 RectTransform knobRect = knobImage.rectTransform;
                 if (knobRect != null)
                 {
-                    knobRect.anchoredPosition = new Vector2(enabledState ? 66f : -66f, 0f);
+                    knobRect.anchoredPosition = new Vector2(-66f, 0f);
                     knobRect.localScale = Vector3.one;
                 }
 
                 knobImage.color = new Color(0.96f, 1f, 1f, 1f);
                 knobImage.raycastTarget = false;
+                knobImage.gameObject.SetActive(!enabledState);
             }
+        }
+
+        private static Color GetInactiveSettingsToggleColor()
+        {
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            ThemeType themeType = activeTheme != null ? activeTheme.ThemeType : ThemeType.Ocean;
+            return themeType switch
+            {
+                ThemeType.Crystal => new Color(0.23f, 0.48f, 0.08f, 0.98f),
+                ThemeType.Neon => new Color(0.63f, 0.10f, 0.30f, 0.98f),
+                ThemeType.Candy => new Color(0.70f, 0.16f, 0.38f, 0.98f),
+                ThemeType.Aqua => new Color(0.72f, 0.30f, 0.04f, 0.98f),
+                _ => new Color(0.05f, 0.30f, 0.60f, 0.98f)
+            };
+        }
+
+        private static Color GetActiveSettingsToggleColor()
+        {
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            ThemeType themeType = activeTheme != null ? activeTheme.ThemeType : ThemeType.Ocean;
+            return themeType switch
+            {
+                ThemeType.Crystal => new Color(0.27f, 0.65f, 0.05f, 0.96f),
+                ThemeType.Neon => new Color(0.95f, 0.16f, 0.47f, 0.96f),
+                ThemeType.Candy => new Color(0.96f, 0.16f, 0.46f, 0.96f),
+                ThemeType.Aqua => new Color(1.00f, 0.43f, 0.00f, 0.96f),
+                _ => new Color(0.00f, 0.52f, 0.96f, 0.96f)
+            };
         }
 
         private bool IsSoundEnabled()
@@ -3497,6 +4731,66 @@ namespace ChromaBlast
             }
         }
 
+        private void BuildStatusRow(
+            string rowName,
+            string label,
+            string iconKey,
+            string status,
+            UnityEngine.Events.UnityAction action)
+        {
+            bool candy = IsCandySettingsActive();
+            bool garden = IsGardenSettingsActive();
+            bool desert = IsDesertSettingsActive();
+            bool blossom = IsBlossomSettingsActive();
+            bool beach = IsBeachSettingsActive();
+            RectTransform row = BuildRowBase(rowName, label, iconKey);
+            RectTransform statusRect = GetOrCreateChildRect(row, "Status");
+            ConfigureTransparentRowButton(statusRect, action);
+
+            RectTransform textRect = GetOrCreateChildRect(statusRect, "Text");
+            // Keep the runtime version between the baked About label and its
+            // right-hand arrow.  This avoids covering either part of the art.
+            textRect.anchorMin = candy ? new Vector2(0.68f, 0.12f) : garden ? new Vector2(0.70f, 0.12f) : new Vector2(0.66f, 0.12f);
+            textRect.anchorMax = candy ? new Vector2(0.85f, 0.88f) : garden ? new Vector2(0.84f, 0.88f) : new Vector2(0.82f, 0.88f);
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            textRect.localScale = Vector3.one;
+
+            TMP_Text text = GetOrAddText(textRect.gameObject);
+            text.text = (candy || garden || desert || beach) && rowName == "AboutRow" ? Application.version : status;
+            text.font = Resources.Load<TMP_FontAsset>(ScoreFontPath);
+            text.alignment = TextAlignmentOptions.MidlineRight;
+            text.enableAutoSizing = true;
+            text.fontSizeMax = candy ? 20f : garden ? 17f : 16f;
+            text.fontSizeMin = candy ? 12f : garden ? 10f : 10f;
+            text.fontStyle = FontStyles.Bold;
+            text.color = candy
+                ? new Color(0.43f, 0.04f, 0.20f, 0.90f)
+                : garden ? new Color(0.035f, 0.23f, 0.09f, 0.88f)
+                    : blossom ? new Color(0.48f, 0.07f, 0.25f, 0.92f)
+                    : beach ? new Color(0.34f, 0.17f, 0.06f, 0.90f)
+                    : desert ? new Color(0.55f, 0.25f, 0.07f, 0.92f)
+                        : new Color(0.16f, 0.10f, 0.07f, 0.78f);
+            text.raycastTarget = false;
+            text.enabled = !string.IsNullOrEmpty(text.text);
+            ConfigureCandyRowChevron(row);
+        }
+
+        private void HandleSettingsPrivacy()
+        {
+            Debug.Log("[Settings] Privacy Policy selected. No production URL is configured yet.");
+        }
+
+        private void HandleSettingsTerms()
+        {
+            Debug.Log("[Settings] Terms & Conditions selected. No production URL is configured yet.");
+        }
+
+        private void HandleSettingsAbout()
+        {
+            Debug.Log($"[Settings] Chroma Blast version {Application.version}");
+        }
+
         private static void ConfigureAspectCover(Image image, Sprite sprite)
         {
             if (image == null || sprite == null)
@@ -3570,6 +4864,12 @@ namespace ChromaBlast
                     blitzTimerCapsuleImage.preserveAspect = true;
                     blitzTimerCapsuleImage.raycastTarget = false;
                     blitzTimerCapsuleImage.enabled = capsuleSprite != null;
+                    blitzTimerCapsuleImage.material = null;
+                    ThemeAssetSet activeTheme = ThemeCatalog.Current;
+                    if (activeTheme != null && activeTheme.CapsuleSprite != null)
+                    {
+                        blitzTimerCapsuleImage.sprite = activeTheme.CapsuleSprite;
+                    }
                     EnsureGraphicShadow(
                         capsuleRect.gameObject,
                         new Color(0f, 0.025f, 0.10f, 0.46f),
@@ -4117,4 +5417,5 @@ namespace ChromaBlast
             }
         }
     }
+
 }

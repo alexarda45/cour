@@ -11,14 +11,16 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c1a8f16a267b4f659b873e6bddf03b91, type: 3}
   m_Name: Theme_Ocean
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   themeType: 2
   displayName: OCEAN
   coinCost: 700
   previewSprite: {fileID: 21300000, guid: afa52a564a3511242825b9463f40a81e, type: 3}
+  cardThumbnailSprite: {fileID: 21300000, guid: 75d033b4d56243f2b335d7ae93ee683d, type: 3}
   menuBackground: {fileID: 21300000, guid: 2f55ed72901e42fbb32431460bc632cc, type: 3}
   gameplayBackground: {fileID: 21300000, guid: d167377547b04c1494ba08dfc8400dcb, type: 3}
   gameOverBackground: {fileID: 21300000, guid: 039978a596b746d3966e30265c75e88d, type: 3}
+  themesPanelBackgroundSprite: {fileID: 21300000, guid: ba7523e9054f49d58aa96bc42f1298e1, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: afa52a564a3511242825b9463f40a81e, type: 3}
   tileCyan: {fileID: 21300000, guid: 153eb13b1345443a836bb6cd1c508542, type: 3}
   tileMagenta: {fileID: 21300000, guid: f25fd761c33e4c33a38993ea2ed42339, type: 3}
@@ -30,3 +32,10 @@ MonoBehaviour:
   effectColorAmber: {r: 0.9137255, g: 0.69803923, b: 0, a: 1}
   capsuleTintColor: {r: 0.8509804, g: 0.95686275, b: 1, a: 1}
   crownTintColor: {r: 1, g: 0.94509804, b: 0.65882355, a: 1}
+  capsuleSprite: {fileID: 0}
+  crownSprite: {fileID: 0}
+  themesCoinBalanceSprite: {fileID: 21300000, guid: d4e83b8b41394a51b3e9af0c6d12e570, type: 3}
+  themesCloseButtonSprite: {fileID: 21300000, guid: 861cd978e3504574b822ccb2c93cfaf3, type: 3}
+  themesSelectedRibbonSprite: {fileID: 21300000, guid: abf5ea0db06541bea552d6d7548e20af, type: 3}
+  themesApplyButtonSprite: {fileID: 21300000, guid: 95977f00b79d453780a17ea83326768d, type: 3}
+  settingsPanelSprite: {fileID: 21300000, guid: af3f876e8a5c81249943e70f912613ba, type: 3}

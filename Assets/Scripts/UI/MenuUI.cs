@@ -11,11 +11,34 @@ namespace ChromaBlast
     {
         private const string OceanBackgroundPath = "Ocean/MainMenu/BG_MainMenu_New";
         private const string OceanLogoPath = "Ocean/MainMenu/Logo_ChromaBlast_Menu";
-        private const string ClassicButtonPath = "Ocean/MainMenu/Buttons/classic_transparent_same_size";
-        private const string BlitzButtonPath = "Ocean/MainMenu/Buttons/blitz_transparent_same_size";
+        private const string ClassicButtonPath = "Ocean/MainMenu/Buttons/Button_Classic";
+        private const string BlitzButtonPath = "Ocean/MainMenu/Buttons/Button_Blitz";
         private const string DailyButtonPath = "Ocean/MainMenu/Buttons/daily_transparent_same_size";
-        private const string RewardsButtonPath = "Ocean/MainMenu/Buttons/rewards_transparent_same_size";
-        private const string SettingsButtonPath = "Ocean/MainMenu/Buttons/settings_transparent_same_size";
+        private const string RewardsButtonPath = "Ocean/MainMenu/Buttons/Button_Rewards";
+        private const string ThemeButtonPath = "Ocean/MainMenu/Buttons/Button_Theme";
+        private const string ShopButtonPath = "Ocean/MainMenu/Buttons/Button_Shop";
+        private const string ThemesBuyButtonPath = "Themes/UI/BuyButton";
+        private const string ThemesApplyButtonPath = "Themes/UI/ApplyThemeButton_Final";
+        private const string ThemesCoinBalancePath = "Themes/UI/ThemesCoinBalance";
+        private const string OceanThemesCloseButtonPath = "Themes/Artwork/Ocean/ThemesCloseButton";
+        private const string OceanCardNormalPath = "Themes/Artwork/Ocean/Card_Ocean_Normal";
+        private const string OceanCardOwnedPath = "Themes/Artwork/Ocean/Card_Ocean_Owned";
+        private const string OceanCardSelectedPath = "Themes/Artwork/Ocean/Card_Ocean_Selected_Final";
+        private const string GardenCardPath = "Themes/Artwork/Crystal/Card_Garden_Final";
+        private const string GardenCardOwnedPath = "Themes/Artwork/Crystal/Card_Garden_Owned";
+        private const string GardenCardSelectedPath = "Themes/Artwork/Crystal/Card_Garden_Selected";
+        private const string BlossomCardPath = "Themes/Artwork/Neon/Card_Blossom_Final";
+        private const string BlossomCardOwnedPath = "Themes/Artwork/Neon/Card_Blossom_Owned";
+        private const string BlossomCardSelectedPath = "Themes/Artwork/Neon/Card_Blossom_Selected";
+        private const string DesertCardPath = "Themes/Artwork/Gold/Card_Desert_Final";
+        private const string DesertCardOwnedPath = "Themes/Artwork/Gold/Card_Desert_Owned";
+        private const string DesertCardSelectedPath = "Themes/Artwork/Gold/Card_Desert_Selected";
+        private const string CandyCardPath = "Themes/Artwork/Candy/Card_Candy_Final";
+        private const string CandyCardOwnedPath = "Themes/Artwork/Candy/Card_Candy_Owned";
+        private const string CandyCardSelectedPath = "Themes/Artwork/Candy/Card_Candy_Selected";
+        private const string BeachCardPath = "Themes/Artwork/Aqua/Card_Beach_Final";
+        private const string BeachCardOwnedPath = "Themes/Artwork/Aqua/Card_Beach_Owned";
+        private const string BeachCardSelectedPath = "Themes/Artwork/Aqua/Card_Beach_Selected";
         private const string RewardsCoinsIconPath = "Ocean/Rewards/icon_coins";
         private const string RewardsClosedChestIconPath = "Ocean/Rewards/icon_chest_closed";
         private const string RewardsGrandIconPath = "Ocean/Rewards/icon_grand_reward";
@@ -26,6 +49,21 @@ namespace ChromaBlast
         private const string DailyRewardPrefabResourcePath = "UI/DailyRewardPanel";
         private const string SelectedLanguageKey = "SelectedLanguage";
         private const string EnglishLanguageCode = "en";
+        private const float MainMenuButtonSpacing = 10f;
+        private const int MainMenuReferenceButtonCount = 5;
+        private const float MainMenuReferenceButtonSpacing = 16f;
+        private const float MainMenuReferenceColumnHeight = 0.625f;
+        private static readonly Vector2 MainMenuColumnAnchorMin = new Vector2(0.11f, 0.05f);
+        private static readonly Vector2 MainMenuColumnAnchorMax = new Vector2(0.89f, 0.5421f);
+        private static readonly ThemeType[] VisibleThemeTypes =
+        {
+            ThemeType.Ocean,
+            ThemeType.Crystal,
+            ThemeType.Neon,
+            ThemeType.Gold,
+            ThemeType.Candy,
+            ThemeType.Aqua
+        };
 
         [SerializeField] private Button classicButton;
         [SerializeField] private Button newClassicButton;
@@ -34,9 +72,6 @@ namespace ChromaBlast
         [SerializeField] private TMP_Text dailyInfoText;
         [SerializeField] private Button dailyGiftButton;
         [SerializeField] private TMP_Text dailyGiftButtonText;
-        [SerializeField] private Button muteButton;
-        [SerializeField] private TMP_Text muteButtonText;
-        [SerializeField] private Button settingsButton;
         [SerializeField] private GameObject settingsRoot;
         [SerializeField] private TMP_Text settingsStatusText;
         [SerializeField] private Button settingsCloseButton;
@@ -60,11 +95,15 @@ namespace ChromaBlast
         [SerializeField] private Image[] themeSwatches;
         private GameObject themesRoot;
         private RectTransform themesPanel;
+        private Image themesCoinPill;
         private TMP_Text themesCoinText;
         private TMP_Text themesFeedbackText;
         private Button themesCloseButton;
+        private Button themesApplyButton;
         private Coroutine themesTransitionRoutine;
         private readonly List<ThemeCardRuntime> themeCards = new List<ThemeCardRuntime>();
+        private ThemeType pendingTheme;
+        private bool hasPendingTheme;
         [SerializeField] private Button shopButton;
         [SerializeField] private GameObject shopRoot;
         [SerializeField] private TMP_Text shopStatusText;
@@ -112,6 +151,7 @@ namespace ChromaBlast
         private Canvas menuLayerCanvas;
         private Image oceanBackgroundImage;
         private Image oceanLogoImage;
+        [SerializeField] private RectTransform mainMenuButtonColumn;
         private bool rewardsLogoStateCaptured;
         private bool rewardsLogoWasActive;
         private readonly List<GameObject> hiddenGameplayObjects = new List<GameObject>();
@@ -122,13 +162,7 @@ namespace ChromaBlast
         {
             public ThemeType Theme;
             public Button Button;
-            public TMP_Text Title;
-            public TMP_Text Status;
-            public Image Preview;
-            public Image PreviewFrame;
-            public Image Gloss;
-            public Image InnerRim;
-            public Image[] Swatches;
+            public Image Artwork;
         }
 
         private void Awake()
@@ -137,8 +171,8 @@ namespace ChromaBlast
             EnsureMenuCameraAndCanvas();
             DisableCameraWarningTexts();
             EnsureAchievementsUi();
-            EnsureSettingsUi();
             EnsureMainMenuButtons();
+            RemoveMainMenuSettingsEntry();
             EnsureThemesUi();
             if (themesRoot != null)
             {
@@ -176,61 +210,31 @@ namespace ChromaBlast
                 dailyGiftButton.onClick.RemoveAllListeners();
             }
 
-            if (settingsButton != null)
-            {
-                settingsButton.onClick.RemoveAllListeners();
-                settingsButton.onClick.AddListener(OpenSettings);
-            }
-
-            if (settingsCloseButton != null)
-            {
-                settingsCloseButton.onClick.RemoveAllListeners();
-                settingsCloseButton.onClick.AddListener(CloseSettings);
-            }
-
-            if (settingsSoundButton != null)
-            {
-                settingsSoundButton.onClick.RemoveAllListeners();
-                settingsSoundButton.onClick.AddListener(ToggleMenuSound);
-            }
-
-            if (settingsHapticsButton != null)
-            {
-                settingsHapticsButton.onClick.RemoveAllListeners();
-                settingsHapticsButton.onClick.AddListener(ToggleMenuHaptics);
-            }
-
-            if (settingsPerformanceButton != null)
-            {
-                settingsPerformanceButton.onClick.RemoveAllListeners();
-                settingsPerformanceButton.onClick.AddListener(ToggleMenuMusic);
-            }
-
-            WireCompletedSettingsListeners();
-
-            if (removeAdsButton != null)
-            {
-                removeAdsButton.onClick.AddListener(BuyRemoveAds);
-            }
-
             if (shopButton != null)
             {
+                shopButton.onClick.RemoveAllListeners();
                 shopButton.onClick.AddListener(OpenShop);
             }
 
             if (shopCloseButton != null)
             {
+                shopCloseButton.onClick.RemoveAllListeners();
                 shopCloseButton.onClick.AddListener(CloseShop);
             }
 
             if (shopCosmeticsButton != null)
             {
-                shopCosmeticsButton.onClick.AddListener(BuyCosmeticPack);
+                shopCosmeticsButton.onClick.RemoveAllListeners();
             }
 
             if (shopRestoreButton != null)
             {
-                shopRestoreButton.onClick.AddListener(RestorePurchases);
+                shopRestoreButton.onClick.RemoveAllListeners();
+            }
+
+            if (removeAdsButton != null)
+            {
+                removeAdsButton.onClick.RemoveAllListeners();
             }
 
             if (achievementsButton != null)
@@ -264,6 +268,7 @@ namespace ChromaBlast
 
             if (settingsRoot != null)
             {
+                SetSettingsOverlayInputState(false);
                 settingsRoot.SetActive(false);
             }
 
@@ -280,18 +285,6 @@ namespace ChromaBlast
                 if (achievementsRoot != null && achievementsRoot.activeSelf)
                 {
                     CloseAchievements();
-                    return;
-                }
-
-                if (settingsRoot != null && settingsRoot.activeSelf)
-                {
-                    if (settingsAboutRoot != null && settingsAboutRoot.activeSelf)
-                    {
-                        CloseSettingsAbout();
-                        return;
-                    }
-
-                    CloseSettings();
                     return;
                 }
 
@@ -315,6 +308,7 @@ namespace ChromaBlast
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
             ThemeCatalog.ThemeChanged += HandleThemeChanged;
+            WireThemeButton();
             HideGameplaySceneObjects();
             Refresh();
         }
@@ -375,18 +369,6 @@ namespace ChromaBlast
                 dailyInfoText.text = string.Empty;
             }
 
-            if (muteButtonText == null && muteButton != null)
-            {
-                muteButtonText = muteButton.GetComponentInChildren<TMP_Text>();
-            }
-
-            if (muteButtonText != null)
-            {
-                muteButtonText.text = "SETTINGS";
-            }
-
-            RefreshSettings(save);
-
             if (themeButtonText == null && themeButton != null)
             {
                 themeButtonText = themeButton.GetComponentInChildren<TMP_Text>();
@@ -412,7 +394,6 @@ namespace ChromaBlast
                 RefreshThemesOverlay(save);
             }
 
-            RefreshShop(save);
             RefreshAchievements(save);
             RefreshDailyGift(save);
             DisableCameraWarningTexts();
@@ -421,13 +402,8 @@ namespace ChromaBlast
 
         private void OpenThemes()
         {
-            SaveManager save = SaveManager.Instance;
-            if (save == null)
-            {
-                return;
-            }
-
             AudioManager.Instance?.PlayClick();
+            SetSettingsOverlayInputState(false);
             EnsureThemesUi();
             if (themesRoot != null)
             {
@@ -435,8 +411,21 @@ namespace ChromaBlast
                 themesRoot.transform.SetAsLastSibling();
             }
 
-            RefreshThemesOverlay(save);
             StartThemesOpenTransition();
+
+            SaveManager save = SaveManager.Instance;
+            if (save == null)
+            {
+                Debug.LogWarning("[Themes] Popup opened before SaveManager became available; theme actions remain disabled until data is ready.");
+                return;
+            }
+
+            // The popup currently exposes only the Ocean card. Keep the active
+            // theme as the pending choice until the Ocean card is actually tapped.
+            // That leaves the supplied normal card art visible for other active themes.
+            pendingTheme = ChromaPalette.CurrentTheme;
+            hasPendingTheme = true;
+            RefreshThemesOverlay(save);
         }
 
         private void WireThemeButton()
@@ -455,6 +444,9 @@ namespace ChromaBlast
         private void CloseThemes()
         {
             AudioManager.Instance?.PlayClick();
+            pendingTheme = ChromaPalette.CurrentTheme;
+            hasPendingTheme = false;
+            ApplyThemesCoinBalance(GetActiveThemesAssetSet());
             if (themesRoot != null && themesRoot.activeSelf)
             {
                 StopThemesTransition();
@@ -569,48 +561,101 @@ namespace ChromaBlast
                 return;
             }
 
+            pendingTheme = theme;
+            hasPendingTheme = true;
+            AudioManager.Instance?.PlayClick();
+
             if (save.IsThemeUnlocked(theme))
             {
-                save.SetTheme((int)theme);
-                AudioManager.Instance?.PlayClick();
-                SetThemesFeedback($"{ChromaPalette.GetThemeName(theme)} SELECTED", new Color(0.50f, 1f, 0.92f, 1f));
+                SetThemesFeedback($"{ChromaPalette.GetThemeName(theme)} READY TO APPLY", new Color(0.50f, 1f, 0.92f, 1f));
+                RefreshThemesOverlay(save, false);
+                return;
+            }
+
+            if (theme == ThemeType.Aqua)
+            {
+                SetThemesFeedback("UNLOCKS WITH DAILY REWARD DAY 7", new Color(1f, 0.82f, 0.34f, 1f));
                 RefreshThemesOverlay(save, false);
                 return;
             }
 
             int cost = ChromaPalette.GetThemeCoinCost(theme);
-            if (save.GetCoins() < cost)
+            SetThemesFeedback($"BUY FOR {cost:N0} COINS", new Color(1f, 0.82f, 0.34f, 1f));
+            RefreshThemesOverlay(save, false);
+        }
+
+        private void ApplyPendingTheme()
+        {
+            SaveManager save = SaveManager.Instance;
+            if (save == null)
+            {
+                return;
+            }
+
+            if (!hasPendingTheme)
+            {
+                pendingTheme = ChromaPalette.CurrentTheme;
+                hasPendingTheme = true;
+            }
+
+            if (!save.IsThemeUnlocked(pendingTheme))
+            {
+                if (pendingTheme == ThemeType.Aqua)
+                {
+                    AudioManager.Instance?.PlayClick();
+                    Haptics.Light();
+                    SetThemesFeedback("BEACH UNLOCKS WITH DAILY REWARD DAY 7", new Color(1f, 0.82f, 0.34f, 1f));
+                    RefreshThemesOverlay(save, false);
+                    return;
+                }
+
+                int cost = ChromaPalette.GetThemeCoinCost(pendingTheme);
+                if (save.TryBuyTheme(pendingTheme))
+                {
+                    ThemeType purchasedTheme = pendingTheme;
+                    pendingTheme = ChromaPalette.CurrentTheme;
+                    hasPendingTheme = true;
+                    AudioManager.Instance?.PlayPure();
+                    Haptics.Medium();
+                    SetThemesFeedback($"{ChromaPalette.GetThemeName(purchasedTheme)} OWNED", new Color(0.50f, 1f, 0.92f, 1f));
+                }
+                else
+                {
+                    AudioManager.Instance?.PlayClick();
+                    Haptics.Light();
+                    SetThemesFeedback($"NOT ENOUGH COINS - NEED {cost:N0}", new Color(1f, 0.48f, 0.50f, 1f));
+                }
+
+                RefreshThemesOverlay(save, false);
+                return;
+            }
+
+            bool changed = save.Data.selectedTheme != (int)pendingTheme;
+            if (changed)
+            {
+                save.SetTheme((int)pendingTheme);
+                AudioManager.Instance?.PlayPure();
+                Haptics.Medium();
+                SetThemesFeedback($"{ChromaPalette.GetThemeName(pendingTheme)} APPLIED", new Color(0.50f, 1f, 0.92f, 1f));
+            }
+            else
             {
                 AudioManager.Instance?.PlayClick();
-                Haptics.Light();
-                SetThemesFeedback("COINS INSUFICIENTE", new Color(1f, 0.48f, 0.50f, 1f));
-                RefreshThemesOverlay(save, false);
-                return;
+                SetThemesFeedback("THEME ALREADY APPLIED", new Color(0.50f, 1f, 0.92f, 1f));
             }
 
-            if (!save.TryBuyTheme(theme))
-            {
-                SetThemesFeedback("THEME COULD NOT BE UNLOCKED", new Color(1f, 0.48f, 0.50f, 1f));
-                RefreshThemesOverlay(save, false);
-                return;
-            }
-
-            save.SetTheme((int)theme);
-            AudioManager.Instance?.PlayPure();
-            Haptics.Medium();
-            SetThemesFeedback($"{ChromaPalette.GetThemeName(theme)} UNLOCKED", new Color(1f, 0.86f, 0.35f, 1f));
             RefreshThemesOverlay(save, false);
         }
 
         private void OpenShop()
         {
             AudioManager.Instance?.PlayClick();
+            ConfigureShopPlaceholder();
             if (shopRoot != null)
             {
                 shopRoot.SetActive(true);
+                shopRoot.transform.SetAsLastSibling();
             }
-
-            Refresh();
         }
 
         private void CloseShop()
@@ -622,6 +667,62 @@ namespace ChromaBlast
             }
         }
 
+        private void ConfigureShopPlaceholder()
+        {
+            if (shopRoot == null)
+            {
+                return;
+            }
+
+            Transform panel = shopRoot.transform.Find("ShopPanel");
+            if (panel == null)
+            {
+                return;
+            }
+
+            TMP_Text title = panel.Find("ShopTitle")?.GetComponent<TMP_Text>();
+            if (title != null)
+            {
+                title.text = "SHOP";
+            }
+
+            if (shopStatusText == null)
+            {
+                shopStatusText = panel.Find("ShopStatus")?.GetComponent<TMP_Text>();
+            }
+
+            if (shopStatusText != null)
+            {
+                shopStatusText.text = "COMING SOON\nNew cosmetic content is being prepared.";
+                shopStatusText.alignment = TextAlignmentOptions.Center;
+            }
+
+            if (removeAdsButton != null)
+            {
+                removeAdsButton.onClick.RemoveAllListeners();
+                removeAdsButton.gameObject.SetActive(false);
+            }
+
+            if (shopCosmeticsButton != null)
+            {
+                shopCosmeticsButton.onClick.RemoveAllListeners();
+                shopCosmeticsButton.gameObject.SetActive(false);
+            }
+
+            if (shopRestoreButton != null)
+            {
+                shopRestoreButton.onClick.RemoveAllListeners();
+                shopRestoreButton.gameObject.SetActive(false);
+            }
+
+            if (shopCloseButton != null)
+            {
+                shopCloseButton.onClick.RemoveAllListeners();
+                shopCloseButton.onClick.AddListener(CloseShop);
+                shopCloseButton.gameObject.SetActive(true);
+            }
+        }
+
         private void OpenAchievements()
         {
             OpenRewards();
@@ -630,6 +731,7 @@ namespace ChromaBlast
         private void OpenRewards()
         {
             AudioManager.Instance?.PlayClick();
+            SetSettingsOverlayInputState(false);
             ResolveDailyRewardPrefab();
             EnsureAchievementsUi();
             if (achievementsRoot == null)
@@ -713,7 +815,11 @@ namespace ChromaBlast
                 }
                 else
                 {
-                    RefreshRewardedAdButton(save);
+                    // Keep the final Daily Rewards UI bound to its claim flow.
+                    // RefreshRewardedAdButton targets the same serialized button and
+                    // removes its listeners, which made CLAIM stop responding after
+                    // the first half-second refresh tick.
+                    RefreshDailyGift(save);
                 }
 
                 yield return refreshDelay;
@@ -742,6 +848,7 @@ namespace ChromaBlast
             {
                 settingsRoot.SetActive(true);
                 settingsRoot.transform.SetAsLastSibling();
+                SetSettingsOverlayInputState(true);
                 SetMainMenuControlsSuppressedForSettings(true);
             }
 
@@ -754,10 +861,29 @@ namespace ChromaBlast
             CloseSettingsAbout(false);
             if (settingsRoot != null)
             {
+                SetSettingsOverlayInputState(false);
                 settingsRoot.SetActive(false);
             }
 
             SetMainMenuControlsSuppressedForSettings(false);
+        }
+
+        private void SetSettingsOverlayInputState(bool visible)
+        {
+            if (settingsRoot == null)
+            {
+                return;
+            }
+
+            CanvasGroup group = settingsRoot.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = settingsRoot.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = visible ? 1f : 0f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
         }
 
         private void SetMainMenuControlsSuppressedForSettings(bool suppressed)
@@ -778,8 +904,6 @@ namespace ChromaBlast
                     dailyButton,
                     dailyGiftButton,
                     achievementsButton,
-                    settingsButton,
-                    muteButton,
                     themeButton,
                     shopButton,
                     quitButton
@@ -826,13 +950,16 @@ namespace ChromaBlast
                 return;
             }
 
+            int claimedDayIndex = save.GetDailyRewardDayIndex();
             if (save.TryClaimDailyGift(out int coinsClaimed))
             {
                 AudioManager.Instance?.PlayPure();
                 Haptics.Medium();
                 AnalyticsManager.Instance?.RecordDailyGiftClaimed(coinsClaimed, save.GetDailyStreak());
                 RefreshDailyGift(save);
-                dailyRewardView?.SetFeedback($"+{coinsClaimed} Coins");
+                dailyRewardView?.SetFeedback(claimedDayIndex == SaveManager.DailyRewardDayCount - 1
+                    ? "Beach Theme Unlocked!"
+                    : $"+{coinsClaimed} Coins");
             }
             else
             {
@@ -840,6 +967,27 @@ namespace ChromaBlast
                 RefreshDailyGift(save);
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugShowDailyRewardsDay(int dayNumber)
+        {
+            SaveManager save = SaveManager.Instance;
+            if (save == null)
+            {
+                Debug.LogError("[Daily Rewards Debug] SaveManager is not available.");
+                return;
+            }
+
+            save.DebugConfigureDailyRewardDay(dayNumber);
+            OpenRewards();
+            RefreshDailyGift(save);
+        }
+
+        public void DebugRefreshDailyRewards()
+        {
+            RefreshDailyGift(SaveManager.Instance);
+        }
+#endif
 
         private void RequestDailyRewardedAd()
         {
@@ -1030,11 +1178,26 @@ namespace ChromaBlast
                 themesPanel = CreateRuntimePanel("ThemesPanel", overlayRect, new Color(0.015f, 0.075f, 0.18f, 0.985f));
             }
 
-            SetRect(themesPanel, new Vector2(0.045f, 0.04f), new Vector2(0.955f, 0.96f), Vector2.zero, Vector2.zero);
+            // Every themed panel uses the same portrait layout, so only the sprite
+            // changes while this shared 9:16 RectTransform remains untouched.
+            SetRect(themesPanel, new Vector2(0.045f, 0.116f), new Vector2(0.955f, 0.884f), Vector2.zero, Vector2.zero);
             Image panelImage = themesPanel.GetComponent<Image>();
-            UISpriteFactory.ApplyRounded(panelImage, 0.075f);
-            panelImage.color = new Color(0.015f, 0.075f, 0.18f, 0.985f);
-            panelImage.raycastTarget = true;
+            Sprite panelBackground = ResolveThemesPanelBackground(GetActiveThemesAssetSet());
+            if (panelBackground != null)
+            {
+                panelImage.sprite = panelBackground;
+                panelImage.type = Image.Type.Simple;
+                panelImage.preserveAspect = false;
+                panelImage.color = Color.white;
+                panelImage.material = null;
+            }
+            else
+            {
+                UISpriteFactory.ApplyRounded(panelImage, 0.075f);
+                panelImage.color = new Color(0.015f, 0.075f, 0.18f, 0.985f);
+            }
+            // The panel is visual-only. Its children own all Themes-popup input.
+            panelImage.raycastTarget = false;
 
             Outline panelOutline = themesPanel.GetComponent<Outline>();
             if (panelOutline == null)
@@ -1045,17 +1208,20 @@ namespace ChromaBlast
             panelOutline.effectColor = new Color(0.20f, 0.88f, 1f, 0.72f);
             panelOutline.effectDistance = new Vector2(3f, -3f);
             panelOutline.useGraphicAlpha = true;
+            panelOutline.enabled = panelBackground == null;
 
             Shadow panelShadow = EnsureStandaloneShadow(themesPanel.gameObject);
             panelShadow.effectColor = new Color(0f, 0.01f, 0.055f, 0.72f);
             panelShadow.effectDistance = new Vector2(0f, -10f);
             panelShadow.useGraphicAlpha = true;
+            panelShadow.enabled = panelBackground == null;
 
             Image panelRim = EnsureThemeImage(themesPanel, "ThemesPanelInnerRim");
             SetRect(panelRim.rectTransform, Vector2.zero, Vector2.one, new Vector2(7f, 7f), new Vector2(-7f, -7f));
             UISpriteFactory.ApplyFrame(panelRim, 0.075f, 0.025f);
             panelRim.color = new Color(0.54f, 0.96f, 1f, 0.30f);
             panelRim.raycastTarget = false;
+            panelRim.gameObject.SetActive(panelBackground == null);
             panelRim.transform.SetAsFirstSibling();
 
             Image panelGloss = EnsureThemeImage(themesPanel, "ThemesPanelGloss");
@@ -1063,41 +1229,65 @@ namespace ChromaBlast
             UISpriteFactory.ApplyRounded(panelGloss, 0.20f);
             panelGloss.color = new Color(0.38f, 0.90f, 1f, 0.055f);
             panelGloss.raycastTarget = false;
+            panelGloss.gameObject.SetActive(panelBackground == null);
             panelGloss.transform.SetSiblingIndex(1);
 
             TMP_Text title = EnsureThemeText(themesPanel, "ThemesTitle", "THEMES", 58f, TextAlignmentOptions.Center);
-            SetRect(title.rectTransform, new Vector2(0.18f, 0.91f), new Vector2(0.82f, 0.975f), Vector2.zero, Vector2.zero);
-            title.color = new Color(0.94f, 1f, 1f, 1f);
-            EnsureTextShadow(title, new Color(0f, 0.02f, 0.10f, 0.78f), new Vector2(0f, -3f));
+            title.gameObject.SetActive(false);
+            title.raycastTarget = false;
+            Transform legacySubtitle = themesPanel.Find("ThemesSubtitle");
+            if (legacySubtitle != null)
+            {
+                legacySubtitle.gameObject.SetActive(false);
+            }
 
-            Image coinPill = EnsureThemeImage(themesPanel, "ThemesCoinPill");
-            SetRect(coinPill.rectTransform, new Vector2(0.25f, 0.846f), new Vector2(0.75f, 0.90f), Vector2.zero, Vector2.zero);
-            UISpriteFactory.ApplyRounded(coinPill, 0.48f);
-            coinPill.color = new Color(0.025f, 0.19f, 0.40f, 0.96f);
-            coinPill.raycastTarget = false;
-            Outline coinOutline = coinPill.GetComponent<Outline>();
+            themesCoinPill = EnsureThemeImage(themesPanel, "ThemesCoinPill");
+            // Compact balance bar below the baked heading, leaving more room for
+            // the enlarged two-column, three-row card grid.
+            SetRect(themesCoinPill.rectTransform, new Vector2(0.365f, 0.782f), new Vector2(0.635f, 0.824f), Vector2.zero, Vector2.zero);
+            Sprite coinBalanceSprite = Resources.Load<Sprite>(ThemesCoinBalancePath);
+            if (coinBalanceSprite != null)
+            {
+                themesCoinPill.sprite = coinBalanceSprite;
+                themesCoinPill.type = Image.Type.Simple;
+                themesCoinPill.preserveAspect = true;
+                themesCoinPill.material = null;
+                themesCoinPill.color = Color.white;
+            }
+            else
+            {
+                UISpriteFactory.ApplyRounded(themesCoinPill, 0.48f);
+                themesCoinPill.color = new Color(0.025f, 0.19f, 0.40f, 0.96f);
+            }
+            themesCoinPill.raycastTarget = false;
+            Outline coinOutline = themesCoinPill.GetComponent<Outline>();
             if (coinOutline == null)
             {
-                coinOutline = coinPill.gameObject.AddComponent<Outline>();
+                coinOutline = themesCoinPill.gameObject.AddComponent<Outline>();
             }
 
             coinOutline.effectColor = new Color(1f, 0.84f, 0.26f, 0.48f);
             coinOutline.effectDistance = new Vector2(2f, -2f);
             coinOutline.useGraphicAlpha = true;
+            coinOutline.enabled = coinBalanceSprite == null;
 
             themesCoinText = EnsureThemeText(themesPanel, "ThemesCoinBalance", string.Empty, 32f, TextAlignmentOptions.Center);
-            SetRect(themesCoinText.rectTransform, new Vector2(0.20f, 0.845f), new Vector2(0.80f, 0.90f), Vector2.zero, Vector2.zero);
-            themesCoinText.color = new Color(1f, 0.86f, 0.35f, 1f);
+            SetRect(themesCoinText.rectTransform, new Vector2(0.445f, 0.782f), new Vector2(0.625f, 0.824f), Vector2.zero, Vector2.zero);
+            themesCoinText.color = Color.white;
+            themesCoinText.raycastTarget = false;
             EnsureTextShadow(themesCoinText, new Color(0f, 0.02f, 0.08f, 0.70f), new Vector2(0f, -2f));
 
             themesFeedbackText = EnsureThemeText(themesPanel, "ThemesFeedback", string.Empty, 27f, TextAlignmentOptions.Center);
-            SetRect(themesFeedbackText.rectTransform, new Vector2(0.10f, 0.105f), new Vector2(0.90f, 0.16f), Vector2.zero, Vector2.zero);
+            SetRect(themesFeedbackText.rectTransform, new Vector2(0.10f, 0.035f), new Vector2(0.90f, 0.085f), Vector2.zero, Vector2.zero);
+            themesFeedbackText.raycastTarget = false;
+            themesFeedbackText.gameObject.SetActive(false);
 
             EnsureThemeCards();
+            EnsureThemesApplyButton();
             EnsureThemesCloseButton();
-            title.transform.SetAsLastSibling();
-            coinPill.transform.SetSiblingIndex(Mathf.Max(0, title.transform.GetSiblingIndex() - 1));
+            themesCoinPill.transform.SetAsLastSibling();
             themesCoinText.transform.SetAsLastSibling();
+            themesApplyButton.transform.SetAsLastSibling();
             themesFeedbackText.transform.SetAsLastSibling();
             themesCloseButton.transform.SetAsLastSibling();
             themesRoot.transform.SetAsLastSibling();
@@ -1111,115 +1301,231 @@ namespace ChromaBlast
             }
 
             themeCards.Clear();
-            TMP_FontAsset premiumFont = Resources.Load<TMP_FontAsset>("Fonts/Fredoka-SemiBold SDF");
-            for (int i = 0; i < ChromaPalette.ThemeCount; i++)
+            for (int childIndex = themesPanel.childCount - 1; childIndex >= 0; childIndex--)
             {
-                ThemeType theme = (ThemeType)i;
+                Transform child = themesPanel.GetChild(childIndex);
+                if (child.name.StartsWith("ThemeCard_", System.StringComparison.Ordinal)
+                    && !IsVisibleThemeCardName(child.name))
+                {
+                    child.gameObject.SetActive(false);
+                }
+            }
+
+            for (int themeIndex = 0; themeIndex < VisibleThemeTypes.Length; themeIndex++)
+            {
+                ThemeType theme = VisibleThemeTypes[themeIndex];
                 string cardName = $"ThemeCard_{theme}";
                 Transform existing = themesPanel.Find(cardName);
                 Button cardButton = existing == null ? null : existing.GetComponent<Button>();
                 if (cardButton == null)
                 {
-                    cardButton = CreateRuntimeButton(cardName, themesPanel, ChromaPalette.GetThemeName(theme), Color.white, Color.white);
+                    cardButton = CreateRuntimeButton(cardName, themesPanel, string.Empty, Color.white, Color.white);
                 }
 
-                int row = i / 2;
-                bool centeredLastCard = i == ChromaPalette.ThemeCount - 1 && ChromaPalette.ThemeCount % 2 != 0;
-                float minX = centeredLastCard ? 0.28f : (i % 2 == 0 ? 0.045f : 0.515f);
-                float maxX = centeredLastCard ? 0.72f : (i % 2 == 0 ? 0.485f : 0.955f);
-                float maxY = 0.82f - row * 0.09f;
-                SetRect((RectTransform)cardButton.transform, new Vector2(minX, maxY - 0.08f), new Vector2(maxX, maxY), Vector2.zero, Vector2.zero);
+                cardButton.gameObject.SetActive(true);
+                // The supplied card artwork contains its own title, price, lock state,
+                // and frame. Disable the previous generated layers so they cannot cover it.
+                for (int childIndex = 0; childIndex < cardButton.transform.childCount; childIndex++)
+                {
+                    cardButton.transform.GetChild(childIndex).gameObject.SetActive(false);
+                }
 
+                GetThemesGridSlotRect(theme, out Vector2 cardAnchorMin, out Vector2 cardAnchorMax);
+                SetRect((RectTransform)cardButton.transform, cardAnchorMin, cardAnchorMax, Vector2.zero, Vector2.zero);
                 Image cardImage = cardButton.image != null ? cardButton.image : cardButton.GetComponent<Image>();
-                UISpriteFactory.ApplyRounded(cardImage, 0.20f);
+                // The Button root is only a full-slot hit target. Artwork is in its
+                // own non-raycasting child, preventing transparent pixels from stealing taps.
+                cardImage.sprite = null;
+                cardImage.type = Image.Type.Simple;
+                cardImage.preserveAspect = false;
+                cardImage.material = null;
+                cardImage.color = Color.clear;
                 cardImage.raycastTarget = true;
                 cardButton.targetGraphic = cardImage;
                 cardButton.interactable = true;
-
-                TMP_Text cardTitle = cardButton.transform.Find("Label")?.GetComponent<TMP_Text>();
-                if (cardTitle == null)
-                {
-                    cardTitle = EnsureThemeText(cardButton.transform, "Label", ChromaPalette.GetThemeName(theme), 30f, TextAlignmentOptions.Center);
-                }
-
-                cardTitle.gameObject.SetActive(true);
-                cardTitle.text = ChromaPalette.GetThemeName(theme);
-                cardTitle.fontSize = 27f;
-                cardTitle.fontSizeMax = 27f;
-                cardTitle.fontSizeMin = 17f;
-                cardTitle.color = Color.white;
-                cardTitle.font = premiumFont != null ? premiumFont : cardTitle.font;
-                cardTitle.alignment = TextAlignmentOptions.MidlineLeft;
-                SetRect(cardTitle.rectTransform, new Vector2(0.35f, 0.53f), new Vector2(0.95f, 0.91f), Vector2.zero, Vector2.zero);
-                EnsureTextShadow(cardTitle, new Color(0f, 0.015f, 0.07f, 0.72f), new Vector2(0f, -2f));
-
-                TMP_Text status = EnsureThemeText(cardButton.transform, "Status", string.Empty, 18f, TextAlignmentOptions.MidlineLeft);
-                status.font = premiumFont != null ? premiumFont : status.font;
-                SetRect(status.rectTransform, new Vector2(0.35f, 0.10f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
-                EnsureTextShadow(status, new Color(0f, 0.015f, 0.07f, 0.62f), new Vector2(0f, -1f));
-
-                Image cardGloss = EnsureThemeImage(cardButton.transform, "CardGloss");
-                SetRect(cardGloss.rectTransform, new Vector2(0.025f, 0.53f), new Vector2(0.975f, 0.95f), Vector2.zero, Vector2.zero);
-                UISpriteFactory.ApplyRounded(cardGloss, 0.28f);
-                cardGloss.color = new Color(1f, 1f, 1f, 0.10f);
-                cardGloss.raycastTarget = false;
-
-                Image cardInnerRim = EnsureThemeImage(cardButton.transform, "CardInnerRim");
-                SetRect(cardInnerRim.rectTransform, Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
-                UISpriteFactory.ApplyFrame(cardInnerRim, 0.20f, 0.035f);
-                cardInnerRim.raycastTarget = false;
-
-                Image previewFrame = EnsureThemeImage(cardButton.transform, "ArtworkPreviewFrame");
-                SetRect(previewFrame.rectTransform, new Vector2(0.035f, 0.11f), new Vector2(0.315f, 0.89f), Vector2.zero, Vector2.zero);
-                UISpriteFactory.ApplyRounded(previewFrame, 0.25f);
-                previewFrame.color = new Color(0.005f, 0.035f, 0.095f, 0.78f);
-                previewFrame.raycastTarget = false;
-
-                Image artworkPreview = EnsureThemeImage(cardButton.transform, "ArtworkPreview");
-                SetRect(artworkPreview.rectTransform, new Vector2(0.055f, 0.16f), new Vector2(0.295f, 0.84f), Vector2.zero, Vector2.zero);
-                artworkPreview.type = Image.Type.Simple;
-                artworkPreview.preserveAspect = true;
-                artworkPreview.raycastTarget = false;
-
-                Image[] swatches = new Image[4];
-                for (int colorIndex = 0; colorIndex < swatches.Length; colorIndex++)
-                {
-                    swatches[colorIndex] = EnsureThemeImage(cardButton.transform, $"Swatch_{colorIndex}");
-                    float swatchMinX = 0.055f + (colorIndex % 2) * 0.125f;
-                    float swatchMinY = colorIndex < 2 ? 0.53f : 0.22f;
-                    SetRect(swatches[colorIndex].rectTransform, new Vector2(swatchMinX, swatchMinY), new Vector2(swatchMinX + 0.105f, swatchMinY + 0.24f), Vector2.zero, Vector2.zero);
-                    UISpriteFactory.ApplyRounded(swatches[colorIndex], 0.35f);
-                    swatches[colorIndex].raycastTarget = false;
-                }
+                // The root Image is a transparent hit target. ColorTint can turn it
+                // opaque white on the next Selectable state update and cover an
+                // unavailable/dormant artwork child.
+                cardButton.transition = Selectable.Transition.None;
+                ColorBlock colors = cardButton.colors;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = Color.white;
+                colors.pressedColor = new Color(0.92f, 0.92f, 0.92f, 1f);
+                colors.selectedColor = Color.white;
+                colors.disabledColor = Color.white;
+                colors.colorMultiplier = 1f;
+                cardButton.colors = colors;
 
                 Outline cardOutline = cardButton.GetComponent<Outline>();
-                if (cardOutline == null)
+                if (cardOutline != null)
                 {
-                    cardOutline = cardButton.gameObject.AddComponent<Outline>();
+                    cardOutline.enabled = false;
                 }
 
-                Shadow cardShadow = EnsureStandaloneShadow(cardButton.gameObject);
-                cardShadow.effectColor = new Color(0f, 0.01f, 0.05f, 0.55f);
-                cardShadow.effectDistance = new Vector2(0f, -4f);
-                cardShadow.useGraphicAlpha = true;
+                Shadow cardShadow = cardButton.GetComponent<Shadow>();
+                if (cardShadow != null)
+                {
+                    cardShadow.enabled = false;
+                }
 
-                ThemeType capturedTheme = theme;
+                Image cardArtwork = EnsureThemeImage(cardButton.transform, "ThemeCardArtwork");
+                // Every card sprite is normalized to the same 720 x 720 canvas and
+                // visible-art bounds. Keep one shared RectTransform for all six cards;
+                // Ocean must never receive a larger runtime compensation.
+                SetRect(cardArtwork.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+                cardArtwork.type = Image.Type.Simple;
+                cardArtwork.preserveAspect = true;
+                cardArtwork.material = null;
+                cardArtwork.color = Color.white;
+                cardArtwork.raycastTarget = false;
+                cardArtwork.gameObject.SetActive(true);
+                // Keep the final supplied artwork above any dormant legacy card
+                // surfaces. The artwork itself never receives raycasts, so the
+                // full-slot Button below remains the interaction target.
+                cardArtwork.transform.SetAsLastSibling();
+
+                ThemeType clickedTheme = theme;
                 cardButton.onClick.RemoveAllListeners();
-                cardButton.onClick.AddListener(() => ChooseTheme(capturedTheme));
+                cardButton.onClick.AddListener(() => ChooseTheme(clickedTheme));
+                // Keep the hit target local to the card root. The shared menu-button
+                // helper also rewrites descendant CanvasGroups/Graphics and must not
+                // touch the supplied card artwork hierarchy.
+                cardImage.enabled = true;
+                cardImage.raycastTarget = true;
+                cardButton.targetGraphic = cardImage;
+                if (cardButton.GetComponent<UIButtonFeedback>() == null)
+                {
+                    cardButton.gameObject.AddComponent<UIButtonFeedback>();
+                }
 
                 themeCards.Add(new ThemeCardRuntime
                 {
                     Theme = theme,
                     Button = cardButton,
-                    Title = cardTitle,
-                    Status = status,
-                    Preview = artworkPreview,
-                    PreviewFrame = previewFrame,
-                    Gloss = cardGloss,
-                    InnerRim = cardInnerRim,
-                    Swatches = swatches
+                    Artwork = cardArtwork
                 });
             }
+
+            EnsureThemesGridPlaceholders();
+        }
+
+        private void EnsureThemesGridPlaceholders()
+        {
+            ThemeType[] futureThemes = { ThemeType.Aqua, ThemeType.Candy, ThemeType.Gold, ThemeType.Crystal, ThemeType.Neon };
+            for (int i = 0; i < futureThemes.Length; i++)
+            {
+                ThemeType theme = futureThemes[i];
+                string slotName = $"ThemeCardSlot_{theme}";
+                RectTransform slot = themesPanel.Find(slotName) as RectTransform;
+                if (slot == null)
+                {
+                    GameObject slotObject = new GameObject(slotName, typeof(RectTransform));
+                    slotObject.transform.SetParent(themesPanel, false);
+                    slot = slotObject.GetComponent<RectTransform>();
+                }
+
+                GetThemesGridSlotRect(theme, out Vector2 anchorMin, out Vector2 anchorMax);
+                SetRect(slot, anchorMin, anchorMax, Vector2.zero, Vector2.zero);
+                // The real cards now occupy these exact positions. Keep any prior
+                // placeholder objects disabled so no legacy layer can overlap them.
+                slot.gameObject.SetActive(false);
+            }
+        }
+
+        private static void GetThemesGridSlotRect(ThemeType theme, out Vector2 anchorMin, out Vector2 anchorMax)
+        {
+            int index;
+            switch (theme)
+            {
+                case ThemeType.Ocean: index = 0; break;
+                case ThemeType.Crystal: index = 1; break;
+                case ThemeType.Neon: index = 2; break;
+                case ThemeType.Gold: index = 3; break;
+                case ThemeType.Candy: index = 4; break;
+                case ThemeType.Aqua: index = 5; break;
+                default: index = 0; break;
+            }
+
+            int row = index / 2;
+            int column = index % 2;
+            // Use the full safe region between the fixed coin bar and Apply button.
+            // All six slots remain identical, with equal outer margins and uniform
+            // gaps in the two-column / three-row grid.
+            float xCenter = column == 0 ? 0.31f : 0.69f;
+            float yCenter = row == 0 ? 0.655f : row == 1 ? 0.44f : 0.225f;
+            const float halfWidth = 0.185f;
+            const float halfHeight = 0.105f;
+            anchorMin = new Vector2(xCenter - halfWidth, yCenter - halfHeight);
+            anchorMax = new Vector2(xCenter + halfWidth, yCenter + halfHeight);
+        }
+
+        private static bool IsVisibleThemeCardName(string objectName)
+        {
+            for (int i = 0; i < VisibleThemeTypes.Length; i++)
+            {
+                if (objectName == $"ThemeCard_{VisibleThemeTypes[i]}")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Sprite ResolveThemeCardArtwork(ThemeType theme, bool owned, bool selected)
+        {
+            string lockedPath;
+            string ownedPath;
+            string selectedPath;
+
+            switch (theme)
+            {
+                case ThemeType.Ocean:
+                    lockedPath = OceanCardNormalPath;
+                    ownedPath = OceanCardOwnedPath;
+                    selectedPath = OceanCardSelectedPath;
+                    break;
+                case ThemeType.Crystal:
+                    lockedPath = GardenCardPath;
+                    ownedPath = GardenCardOwnedPath;
+                    selectedPath = GardenCardSelectedPath;
+                    break;
+                case ThemeType.Neon:
+                    lockedPath = BlossomCardPath;
+                    ownedPath = BlossomCardOwnedPath;
+                    selectedPath = BlossomCardSelectedPath;
+                    break;
+                case ThemeType.Gold:
+                    lockedPath = DesertCardPath;
+                    ownedPath = DesertCardOwnedPath;
+                    selectedPath = DesertCardSelectedPath;
+                    break;
+                case ThemeType.Candy:
+                    lockedPath = CandyCardPath;
+                    ownedPath = CandyCardOwnedPath;
+                    selectedPath = CandyCardSelectedPath;
+                    break;
+                case ThemeType.Aqua:
+                    lockedPath = BeachCardPath;
+                    ownedPath = BeachCardOwnedPath;
+                    selectedPath = BeachCardSelectedPath;
+                    break;
+                default:
+                    return null;
+            }
+
+            string requestedPath = !owned ? lockedPath : selected ? selectedPath : ownedPath;
+            Sprite sprite = Resources.Load<Sprite>(requestedPath);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            // Keep old saves and partially imported artwork safe: an owned card may
+            // fall back to its locked artwork, but a locked card can never borrow a
+            // selected/owned visual that would misrepresent ownership.
+            return Resources.Load<Sprite>(lockedPath);
         }
 
         private void EnsureThemesCloseButton()
@@ -1233,24 +1539,135 @@ namespace ChromaBlast
             themesCloseButton = existing == null ? null : existing.GetComponent<Button>();
             if (themesCloseButton == null)
             {
-                themesCloseButton = CreateRuntimeButton("ThemesCloseButton", themesPanel, "X", new Color(0.02f, 0.38f, 0.70f, 1f), Color.white);
+                themesCloseButton = CreateRuntimeButton("ThemesCloseButton", themesPanel, string.Empty, Color.clear, Color.white);
             }
 
-            SetRect((RectTransform)themesCloseButton.transform, new Vector2(0.88f, 0.91f), new Vector2(0.96f, 0.975f), Vector2.zero, Vector2.zero);
-            Image closeImage = themesCloseButton.image;
-            UISpriteFactory.ApplyRounded(closeImage, 1f);
-            closeImage.color = new Color(0.02f, 0.48f, 0.82f, 1f);
+            SetRect((RectTransform)themesCloseButton.transform, new Vector2(0.785f, 0.875f), new Vector2(0.890f, 0.945f), Vector2.zero, Vector2.zero);
+            // Keep the Button's hit surface separate from its artwork. A Button can
+            // legally change its target Image state; the supplied Close Ocean sprite
+            // must never be allowed to disappear along with that hit surface.
+            Image closeHitImage = themesCloseButton.GetComponent<Image>();
+            if (closeHitImage == null)
+            {
+                closeHitImage = themesCloseButton.gameObject.AddComponent<Image>();
+            }
+
+            closeHitImage.sprite = null;
+            closeHitImage.color = Color.clear;
+            closeHitImage.raycastTarget = true;
+            closeHitImage.enabled = true;
+            themesCloseButton.targetGraphic = closeHitImage;
+            ApplyThemesCloseButton(GetActiveThemesAssetSet());
+
+            themesCloseButton.enabled = true;
+            themesCloseButton.interactable = true;
+            // CreateRuntimeButton originally gave this button a transparent normal
+            // ColorTint state. Unity reapplied that state on the next frame, so the
+            // correct close art flashed once and then vanished. The supplied PNG is
+            // self-contained artwork, so its visual must never be colour-tinted.
+            themesCloseButton.transition = Selectable.Transition.None;
+            ColorBlock closeColors = themesCloseButton.colors;
+            closeColors.normalColor = Color.white;
+            closeColors.highlightedColor = Color.white;
+            closeColors.pressedColor = Color.white;
+            closeColors.selectedColor = Color.white;
+            closeColors.disabledColor = new Color(1f, 1f, 1f, 0.45f);
+            closeColors.colorMultiplier = 1f;
+            themesCloseButton.colors = closeColors;
+            EnsureButtonRaycastPath(themesCloseButton);
+            themesCloseButton.gameObject.SetActive(true);
             TMP_Text closeLabel = themesCloseButton.GetComponentInChildren<TMP_Text>(true);
             if (closeLabel != null)
             {
-                closeLabel.gameObject.SetActive(true);
-                closeLabel.text = "X";
-                closeLabel.fontSize = 34f;
-                closeLabel.color = Color.white;
+                closeLabel.gameObject.SetActive(false);
             }
 
             themesCloseButton.onClick.RemoveAllListeners();
             themesCloseButton.onClick.AddListener(CloseThemes);
+        }
+
+        private void EnsureThemesApplyButton()
+        {
+            if (themesPanel == null)
+            {
+                return;
+            }
+
+            Transform existing = themesPanel.Find("ThemesApplyButton");
+            themesApplyButton = existing == null ? null : existing.GetComponent<Button>();
+            if (themesApplyButton == null)
+            {
+                themesApplyButton = CreateThemesApplyButton();
+            }
+
+            SetRect((RectTransform)themesApplyButton.transform, new Vector2(0.21f, 0.023f), new Vector2(0.79f, 0.115f), Vector2.zero, Vector2.zero);
+
+            ApplyThemesApplyButton(GetActiveThemesAssetSet());
+            Image applyImage = themesApplyButton.image != null ? themesApplyButton.image : themesApplyButton.GetComponent<Image>();
+            if (applyImage != null)
+            {
+                applyImage.raycastTarget = true;
+                themesApplyButton.targetGraphic = applyImage;
+            }
+
+            ColorBlock colors = themesApplyButton.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = Color.white;
+            colors.pressedColor = new Color(0.82f, 0.92f, 1f, 1f);
+            colors.selectedColor = Color.white;
+            colors.disabledColor = new Color(1f, 1f, 1f, 0.50f);
+            colors.colorMultiplier = 1f;
+            themesApplyButton.colors = colors;
+            themesApplyButton.transition = Selectable.Transition.ColorTint;
+            themesApplyButton.enabled = true;
+            themesApplyButton.interactable = true;
+
+            RemoveThemesApplyButtonText();
+
+            themesApplyButton.onClick.RemoveAllListeners();
+            themesApplyButton.onClick.AddListener(ApplyPendingTheme);
+            EnsureButtonRaycastPath(themesApplyButton);
+            if (themesApplyButton.GetComponent<UIButtonFeedback>() == null)
+            {
+                themesApplyButton.gameObject.AddComponent<UIButtonFeedback>();
+            }
+
+            themesApplyButton.gameObject.SetActive(true);
+        }
+
+        private Button CreateThemesApplyButton()
+        {
+            GameObject buttonObject = new GameObject("ThemesApplyButton", typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(themesPanel, false);
+
+            Image image = buttonObject.GetComponent<Image>();
+            image.color = Color.white;
+            image.raycastTarget = true;
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = image;
+            buttonObject.AddComponent<UIButtonFeedback>();
+            return button;
+        }
+
+        private void RemoveThemesApplyButtonText()
+        {
+            if (themesApplyButton == null)
+            {
+                return;
+            }
+
+            TMP_Text[] labels = themesApplyButton.GetComponentsInChildren<TMP_Text>(true);
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (labels[i] == null)
+                {
+                    continue;
+                }
+
+                labels[i].gameObject.SetActive(false);
+                Destroy(labels[i].gameObject);
+            }
         }
 
         private void RefreshThemesOverlay(SaveManager save, bool clearFeedback = true)
@@ -1260,13 +1677,33 @@ namespace ChromaBlast
                 return;
             }
 
+            ThemeAssetSet activeTheme = GetActiveThemesAssetSet();
+            ApplyThemesPanelBackground(activeTheme);
+            ApplyThemesCloseButton(activeTheme);
+
+            if (!hasPendingTheme)
+            {
+                pendingTheme = ChromaPalette.CurrentTheme;
+                hasPendingTheme = true;
+            }
+
+            // Coin balance artwork always follows the applied/saved theme.
+            // A pending card selection (including a newly purchased-but-not-applied
+            // theme) must not preview or replace this bar.
+            ApplyThemesCoinBalance(activeTheme);
+
+            bool pendingOwned = save.IsThemeUnlocked(pendingTheme);
+            bool showBuy = !pendingOwned && pendingTheme != ThemeType.Aqua;
+            ApplyThemesApplyButton(activeTheme, showBuy);
+
             if (themesCoinText != null)
             {
-                themesCoinText.text = $"{save.GetCoins():N0} COINS";
+                themesCoinText.text = $"{save.GetCoins():N0}";
             }
 
             if (clearFeedback && themesFeedbackText != null)
             {
+                themesFeedbackText.gameObject.SetActive(false);
                 themesFeedbackText.text = string.Empty;
             }
 
@@ -1278,108 +1715,39 @@ namespace ChromaBlast
                     continue;
                 }
 
-                bool selected = save.Data.selectedTheme == (int)card.Theme;
-                bool unlocked = save.IsThemeUnlocked(card.Theme);
-                int cost = ChromaPalette.GetThemeCoinCost(card.Theme);
-                bool affordable = save.GetCoins() >= cost;
-                ThemeAssetSet definition = ThemeCatalog.GetDefinition(card.Theme);
-                Sprite previewSprite = definition == null ? null : definition.PreviewSprite;
-
-                Image cardImage = card.Button.image;
-                Color top = ChromaPalette.GetThemeTopColor(card.Theme);
-                Color bottom = ChromaPalette.GetThemeBottomColor(card.Theme);
-                Color themeColor = Color.Lerp(top, bottom, 0.5f);
-                Color background = Color.Lerp(new Color(0.01f, 0.065f, 0.16f, 1f), themeColor, 0.48f);
-                background.a = 0.98f;
-                cardImage.color = background;
-
-                if (card.Gloss != null)
-                {
-                    card.Gloss.color = new Color(1f, 1f, 1f, selected ? 0.16f : 0.10f);
-                }
-
-                if (card.InnerRim != null)
-                {
-                    Color rim = definition == null ? new Color(0.34f, 0.91f, 1f, 1f) : definition.CapsuleTintColor;
-                    rim.a = selected ? 0.82f : (unlocked ? 0.38f : 0.22f);
-                    card.InnerRim.color = rim;
-                }
-
-                if (card.PreviewFrame != null)
-                {
-                    card.PreviewFrame.color = selected
-                        ? new Color(0.025f, 0.12f, 0.24f, 0.96f)
-                        : new Color(0.005f, 0.035f, 0.095f, 0.78f);
-                }
-
-                ColorBlock colors = card.Button.colors;
-                colors.normalColor = Color.white;
-                colors.highlightedColor = new Color(1f, 1f, 1f, 0.90f);
-                colors.pressedColor = new Color(0.82f, 0.94f, 1f, 0.88f);
-                colors.selectedColor = Color.white;
-                colors.disabledColor = new Color(0.55f, 0.62f, 0.72f, 0.60f);
-                colors.colorMultiplier = 1f;
-                card.Button.colors = colors;
-
-                Outline outline = card.Button.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    outline.effectColor = selected
-                        ? new Color(1f, 0.88f, 0.30f, 1f)
-                        : new Color(0.34f, 0.91f, 1f, unlocked ? 0.58f : 0.30f);
-                    outline.effectDistance = selected ? new Vector2(4f, -4f) : new Vector2(2f, -2f);
-                    outline.useGraphicAlpha = true;
-                }
-
-                if (card.Title != null)
-                {
-                    card.Title.color = selected ? new Color(1f, 0.92f, 0.48f, 1f) : Color.white;
-                }
-
-                if (card.Status != null)
-                {
-                    if (selected)
-                    {
-                        card.Status.text = $"SELECTED - {cost:N0} COINS";
-                        card.Status.color = new Color(1f, 0.90f, 0.38f, 1f);
-                    }
-                    else if (unlocked)
-                    {
-                        card.Status.text = $"UNLOCKED - COST {cost:N0}";
-                        card.Status.color = new Color(0.48f, 1f, 0.88f, 1f);
-                    }
-                    else if (affordable)
-                    {
-                        card.Status.text = $"BUY - {cost:N0} COINS";
-                        card.Status.color = new Color(1f, 0.86f, 0.35f, 1f);
-                    }
-                    else
-                    {
-                        card.Status.text = $"{cost:N0} COINS - INSUFFICIENT";
-                        card.Status.color = new Color(1f, 0.53f, 0.56f, 1f);
-                    }
-                }
-
-                if (card.Swatches == null)
+                bool owned = save.IsThemeUnlocked(card.Theme);
+                bool selected = owned && pendingTheme == card.Theme;
+                Image cardImage = card.Artwork;
+                if (cardImage == null)
                 {
                     continue;
                 }
 
-                if (card.Preview != null)
-                {
-                    card.Preview.sprite = previewSprite;
-                    card.Preview.color = Color.white;
-                    card.Preview.gameObject.SetActive(previewSprite != null);
-                }
+                cardImage.sprite = ResolveThemeCardArtwork(card.Theme, owned, selected);
+                cardImage.type = Image.Type.Simple;
+                cardImage.preserveAspect = true;
+                cardImage.material = null;
+                cardImage.color = Color.white;
+                cardImage.enabled = true;
+                cardImage.gameObject.SetActive(true);
+                cardImage.raycastTarget = false;
+                cardImage.transform.SetAsLastSibling();
+                cardImage.SetAllDirty();
 
-                for (int colorIndex = 0; colorIndex < card.Swatches.Length; colorIndex++)
-                {
-                    if (card.Swatches[colorIndex] != null)
-                    {
-                        card.Swatches[colorIndex].gameObject.SetActive(previewSprite == null);
-                        card.Swatches[colorIndex].color = ChromaPalette.GetColor((ChromaColor)colorIndex, card.Theme);
-                    }
-                }
+                ColorBlock colors = card.Button.colors;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = Color.white;
+                colors.pressedColor = new Color(0.92f, 0.92f, 0.92f, 1f);
+                colors.selectedColor = Color.white;
+                colors.disabledColor = Color.white;
+                colors.colorMultiplier = 1f;
+                card.Button.colors = colors;
+
+            }
+
+            if (themesApplyButton != null)
+            {
+                themesApplyButton.interactable = pendingOwned || pendingTheme != ThemeType.Aqua;
             }
         }
 
@@ -1469,12 +1837,6 @@ namespace ChromaBlast
         private void RefreshSettings(SaveManager save)
         {
             EnforceEnglishLanguage();
-            if (settingsButton == null && muteButton != null)
-            {
-                settingsButton = muteButton;
-            }
-
-            SetButtonLabel(settingsButton, "SETARI");
             bool romanian = false;
             bool legacySoundEnabled = save == null || !save.Data.soundMuted;
             AudioManager audio = AudioManager.Instance;
@@ -1600,8 +1962,20 @@ namespace ChromaBlast
 
             dailyRewardView?.SetBalance(hasSave ? save.GetCoins() : 0);
 
-            RefreshRewardedAdButton(save);
+            RefreshDailyClaimButton(save);
             RefreshRewardCardStates(save);
+        }
+
+        private void RefreshDailyClaimButton(SaveManager save)
+        {
+            if (dailyGiftButton == null) return;
+            bool canClaim = save != null && save.CanClaimDailyGift();
+            dailyGiftButton.gameObject.name = "DailyRewardClaimButton";
+            dailyGiftButton.onClick.RemoveAllListeners();
+            dailyGiftButton.interactable = canClaim;
+            if (canClaim) dailyGiftButton.onClick.AddListener(ClaimDailyGift);
+            dailyRewardView?.ApplyDailyClaimState(canClaim);
+            dailyRewardView?.SetClaimAvailability(canClaim);
         }
 
         private void RefreshRewardCardStates(SaveManager save)
@@ -1694,8 +2068,201 @@ namespace ChromaBlast
             blitzButton = EnsureImageMenuButton(blitzButton, "BlitzButton");
             dailyButton = EnsureImageMenuButton(dailyButton, "DailyButton");
             achievementsButton = EnsureImageMenuButton(achievementsButton, "RewardsButton");
-            settingsButton = EnsureImageMenuButton(settingsButton != null ? settingsButton : muteButton, "SettingsButton");
+            if (achievementsButton != null)
+            {
+                achievementsButton.gameObject.name = "RewardsButton";
+            }
             themeButton = EnsureImageMenuButton(themeButton, "ThemeButton");
+            shopButton = EnsureImageMenuButton(shopButton, "ShopButton");
+            EnsureMainMenuButtonColumn();
+        }
+
+        private void EnsureMainMenuButtonColumn()
+        {
+            RectTransform parentRect = transform as RectTransform;
+            if (parentRect == null)
+            {
+                return;
+            }
+
+            if (mainMenuButtonColumn == null)
+            {
+                Transform existing = transform.Find("MainMenuButtonColumn");
+                mainMenuButtonColumn = existing as RectTransform;
+            }
+
+            if (mainMenuButtonColumn == null)
+            {
+                GameObject columnObject = new GameObject(
+                    "MainMenuButtonColumn",
+                    typeof(RectTransform),
+                    typeof(VerticalLayoutGroup));
+                columnObject.transform.SetParent(transform, false);
+                mainMenuButtonColumn = columnObject.GetComponent<RectTransform>();
+            }
+
+            mainMenuButtonColumn.anchorMin = MainMenuColumnAnchorMin;
+            mainMenuButtonColumn.anchorMax = MainMenuColumnAnchorMax;
+            mainMenuButtonColumn.offsetMin = Vector2.zero;
+            mainMenuButtonColumn.offsetMax = Vector2.zero;
+            mainMenuButtonColumn.pivot = new Vector2(0.5f, 0.5f);
+            mainMenuButtonColumn.localScale = Vector3.one;
+
+            VerticalLayoutGroup layout = mainMenuButtonColumn.GetComponent<VerticalLayoutGroup>();
+            if (layout == null)
+            {
+                layout = mainMenuButtonColumn.gameObject.AddComponent<VerticalLayoutGroup>();
+            }
+
+            layout.padding = new RectOffset(0, 0, 0, 0);
+            layout.spacing = MainMenuButtonSpacing;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.childScaleWidth = false;
+            layout.childScaleHeight = false;
+
+            Button[] orderedButtons =
+            {
+                classicButton,
+                blitzButton,
+                achievementsButton,
+                themeButton
+            };
+
+            for (int i = 0; i < orderedButtons.Length; i++)
+            {
+                Button button = orderedButtons[i];
+                if (button == null)
+                {
+                    continue;
+                }
+
+                RectTransform buttonRect = button.transform as RectTransform;
+                if (buttonRect != null && buttonRect.parent != mainMenuButtonColumn)
+                {
+                    buttonRect.SetParent(mainMenuButtonColumn, false);
+                }
+
+                button.transform.SetSiblingIndex(i);
+            }
+
+            RefreshMainMenuButtonLayout();
+        }
+
+        private void RefreshMainMenuButtonLayout()
+        {
+            if (mainMenuButtonColumn == null)
+            {
+                return;
+            }
+
+            RectTransform parentRect = transform as RectTransform;
+            if (parentRect == null)
+            {
+                return;
+            }
+
+            float availableWidth = parentRect.rect.width
+                * (MainMenuColumnAnchorMax.x - MainMenuColumnAnchorMin.x);
+            float referenceAvailableHeight = parentRect.rect.height * MainMenuReferenceColumnHeight;
+            float maximumButtonHeight = Mathf.Max(
+                1f,
+                (referenceAvailableHeight
+                    - (MainMenuReferenceButtonSpacing * (MainMenuReferenceButtonCount - 1f)))
+                / MainMenuReferenceButtonCount);
+
+            Button[] orderedButtons =
+            {
+                classicButton,
+                blitzButton,
+                achievementsButton,
+                themeButton
+            };
+
+            for (int i = 0; i < orderedButtons.Length; i++)
+            {
+                Button button = orderedButtons[i];
+                Image image = button == null ? null : button.image;
+                Sprite sprite = image == null ? null : image.sprite;
+                if (button == null || sprite == null || sprite.rect.height <= 0f)
+                {
+                    continue;
+                }
+
+                float aspect = sprite.rect.width / sprite.rect.height;
+                float preferredWidth = Mathf.Min(availableWidth, maximumButtonHeight * aspect);
+                float preferredHeight = preferredWidth / aspect;
+                LayoutElement layoutElement = button.GetComponent<LayoutElement>();
+                if (layoutElement == null)
+                {
+                    layoutElement = button.gameObject.AddComponent<LayoutElement>();
+                }
+
+                layoutElement.ignoreLayout = false;
+                layoutElement.minWidth = 0f;
+                layoutElement.minHeight = 0f;
+                layoutElement.preferredWidth = preferredWidth;
+                layoutElement.preferredHeight = preferredHeight;
+                layoutElement.flexibleWidth = 0f;
+                layoutElement.flexibleHeight = 0f;
+
+                RectTransform buttonRect = button.transform as RectTransform;
+                if (buttonRect != null)
+                {
+                    buttonRect.localScale = Vector3.one;
+                    buttonRect.localRotation = Quaternion.identity;
+                    buttonRect.pivot = new Vector2(0.5f, 0.5f);
+                }
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(mainMenuButtonColumn);
+        }
+
+        private void RemoveMainMenuSettingsEntry()
+        {
+            Transform oldButton = transform.Find("SettingsButton");
+            if (oldButton != null)
+            {
+                Destroy(oldButton.gameObject);
+            }
+
+            GameObject oldSettingsRoot = settingsRoot;
+            if (oldSettingsRoot == null)
+            {
+                Transform root = transform.Find("SettingsRoot");
+                if (root == null)
+                {
+                    root = transform.Find("SettingsOverlay");
+                }
+
+                oldSettingsRoot = root == null ? null : root.gameObject;
+            }
+
+            if (oldSettingsRoot != null)
+            {
+                Destroy(oldSettingsRoot);
+            }
+
+            settingsRoot = null;
+            settingsStatusText = null;
+            settingsCloseButton = null;
+            settingsSoundButton = null;
+            settingsSoundButtonText = null;
+            settingsHapticsButton = null;
+            settingsHapticsButtonText = null;
+            settingsPerformanceButton = null;
+            settingsPerformanceButtonText = null;
+            settingsLanguageButton = null;
+            settingsPrivacyButton = null;
+            settingsTermsButton = null;
+            settingsAboutButton = null;
+            settingsVersionText = null;
+            settingsTitleText = null;
+            settingsAboutRoot = null;
+            settingsAboutBodyText = null;
         }
 
         private Button EnsureImageMenuButton(Button button, string objectName)
@@ -1705,7 +2272,13 @@ namespace ChromaBlast
                 return button;
             }
 
-            Transform existing = transform.Find(objectName);
+            Transform existing = mainMenuButtonColumn == null
+                ? null
+                : mainMenuButtonColumn.Find(objectName);
+            if (existing == null)
+            {
+                existing = transform.Find(objectName);
+            }
             if (existing != null)
             {
                 button = existing.GetComponent<Button>();
@@ -1781,7 +2354,9 @@ namespace ChromaBlast
             oceanBackgroundImage.color = Color.white;
             oceanBackgroundImage.type = Image.Type.Simple;
             oceanBackgroundImage.preserveAspect = true;
-            oceanBackgroundImage.raycastTarget = true;
+            // Fullscreen menu artwork is decorative. Keeping it as a raycast target
+            // lets it intercept modal controls such as Themes cards.
+            oceanBackgroundImage.raycastTarget = false;
             RectTransform backgroundRect = oceanBackgroundImage.rectTransform;
             Stretch(backgroundRect, Vector2.zero, Vector2.zero);
             backgroundRect.pivot = new Vector2(0.5f, 0.5f);
@@ -1803,10 +2378,230 @@ namespace ChromaBlast
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             EnsureOceanBackground();
-            StyleThemeMenuButton();
+            ThemeAssetSet activeTheme = resolvedTheme ?? GetActiveThemesAssetSet();
+            ApplyThemesPanelBackground(activeTheme);
+            ApplyThemesCloseButton(activeTheme);
+            ApplyThemesApplyButton(activeTheme);
+            StyleMenuSpriteButton(themeButton, ThemeButtonPath, new Vector2(0.10f, 0.137f), new Vector2(0.49f, 0.232f));
+            EnsureMainMenuButtonColumn();
             if (themesRoot != null && themesRoot.activeSelf && SaveManager.Instance != null)
             {
                 RefreshThemesOverlay(SaveManager.Instance, false);
+            }
+        }
+
+        private void ApplyThemesPanelBackground(ThemeAssetSet themeSet)
+        {
+            if (themesPanel == null)
+            {
+                return;
+            }
+
+            Image panelImage = themesPanel.GetComponent<Image>();
+            Sprite panelBackground = ResolveThemesPanelBackground(themeSet);
+            if (panelImage == null || panelBackground == null)
+            {
+                return;
+            }
+
+            panelImage.sprite = panelBackground;
+            panelImage.type = Image.Type.Simple;
+            panelImage.preserveAspect = false;
+            panelImage.color = Color.white;
+            panelImage.material = null;
+            panelImage.SetAllDirty();
+        }
+
+        private void ApplyThemesCoinBalance(ThemeAssetSet themeSet)
+        {
+            if (themesCoinPill == null)
+            {
+                return;
+            }
+
+            Sprite coinBalance = ResolveThemesCoinBalanceSprite(themeSet);
+            if (coinBalance == null)
+            {
+                return;
+            }
+
+            themesCoinPill.sprite = coinBalance;
+            themesCoinPill.type = Image.Type.Simple;
+            themesCoinPill.preserveAspect = true;
+            themesCoinPill.color = Color.white;
+            themesCoinPill.material = null;
+            themesCoinPill.raycastTarget = false;
+            themesCoinPill.SetAllDirty();
+        }
+
+        private static Sprite ResolveThemesCoinBalanceSprite(ThemeAssetSet themeSet)
+        {
+            if (themeSet != null && themeSet.ThemesCoinBalanceSprite != null)
+            {
+                return themeSet.ThemesCoinBalanceSprite;
+            }
+
+            ThemeAssetSet ocean = ThemeCatalog.GetDefinition(ThemeType.Ocean);
+            if (ocean != null && ocean.ThemesCoinBalanceSprite != null)
+            {
+                return ocean.ThemesCoinBalanceSprite;
+            }
+
+            return Resources.Load<Sprite>(ThemesCoinBalancePath);
+        }
+
+        private static Sprite ResolveThemesPanelBackground(ThemeAssetSet themeSet)
+        {
+            if (themeSet != null && themeSet.ThemesPanelBackgroundSprite != null)
+            {
+                return themeSet.ThemesPanelBackgroundSprite;
+            }
+
+            ThemeAssetSet ocean = ThemeCatalog.GetDefinition(ThemeType.Ocean);
+            return ocean != null ? ocean.ThemesPanelBackgroundSprite : null;
+        }
+
+        private static ThemeAssetSet GetOceanThemesAssetSet()
+        {
+            return ThemeCatalog.GetDefinition(ThemeType.Ocean) ?? ThemeCatalog.Current;
+        }
+
+        private static ThemeAssetSet GetActiveThemesAssetSet()
+        {
+            ThemeType activeTheme = ChromaPalette.CurrentTheme;
+            return ThemeCatalog.GetDefinition(activeTheme)
+                ?? ThemeCatalog.Current
+                ?? ThemeCatalog.GetDefinition(ThemeType.Ocean);
+        }
+
+        private void ApplyThemesCloseButton(ThemeAssetSet themeSet)
+        {
+            if (themesCloseButton == null)
+            {
+                return;
+            }
+
+            Image closeHitImage = themesCloseButton.GetComponent<Image>();
+            if (closeHitImage == null)
+            {
+                closeHitImage = themesCloseButton.gameObject.AddComponent<Image>();
+            }
+
+            closeHitImage.sprite = null;
+            closeHitImage.color = Color.clear;
+            closeHitImage.raycastTarget = true;
+            closeHitImage.enabled = true;
+            themesCloseButton.targetGraphic = closeHitImage;
+
+            Image closeArtwork = EnsureThemeImage(themesCloseButton.transform, "ThemesCloseArtwork");
+            SetRect(closeArtwork.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Sprite closeSprite = ResolveThemesCloseButtonSprite(themeSet);
+            if (closeSprite != null)
+            {
+                closeArtwork.sprite = closeSprite;
+                closeArtwork.type = Image.Type.Simple;
+                closeArtwork.preserveAspect = true;
+                closeArtwork.color = Color.white;
+                closeArtwork.material = null;
+                closeArtwork.raycastTarget = false;
+                closeArtwork.enabled = true;
+                closeArtwork.gameObject.SetActive(true);
+                closeArtwork.transform.SetAsLastSibling();
+                closeArtwork.SetAllDirty();
+            }
+            else
+            {
+                closeArtwork.sprite = null;
+                closeArtwork.enabled = false;
+            }
+
+            TMP_Text closeLabel = themesCloseButton.GetComponentInChildren<TMP_Text>(true);
+            if (closeLabel != null)
+            {
+                closeLabel.gameObject.SetActive(false);
+            }
+        }
+
+        private static Sprite ResolveThemesCloseButtonSprite(ThemeAssetSet themeSet)
+        {
+            if (themeSet != null && themeSet.ThemesCloseButtonSprite != null)
+            {
+                return themeSet.ThemesCloseButtonSprite;
+            }
+
+            // A missing themed close asset must fail safely to the known-good Ocean
+            // artwork without forcing Ocean over correctly configured themes.
+            Sprite exactOceanClose = Resources.Load<Sprite>(OceanThemesCloseButtonPath);
+            if (exactOceanClose != null)
+            {
+                return exactOceanClose;
+            }
+
+            ThemeAssetSet ocean = ThemeCatalog.GetDefinition(ThemeType.Ocean);
+            return ocean != null ? ocean.ThemesCloseButtonSprite : null;
+        }
+
+        private void ApplyThemesApplyButton(ThemeAssetSet themeSet, bool showBuy = false)
+        {
+            if (themesApplyButton == null || themesApplyButton.image == null)
+            {
+                return;
+            }
+
+            Image applyImage = themesApplyButton.image;
+            Sprite applySprite = ResolveThemesApplyButtonSprite(showBuy);
+            if (applySprite != null)
+            {
+                applyImage.sprite = applySprite;
+                applyImage.type = Image.Type.Simple;
+                applyImage.preserveAspect = true;
+                applyImage.material = null;
+                applyImage.color = Color.white;
+                applyImage.SetAllDirty();
+            }
+            else
+            {
+                UISpriteFactory.ApplyRounded(applyImage, 0.46f);
+                applyImage.color = new Color(0.04f, 0.48f, 0.90f, 1f);
+            }
+
+            RemoveThemesApplyButtonText();
+        }
+
+        private static Sprite ResolveThemesApplyButtonSprite(bool showBuy)
+        {
+            if (showBuy)
+            {
+                Sprite buySprite = Resources.Load<Sprite>(ThemesBuyButtonPath);
+                if (buySprite != null)
+                {
+                    return buySprite;
+                }
+            }
+
+            // APPLY is intentionally global: never fall back to a per-theme
+            // ThemeAssetSet sprite, so every theme renders the exact same artwork.
+            return Resources.Load<Sprite>(ThemesApplyButtonPath);
+        }
+
+        private static Color GetThemesGridFrameColor(ThemeAssetSet activeThemeSet)
+        {
+            ThemeType theme = activeThemeSet != null ? activeThemeSet.ThemeType : ThemeType.Ocean;
+            switch (theme)
+            {
+                case ThemeType.Aqua:
+                    return new Color(0.10f, 0.88f, 0.73f, 1f);
+                case ThemeType.Candy:
+                    return new Color(1f, 0.42f, 0.68f, 1f);
+                case ThemeType.Gold:
+                    return new Color(1f, 0.64f, 0.16f, 1f);
+                case ThemeType.Crystal:
+                    return new Color(0.40f, 0.84f, 0.48f, 1f);
+                case ThemeType.Neon:
+                    return new Color(0.56f, 1f, 0.12f, 1f);
+                case ThemeType.Ocean:
+                default:
+                    return new Color(0.18f, 0.76f, 1f, 1f);
             }
         }
 
@@ -1852,6 +2647,13 @@ namespace ChromaBlast
             Canvas canvas = GetComponentInParent<Canvas>();
             if (canvas != null)
             {
+                // A zero-scaled root canvas makes the complete menu hierarchy
+                // active but invisible. Normalize only that invalid state.
+                if (canvas.transform.localScale.sqrMagnitude < 0.0001f)
+                {
+                    canvas.transform.localScale = Vector3.one;
+                }
+
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 canvas.worldCamera = null;
                 canvas.targetDisplay = 0;
@@ -1956,8 +2758,8 @@ namespace ChromaBlast
             oceanLogoImage.raycastTarget = false;
 
             RectTransform logoRect = oceanLogoImage.rectTransform;
-            logoRect.anchorMin = new Vector2(0.06f, 0.765f);
-            logoRect.anchorMax = new Vector2(0.94f, 0.965f);
+            logoRect.anchorMin = new Vector2(0.005f, 0.7375f);
+            logoRect.anchorMax = new Vector2(0.995f, 0.9625f);
             logoRect.offsetMin = Vector2.zero;
             logoRect.offsetMax = Vector2.zero;
             logoRect.pivot = new Vector2(0.5f, 0.5f);
@@ -2010,8 +2812,9 @@ namespace ChromaBlast
             StyleMenuSpriteButton(classicButton, ClassicButtonPath, new Vector2(0.10f, 0.458f), new Vector2(0.90f, 0.553f));
             StyleMenuSpriteButton(blitzButton, BlitzButtonPath, new Vector2(0.10f, 0.351f), new Vector2(0.90f, 0.446f));
             StyleMenuSpriteButton(achievementsButton, RewardsButtonPath, new Vector2(0.10f, 0.244f), new Vector2(0.90f, 0.339f));
-            StyleMenuSpriteButton(settingsButton, SettingsButtonPath, new Vector2(0.10f, 0.137f), new Vector2(0.90f, 0.232f));
-            StyleThemeMenuButton();
+            StyleMenuSpriteButton(themeButton, ThemeButtonPath, new Vector2(0.10f, 0.137f), new Vector2(0.90f, 0.232f));
+            SetButtonVisible(shopButton, false);
+            EnsureMainMenuButtonColumn();
             SetButtonVisible(dailyButton, false);
 
             HideLegacyMainMenuObjects();
@@ -2090,8 +2893,8 @@ namespace ChromaBlast
                 || IsTransformOrChildOf(target, blitzButton == null ? null : blitzButton.transform)
                 || IsTransformOrChildOf(target, dailyButton == null ? null : dailyButton.transform)
                 || IsTransformOrChildOf(target, achievementsButton == null ? null : achievementsButton.transform)
-                || IsTransformOrChildOf(target, settingsButton == null ? null : settingsButton.transform)
-                || IsTransformOrChildOf(target, themeButton == null ? null : themeButton.transform);
+                || IsTransformOrChildOf(target, themeButton == null ? null : themeButton.transform)
+                || IsTransformOrChildOf(target, shopButton == null ? null : shopButton.transform);
         }
 
         private bool IsMenuOverlayElement(Transform target)
@@ -2278,18 +3081,19 @@ namespace ChromaBlast
                 return;
             }
 
-            Sprite sprite = LoadMenuSprite(spritePath);
             Image image = button.image != null ? button.image : button.GetComponent<Image>();
             if (image == null)
             {
                 image = button.gameObject.AddComponent<Image>();
             }
 
-            if (sprite != null)
+            if (!string.IsNullOrEmpty(spritePath)
+                && (image.sprite == null || IsLegacyMenuButtonSprite(image.sprite)))
             {
-                image.sprite = sprite;
+                image.sprite = LoadMenuSprite(spritePath);
             }
 
+            image.material = null;
             image.type = Image.Type.Simple;
             image.preserveAspect = true;
             image.color = Color.white;
@@ -2298,21 +3102,173 @@ namespace ChromaBlast
 
             ColorBlock colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(0.94f, 1f, 1f, 1f);
-            colors.pressedColor = new Color(0.82f, 0.94f, 1f, 1f);
+            colors.highlightedColor = Color.white;
+            colors.pressedColor = Color.white;
             colors.selectedColor = Color.white;
             colors.disabledColor = new Color(1f, 1f, 1f, 0.48f);
             colors.colorMultiplier = 1f;
             button.colors = colors;
+            button.transition = Selectable.Transition.None;
 
-            SetButtonRect(button, anchorMin, anchorMax);
+            if (mainMenuButtonColumn == null || button.transform.parent != mainMenuButtonColumn)
+            {
+                SetButtonRect(button, anchorMin, anchorMax);
+            }
             HideButtonText(button);
             DisableGeneratedButtonDecor(button);
+            EnsureButtonRaycastPath(button);
             button.gameObject.SetActive(true);
+            button.transform.SetAsLastSibling();
 
             if (button.GetComponent<UIButtonFeedback>() == null)
             {
                 button.gameObject.AddComponent<UIButtonFeedback>();
+            }
+
+            RefreshMainMenuButtonLayout();
+        }
+
+        private static bool IsLegacyMenuButtonSprite(Sprite sprite)
+        {
+            if (sprite == null || string.IsNullOrEmpty(sprite.name))
+            {
+                return true;
+            }
+
+            string spriteName = sprite.name;
+            return spriteName.IndexOf("transparent_same_size", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || spriteName.IndexOf("rounded", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || spriteName.IndexOf("generated", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void StyleMenuUtilityButton(Button button, string fallbackLabel, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            SetButtonRect(button, anchorMin, anchorMax);
+            Image image = button.image != null ? button.image : button.GetComponent<Image>();
+            if (image == null)
+            {
+                image = button.gameObject.AddComponent<Image>();
+            }
+
+            if (image.sprite == null)
+            {
+                UISpriteFactory.ApplyRounded(image, 0.46f);
+            }
+
+            image.material = null;
+            image.color = Color.white;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = true;
+            image.raycastTarget = true;
+            button.targetGraphic = image;
+            button.enabled = true;
+            button.interactable = true;
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = Color.white;
+            colors.pressedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.disabledColor = new Color(1f, 1f, 1f, 0.45f);
+            colors.colorMultiplier = 1f;
+            button.colors = colors;
+            button.transition = Selectable.Transition.None;
+
+            DisableGeneratedButtonDecor(button);
+            DisableNamedButtonDecor(button, "ThemeButtonGloss");
+            DisableNamedButtonDecor(button, "ThemeButtonInnerRim");
+
+            TMP_Text label = button == themeButton ? themeButtonText : button.GetComponentInChildren<TMP_Text>(true);
+            if (label == null)
+            {
+                label = CreateRuntimeText($"{button.name}Label", button.transform, fallbackLabel, 40f, TextAlignmentOptions.Center);
+            }
+
+            if (button == themeButton)
+            {
+                themeButtonText = label;
+            }
+
+            label.gameObject.SetActive(true);
+            label.text = fallbackLabel;
+            label.color = Color.white;
+            label.fontSize = 40f;
+            label.fontSizeMax = 40f;
+            label.fontSizeMin = 24f;
+            label.fontStyle = FontStyles.Bold;
+            label.raycastTarget = false;
+            TMP_FontAsset premiumFont = Resources.Load<TMP_FontAsset>("Fonts/Fredoka-SemiBold SDF");
+            if (premiumFont != null)
+            {
+                label.font = premiumFont;
+            }
+
+            Stretch(label.rectTransform, new Vector2(14f, 8f), new Vector2(-14f, -8f));
+            label.transform.SetAsLastSibling();
+
+            EnsureButtonRaycastPath(button);
+            button.gameObject.SetActive(true);
+            button.transform.SetAsLastSibling();
+            if (button.GetComponent<UIButtonFeedback>() == null)
+            {
+                button.gameObject.AddComponent<UIButtonFeedback>();
+            }
+
+            if (button == themeButton)
+            {
+                WireThemeButton();
+            }
+        }
+
+        private static void DisableNamedButtonDecor(Button button, string childName)
+        {
+            Transform child = button == null ? null : button.transform.Find(childName);
+            if (child != null)
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        private static void EnsureButtonRaycastPath(Button button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Image rootImage = button.image != null ? button.image : button.GetComponent<Image>();
+            if (rootImage != null)
+            {
+                rootImage.enabled = true;
+                rootImage.raycastTarget = true;
+                button.targetGraphic = rootImage;
+            }
+
+            Graphic[] descendants = button.GetComponentsInChildren<Graphic>(true);
+            for (int i = 0; i < descendants.Length; i++)
+            {
+                if (descendants[i] != null && descendants[i] != rootImage)
+                {
+                    descendants[i].raycastTarget = false;
+                }
+            }
+
+            CanvasGroup[] groups = button.GetComponentsInChildren<CanvasGroup>(true);
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (groups[i] == null)
+                {
+                    continue;
+                }
+
+                groups[i].alpha = 1f;
+                groups[i].interactable = true;
+                groups[i].blocksRaycasts = true;
             }
         }
 
@@ -2712,56 +3668,7 @@ namespace ChromaBlast
 
         private void ApplyActiveDailyRewardVisualPolish()
         {
-            if (dailyRewardView == null)
-            {
-                return;
-            }
-
-            Button closeButton = dailyRewardView.CloseButton;
-            RectTransform closeRect = closeButton == null ? null : closeButton.transform as RectTransform;
-            if (closeRect != null)
-            {
-                closeRect.anchorMin = Vector2.one;
-                closeRect.anchorMax = Vector2.one;
-                closeRect.pivot = new Vector2(0.5f, 0.5f);
-                closeRect.anchoredPosition = new Vector2(-98f, -86f);
-                closeRect.sizeDelta = new Vector2(79.12f, 79.12f);
-            }
-
-            DailyRewardView.RewardCard[] cards = dailyRewardView.RewardCards;
-            if (cards == null || cards.Length < SaveManager.DailyRewardDayCount)
-            {
-                return;
-            }
-
-            DailyRewardView.RewardCard finalCard = cards[SaveManager.DailyRewardDayCount - 1];
-            if (finalCard == null || finalCard.Background == null)
-            {
-                return;
-            }
-
-            EnsureRewardSpritesLoaded();
-            RectTransform cardRect = finalCard.Background.rectTransform;
-            Image artwork = finalCard.Artwork;
-            if (artwork != null)
-            {
-                RectTransform artworkRect = artwork.rectTransform;
-                RectTransform artworkViewport = artworkRect.parent as RectTransform;
-                if (artworkViewport != null && artworkViewport.name == "ArtworkViewport")
-                {
-                    SetRect(artworkViewport, new Vector2(0.20f, 0.33f), new Vector2(0.80f, 0.98f), Vector2.zero, Vector2.zero);
-                }
-
-                artworkRect.anchorMin = new Vector2(0.5f, 0.5f);
-                artworkRect.anchorMax = artworkRect.anchorMin;
-                artworkRect.pivot = new Vector2(0.5f, 0.5f);
-                artworkRect.anchoredPosition = Vector2.zero;
-                artworkRect.sizeDelta = new Vector2(252f, 252f);
-                artworkRect.localScale = Vector3.one;
-                artwork.preserveAspect = true;
-            }
-
-            ConfigureDaySevenRewardValue(cardRect, finalCard.AmountText);
+            dailyRewardView?.ApplyFinalVisualLayout();
         }
 
         private void EnsureDailyGiftUi()
@@ -4150,22 +5057,6 @@ namespace ChromaBlast
 
         private void EnsureSettingsUi()
         {
-            if (settingsButton == null)
-            {
-                Transform existing = transform.Find("SettingsButton");
-                if (existing != null)
-                {
-                    settingsButton = existing.GetComponent<Button>();
-                }
-            }
-
-            if (settingsButton == null && muteButton != null)
-            {
-                settingsButton = muteButton;
-            }
-
-            SetButtonLabel(settingsButton, "SETARI");
-
             if (settingsRoot == null)
             {
                 Transform existing = transform.Find("SettingsRoot");

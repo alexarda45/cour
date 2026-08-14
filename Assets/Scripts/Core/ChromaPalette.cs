@@ -195,6 +195,21 @@ namespace ChromaBlast
 
         public static int GetThemeCoinCost(ThemeType theme)
         {
+            switch (theme)
+            {
+                case ThemeType.Ocean:
+                case ThemeType.Aqua:
+                    return 0;
+                case ThemeType.Crystal:
+                    return 500;
+                case ThemeType.Neon:
+                    return 1000;
+                case ThemeType.Gold:
+                    return 1500;
+                case ThemeType.Candy:
+                    return 2000;
+            }
+
             ThemeAssetSet definition = ThemeCatalog.GetDefinition(theme);
             if (definition != null)
             {
@@ -266,13 +281,13 @@ namespace ChromaBlast
             {
                 if (SaveManager.Instance == null)
                 {
-                    return ThemeType.Neon;
+                    return ThemeType.Ocean;
                 }
 
                 SaveManager save = SaveManager.Instance;
                 SaveData data = save.Data;
                 ThemeType selected = (ThemeType)Mathf.Clamp(data.selectedTheme, 0, ThemeNames.Length - 1);
-                return save.IsThemeUnlocked(selected) ? selected : ThemeType.Neon;
+                return save.IsThemeUnlocked(selected) ? selected : ThemeType.Ocean;
             }
         }
 

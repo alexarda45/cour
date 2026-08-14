@@ -10,6 +10,14 @@ namespace ChromaBlast
     public class GameOverUI : MonoBehaviour
     {
         private const float ButtonRevealDuration = 0.15f;
+        // The theme capsule files share the original 1536x1024 padded canvas.
+        // Game Over uses a wide cropped capsule RectTransform, so use the same
+        // visible-art bounds (alpha >= 8) without stretching the source artwork.
+        private static readonly Rect ThemeCapsuleVisibleRectNormalized = new Rect(
+            67f / 1536f,
+            250f / 1024f,
+            1402f / 1536f,
+            533f / 1024f);
 
         private static readonly string[] LegacyObjectNames =
         {
@@ -40,6 +48,12 @@ namespace ChromaBlast
         private bool runtimeRestartListenerAdded;
         private Vector2 restartFinalPosition;
         private bool restartFinalPositionCached;
+        private Image themedBestScoreCapsuleImage;
+        private Image themedBestScoreCrownImage;
+        private Sprite defaultBestScoreCapsuleSprite;
+        private Sprite defaultBestScoreCrownSprite;
+        private Sprite gameOverThemeCapsuleSprite;
+        private Sprite gameOverThemeCapsuleSource;
 
         private void Awake()
         {
@@ -49,7 +63,7 @@ namespace ChromaBlast
             }
 
             DisableLegacyVisuals();
-            ApplyCurrentThemeBackground();
+            ApplyCurrentThemeVisuals();
             CacheRestartFinalPosition();
         }
 
@@ -57,12 +71,18 @@ namespace ChromaBlast
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
             ThemeCatalog.ThemeChanged += HandleThemeChanged;
-            ApplyCurrentThemeBackground();
+            ApplyCurrentThemeVisuals();
         }
 
         private void OnDisable()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+        }
+
+        private void OnDestroy()
+        {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            DestroyRuntimeThemeCapsuleSprite();
         }
 
         public void Initialize(GameManager owner)
@@ -95,7 +115,7 @@ namespace ChromaBlast
             }
 
             DisableLegacyVisuals();
-            ApplyCurrentThemeBackground();
+            ApplyCurrentThemeVisuals();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
             WireRestartButtonOnce();
@@ -334,11 +354,119 @@ namespace ChromaBlast
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             ApplyThemeBackground(resolvedTheme);
+            ApplyBestScoreTheme(resolvedTheme);
         }
 
-        private void ApplyCurrentThemeBackground()
+        private void ApplyCurrentThemeVisuals()
         {
-            ApplyThemeBackground(ThemeCatalog.Current);
+            ThemeAssetSet theme = ThemeCatalog.Current;
+            ApplyThemeBackground(theme);
+            ApplyBestScoreTheme(theme);
+        }
+
+        private void ApplyBestScoreTheme(ThemeAssetSet theme)
+        {
+            CacheBestScoreThemeGraphics();
+
+            if (themedBestScoreCapsuleImage != null)
+            {
+                themedBestScoreCapsuleImage.material = null;
+                themedBestScoreCapsuleImage.color = Color.white;
+                themedBestScoreCapsuleImage.preserveAspect = true;
+                themedBestScoreCapsuleImage.sprite = theme != null && theme.CapsuleSprite != null
+                    ? GetGameOverCapsuleSprite(theme.CapsuleSprite)
+                    : defaultBestScoreCapsuleSprite;
+            }
+
+            if (themedBestScoreCrownImage != null)
+            {
+                themedBestScoreCrownImage.material = null;
+                themedBestScoreCrownImage.color = Color.white;
+                themedBestScoreCrownImage.preserveAspect = true;
+                themedBestScoreCrownImage.sprite = defaultBestScoreCrownSprite;
+            }
+        }
+
+        private Sprite GetGameOverCapsuleSprite(Sprite source)
+        {
+            if (source == null)
+            {
+                DestroyRuntimeThemeCapsuleSprite();
+                return defaultBestScoreCapsuleSprite;
+            }
+
+            if (gameOverThemeCapsuleSprite != null && gameOverThemeCapsuleSource == source)
+            {
+                return gameOverThemeCapsuleSprite;
+            }
+
+            DestroyRuntimeThemeCapsuleSprite();
+            Rect sourceRect = source.rect;
+            Rect crop = new Rect(
+                sourceRect.x + sourceRect.width * ThemeCapsuleVisibleRectNormalized.x,
+                sourceRect.y + sourceRect.height * ThemeCapsuleVisibleRectNormalized.y,
+                sourceRect.width * ThemeCapsuleVisibleRectNormalized.width,
+                sourceRect.height * ThemeCapsuleVisibleRectNormalized.height);
+            gameOverThemeCapsuleSprite = Sprite.Create(
+                source.texture,
+                crop,
+                new Vector2(0.5f, 0.5f),
+                source.pixelsPerUnit,
+                0u,
+                SpriteMeshType.FullRect,
+                source.border);
+            gameOverThemeCapsuleSprite.name = $"{source.name}_GameOverVisibleCrop";
+            gameOverThemeCapsuleSprite.hideFlags = HideFlags.HideAndDontSave;
+            gameOverThemeCapsuleSource = source;
+            return gameOverThemeCapsuleSprite;
+        }
+
+        private void DestroyRuntimeThemeCapsuleSprite()
+        {
+            if (gameOverThemeCapsuleSprite != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(gameOverThemeCapsuleSprite);
+                }
+                else
+                {
+                    DestroyImmediate(gameOverThemeCapsuleSprite);
+                }
+            }
+
+            gameOverThemeCapsuleSprite = null;
+            gameOverThemeCapsuleSource = null;
+        }
+
+        private void CacheBestScoreThemeGraphics()
+        {
+            if (bestScoreCapsuleGroup == null)
+            {
+                return;
+            }
+
+            if (themedBestScoreCapsuleImage == null)
+            {
+                themedBestScoreCapsuleImage = bestScoreCapsuleGroup.GetComponent<Image>();
+                if (themedBestScoreCapsuleImage != null)
+                {
+                    defaultBestScoreCapsuleSprite = themedBestScoreCapsuleImage.sprite;
+                }
+            }
+
+            if (themedBestScoreCrownImage == null)
+            {
+                Transform crown = bestScoreCapsuleGroup.transform.Find("CrownIcon");
+                if (crown != null)
+                {
+                    themedBestScoreCrownImage = crown.GetComponent<Image>();
+                    if (themedBestScoreCrownImage != null)
+                    {
+                        defaultBestScoreCrownSprite = themedBestScoreCrownImage.sprite;
+                    }
+                }
+            }
         }
 
         private void ApplyThemeBackground(ThemeAssetSet theme)

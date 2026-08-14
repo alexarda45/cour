@@ -62,7 +62,8 @@ namespace ChromaBlast
         public long lastInterstitialUnix;
         public bool tutorialSeen;
         public int selectedTheme;
-        public int unlockedThemeMask = 1;
+        public int unlockedThemeMask = 1 << (int)ThemeType.Ocean;
+        public int themeOwnershipVersion;
         public bool cosmeticPackOwned;
         public ClassicRunState classicRun;
     }
@@ -96,18 +97,26 @@ namespace ChromaBlast
 
         private static readonly int[] DailyRewardCoins =
         {
-            25,
-            35,
-            45,
-            60,
-            75,
+            50,
             100,
-            150
+            150,
+            175,
+            225,
+            300,
+            0
         };
 
         public static SaveManager Instance { get; private set; }
 
         public SaveData Data { get; private set; } = new SaveData();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private bool dailyRewardsDebugMode;
+        private string dailyRewardsProductionSnapshot;
+        private string dailyRewardsDebugSerializedState;
+
+        public bool IsDailyRewardsDebugMode => dailyRewardsDebugMode;
+#endif
 
         private const string SaveFileName = "chroma_blast_save.json";
         private const string TemporarySaveFileName = "chroma_blast_save.tmp";
@@ -132,6 +141,21 @@ namespace ChromaBlast
 
         public void Load()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (dailyRewardsDebugMode && !string.IsNullOrEmpty(dailyRewardsDebugSerializedState))
+            {
+                SaveData debugData = JsonUtility.FromJson<SaveData>(dailyRewardsDebugSerializedState);
+                if (debugData != null)
+                {
+                    Data = debugData;
+                    return;
+                }
+
+                Debug.LogError("[Daily Rewards Debug] Could not reload the isolated debug save state.");
+                return;
+            }
+#endif
+
             bool saveMigratedData = false;
             bool mainSaveExists = File.Exists(SavePath);
             bool backupSaveExists = File.Exists(BackupSavePath);
@@ -179,6 +203,34 @@ namespace ChromaBlast
                 saveMigratedData = true;
             }
 
+            if (Data.themeOwnershipVersion < 1)
+            {
+                // The legacy default mask owned bit zero (Neon) implicitly. Under
+                // the explicit shop rules Ocean is the sole starter theme, so the
+                // old implicit bit is removed while every other purchased bit is
+                // preserved.
+                Data.unlockedThemeMask &= ~(1 << (int)ThemeType.Neon);
+                Data.unlockedThemeMask |= 1 << (int)ThemeType.Ocean;
+                Data.themeOwnershipVersion = 1;
+                saveMigratedData = true;
+            }
+            else
+            {
+                int maskWithOcean = Data.unlockedThemeMask | (1 << (int)ThemeType.Ocean);
+                if (Data.unlockedThemeMask != maskWithOcean)
+                {
+                    Data.unlockedThemeMask = maskWithOcean;
+                    saveMigratedData = true;
+                }
+            }
+
+            ThemeType savedTheme = (ThemeType)Mathf.Clamp(Data.selectedTheme, 0, ChromaPalette.ThemeCount - 1);
+            if (!IsThemeUnlocked(savedTheme))
+            {
+                Data.selectedTheme = (int)ThemeType.Ocean;
+                saveMigratedData = true;
+            }
+
             string currentDailyAdDate = GetDailyDateKey();
             if (Data.lastDailyRewardedAdDate != currentDailyAdDate)
             {
@@ -214,6 +266,14 @@ namespace ChromaBlast
 
         public void Save()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (dailyRewardsDebugMode)
+            {
+                dailyRewardsDebugSerializedState = JsonUtility.ToJson(Data, true);
+                return;
+            }
+#endif
+
             try
             {
                 string json = JsonUtility.ToJson(Data, true);
@@ -670,13 +730,19 @@ namespace ChromaBlast
 
         public void SetTheme(int themeIndex)
         {
-            int clampedTheme = Mathf.Clamp(themeIndex, 0, ChromaPalette.ThemeCount - 1);
-            if (!IsThemeUnlocked((ThemeType)clampedTheme))
+            if (themeIndex < 0 || themeIndex >= ChromaPalette.ThemeCount)
             {
-                clampedTheme = 0;
+                return;
             }
 
-            Data.selectedTheme = clampedTheme;
+            ThemeType theme = (ThemeType)themeIndex;
+            if (!IsThemeUnlocked(theme))
+            {
+                Debug.LogWarning($"[Themes] Refused to apply unowned theme {theme}.");
+                return;
+            }
+
+            Data.selectedTheme = themeIndex;
             Save();
             ThemeCatalog.NotifyThemeChanged();
             RefreshThemeBackdrops();
@@ -685,9 +751,21 @@ namespace ChromaBlast
         public bool IsThemeUnlocked(ThemeType theme)
         {
             int themeIndex = Mathf.Clamp((int)theme, 0, ChromaPalette.ThemeCount - 1);
-            int mask = Data.unlockedThemeMask == 0 ? 1 : Data.unlockedThemeMask;
-            bool boughtWithCoins = (mask & (1 << themeIndex)) != 0;
-            return boughtWithCoins || ChromaPalette.IsThemeUnlocked(theme, Data.rankPoints, Data.cosmeticPackOwned);
+            int mask = Data.unlockedThemeMask | (1 << (int)ThemeType.Ocean);
+            bool explicitlyOwned = (mask & (1 << themeIndex)) != 0;
+
+            switch (theme)
+            {
+                case ThemeType.Ocean:
+                case ThemeType.Crystal:
+                case ThemeType.Neon:
+                case ThemeType.Gold:
+                case ThemeType.Candy:
+                case ThemeType.Aqua:
+                    return explicitlyOwned;
+                default:
+                    return explicitlyOwned || ChromaPalette.IsThemeUnlocked(theme, Data.rankPoints, Data.cosmeticPackOwned);
+            }
         }
 
         public ThemeType GetNextLockedTheme()
@@ -706,7 +784,13 @@ namespace ChromaBlast
 
         public bool CanBuyTheme(ThemeType theme)
         {
-            return !IsThemeUnlocked(theme) && GetCoins() >= ChromaPalette.GetThemeCoinCost(theme);
+            if (theme == ThemeType.Ocean || theme == ThemeType.Aqua || IsThemeUnlocked(theme))
+            {
+                return false;
+            }
+
+            int cost = ChromaPalette.GetThemeCoinCost(theme);
+            return cost > 0 && GetCoins() >= cost;
         }
 
         public bool TryBuyTheme(ThemeType theme)
@@ -718,9 +802,16 @@ namespace ChromaBlast
 
             int themeIndex = Mathf.Clamp((int)theme, 0, ChromaPalette.ThemeCount - 1);
             Data.coins = Mathf.Max(0, Data.coins - ChromaPalette.GetThemeCoinCost(theme));
-            Data.unlockedThemeMask = (Data.unlockedThemeMask == 0 ? 1 : Data.unlockedThemeMask) | (1 << themeIndex);
+            int existingMask = Data.unlockedThemeMask | (1 << (int)ThemeType.Ocean);
+            Data.unlockedThemeMask = existingMask | (1 << themeIndex);
             Save();
             return true;
+        }
+
+        private void UnlockThemeWithoutSaving(ThemeType theme)
+        {
+            int themeIndex = Mathf.Clamp((int)theme, 0, ChromaPalette.ThemeCount - 1);
+            Data.unlockedThemeMask |= 1 << themeIndex;
         }
 
         private void RefreshThemeBackdrops()
@@ -826,9 +917,153 @@ namespace ChromaBlast
             Data.lastDailyGiftDateKey = today;
             Data.dailyRewardDayIndex = (claimedDayIndex + 1) % DailyRewardDayCount;
             AddCoinsToBalance(coinsClaimed);
+            if (claimedDayIndex == DailyRewardDayCount - 1)
+            {
+                UnlockThemeWithoutSaving(ThemeType.Aqua);
+            }
             Save();
             return true;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void DebugPrepareDailyRewardsValidationState()
+        {
+            dailyRewardsDebugMode = false;
+            dailyRewardsProductionSnapshot = null;
+            dailyRewardsDebugSerializedState = null;
+            Data = new SaveData
+            {
+                schemaVersion = 7,
+                selectedTheme = (int)ThemeType.Ocean,
+                unlockedThemeMask = 1 << (int)ThemeType.Ocean,
+                themeOwnershipVersion = 1
+            };
+        }
+
+        public void DebugConfigureDailyRewardDay(int dayNumber)
+        {
+            int dayIndex = Mathf.Clamp(dayNumber - 1, 0, DailyRewardDayCount - 1);
+            if (!dailyRewardsDebugMode)
+            {
+                dailyRewardsProductionSnapshot = JsonUtility.ToJson(Data, true);
+                dailyRewardsDebugMode = true;
+            }
+
+            SaveData cleanDebugData = JsonUtility.FromJson<SaveData>(dailyRewardsProductionSnapshot);
+            Data = cleanDebugData ?? new SaveData();
+
+            // A valid consecutive previous day makes the requested day claimable
+            // without changing the production calendar or reward table.
+            Data.lastDailyGiftDateKey = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+            Data.dailyRewardDayIndex = dayIndex;
+
+            // Make the Day 7 unlock assertion deterministic inside the isolated
+            // test copy, even when the real player already owns Beach.
+            Data.unlockedThemeMask |= 1 << (int)ThemeType.Ocean;
+            Data.unlockedThemeMask &= ~(1 << (int)ThemeType.Aqua);
+            Data.selectedTheme = (int)ThemeType.Ocean;
+            Save();
+
+            Debug.Log($"[Daily Rewards Debug] Simulating Day {dayNumber}. Production save is untouched.");
+        }
+
+        public void DebugReloadDailyRewardSimulation()
+        {
+            if (!dailyRewardsDebugMode)
+            {
+                Debug.LogWarning("[Daily Rewards Debug] No simulation is active.");
+                return;
+            }
+
+            Load();
+        }
+
+        public void DebugEndDailyRewardSimulation()
+        {
+            if (!dailyRewardsDebugMode)
+            {
+                return;
+            }
+
+            SaveData productionData = JsonUtility.FromJson<SaveData>(dailyRewardsProductionSnapshot);
+            if (productionData != null)
+            {
+                Data = productionData;
+            }
+
+            dailyRewardsDebugMode = false;
+            dailyRewardsProductionSnapshot = null;
+            dailyRewardsDebugSerializedState = null;
+            Debug.Log("[Daily Rewards Debug] Simulation stopped. Production save restored in memory.");
+        }
+
+        public bool DebugRunDailyRewardsValidation(out string report)
+        {
+            System.Text.StringBuilder results = new System.Text.StringBuilder();
+            bool allPassed = true;
+
+            try
+            {
+                for (int dayNumber = 1; dayNumber <= DailyRewardDayCount; dayNumber++)
+                {
+                    DebugConfigureDailyRewardDay(dayNumber);
+                    int dayIndex = dayNumber - 1;
+                    int startingCoins = GetCoins();
+                    int expectedReward = GetDailyRewardAmountForDay(dayIndex);
+                    ThemeType startingTheme = (ThemeType)Data.selectedTheme;
+
+                    bool statePatternValid = CanClaimDailyGift() && GetDailyRewardDayIndex() == dayIndex;
+                    for (int cardIndex = 0; cardIndex < DailyRewardDayCount; cardIndex++)
+                    {
+                        bool shouldBeClaimed = cardIndex < dayIndex;
+                        bool shouldBeClaim = cardIndex == dayIndex;
+                        bool shouldBeLocked = cardIndex > dayIndex;
+                        int stateCount = (shouldBeClaimed ? 1 : 0) + (shouldBeClaim ? 1 : 0) + (shouldBeLocked ? 1 : 0);
+                        statePatternValid &= stateCount == 1;
+                    }
+
+                    bool firstClaim = TryClaimDailyGift(out int claimedCoins);
+                    int coinsAfterClaim = GetCoins();
+                    bool beachUnlocked = IsThemeUnlocked(ThemeType.Aqua);
+                    bool activeThemeUnchanged = (ThemeType)Data.selectedTheme == startingTheme;
+                    bool duplicateClaim = TryClaimDailyGift(out int duplicateCoins);
+                    bool duplicateBlocked = !duplicateClaim && duplicateCoins == 0 && GetCoins() == coinsAfterClaim;
+
+                    DebugReloadDailyRewardSimulation();
+                    bool persisted = GetCoins() == coinsAfterClaim
+                        && !CanClaimDailyGift()
+                        && IsThemeUnlocked(ThemeType.Aqua) == beachUnlocked
+                        && (ThemeType)Data.selectedTheme == startingTheme;
+
+                    bool rewardValid = firstClaim
+                        && claimedCoins == expectedReward
+                        && coinsAfterClaim == startingCoins + expectedReward;
+                    bool beachValid = dayNumber == DailyRewardDayCount ? beachUnlocked : !beachUnlocked;
+                    bool dayPassed = statePatternValid
+                        && rewardValid
+                        && beachValid
+                        && activeThemeUnchanged
+                        && duplicateBlocked
+                        && persisted;
+
+                    allPassed &= dayPassed;
+                    results.AppendLine(
+                        $"Day {dayNumber}: {(dayPassed ? "PASS" : "FAIL")} | "
+                        + $"states={(statePatternValid ? "ok" : "bad")}, reward={claimedCoins}/{expectedReward}, "
+                        + $"duplicate={(duplicateBlocked ? "blocked" : "FAILED")}, "
+                        + $"Beach={(beachUnlocked ? "owned" : "locked")}, autoApply={!activeThemeUnchanged}, "
+                        + $"reload={(persisted ? "persisted" : "FAILED")}");
+                }
+            }
+            finally
+            {
+                DebugEndDailyRewardSimulation();
+            }
+
+            report = results.ToString().TrimEnd();
+            return allPassed;
+        }
+#endif
 
         public int GetDailyRewardedAdCount()
         {
