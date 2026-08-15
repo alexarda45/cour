@@ -25,6 +25,12 @@ namespace ChromaBlast
         [SerializeField] private Sprite tileLime;
         [SerializeField] private Sprite tileAmber;
 
+        [Header("POP Button Artwork")]
+        [SerializeField] private Sprite popButtonCyan;
+        [SerializeField] private Sprite popButtonMagenta;
+        [SerializeField] private Sprite popButtonLime;
+        [SerializeField] private Sprite popButtonAmber;
+
         [Header("Gameplay Effect Colours")]
         [SerializeField] private Color effectColorCyan = new Color(0.0235f, 0.8353f, 0.9137f, 1f);
         [SerializeField] private Color effectColorMagenta = new Color(0.9137f, 0.0196f, 0.1686f, 1f);
@@ -153,6 +159,23 @@ namespace ChromaBlast
                     return tileAmber;
                 default:
                     return tileCyan;
+            }
+        }
+
+        public Sprite GetPopButtonSprite(ChromaColor color)
+        {
+            switch (color)
+            {
+                case ChromaColor.Cyan:
+                    return popButtonCyan;
+                case ChromaColor.Magenta:
+                    return popButtonMagenta;
+                case ChromaColor.Lime:
+                    return popButtonLime;
+                case ChromaColor.Amber:
+                    return popButtonAmber;
+                default:
+                    return popButtonCyan;
             }
         }
 

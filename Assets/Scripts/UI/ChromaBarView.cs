@@ -18,7 +18,6 @@ namespace ChromaBlast
             "Ocean/UI/Pop/PopButton_Amber"
         };
 
-        private static readonly Sprite[] PopButtonSprites = new Sprite[GameConstants.ColorCount];
         private static readonly bool[] MissingPopButtonSpriteLogged = new bool[GameConstants.ColorCount];
         private static readonly Vector2 PopButtonSize = new Vector2(154f, 54f);
 
@@ -33,6 +32,17 @@ namespace ChromaBlast
         private Action<ChromaColor> onPop;
         private bool wasReady;
         private Coroutine readyPulseRoutine;
+
+        private void OnEnable()
+        {
+            ThemeCatalog.ThemeChanged += HandleThemeChanged;
+            ConfigurePopButtonVisual();
+        }
+
+        private void OnDisable()
+        {
+            ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+        }
 
         public void Initialize(ChromaColor chromaColor, Action<ChromaColor> popCallback)
         {
@@ -243,11 +253,17 @@ namespace ChromaBlast
             }
 
             int index = Mathf.Clamp((int)color, 0, PopButtonSpritePaths.Length - 1);
-            Sprite sprite = PopButtonSprites[index];
+            ThemeAssetSet activeTheme = ThemeCatalog.Current;
+            Sprite sprite = activeTheme == null ? null : activeTheme.GetPopButtonSprite(color);
+            if (sprite == null)
+            {
+                ThemeAssetSet oceanTheme = ThemeCatalog.GetDefinition(ThemeType.Ocean);
+                sprite = oceanTheme == null ? null : oceanTheme.GetPopButtonSprite(color);
+            }
+
             if (sprite == null)
             {
                 sprite = LoadPopButtonSprite(PopButtonSpritePaths[index]);
-                PopButtonSprites[index] = sprite;
             }
 
             if (sprite == null)
@@ -310,6 +326,11 @@ namespace ChromaBlast
                     legacyEffects[i].enabled = false;
                 }
             }
+        }
+
+        private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
+        {
+            ConfigurePopButtonVisual();
         }
 
         private static Sprite LoadPopButtonSprite(string resourcePath)
