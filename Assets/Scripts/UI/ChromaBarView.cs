@@ -20,6 +20,8 @@ namespace ChromaBlast
 
         private static readonly bool[] MissingPopButtonSpriteLogged = new bool[GameConstants.ColorCount];
         private static readonly Vector2 PopButtonSize = new Vector2(154f, 54f);
+        private const string BlossomPopVisualName = "BlossomPopVisual";
+        private const float BlossomPopVisualScale = 1.18f;
 
         [SerializeField] private ChromaColor color;
         [SerializeField] private Slider slider;
@@ -32,6 +34,7 @@ namespace ChromaBlast
         private Action<ChromaColor> onPop;
         private bool wasReady;
         private Coroutine readyPulseRoutine;
+        private Image blossomPopVisual;
 
         private void OnEnable()
         {
@@ -308,12 +311,30 @@ namespace ChromaBlast
             if (buttonImage != null)
             {
                 buttonImage.sprite = sprite;
-                buttonImage.color = Color.white;
                 buttonImage.type = Image.Type.Simple;
                 buttonImage.preserveAspect = true;
                 buttonImage.raycastTarget = true;
-                buttonImage.canvasRenderer.SetColor(Color.white);
                 popButton.targetGraphic = buttonImage;
+
+                bool useScaledThemeVisual = activeTheme != null
+                    && (activeTheme.ThemeType == ThemeType.Neon
+                        || activeTheme.ThemeType == ThemeType.Crystal
+                        || activeTheme.ThemeType == ThemeType.Gold
+                        || activeTheme.ThemeType == ThemeType.Aqua
+                        || activeTheme.ThemeType == ThemeType.Candy);
+                if (useScaledThemeVisual)
+                {
+                    Color transparentWhite = new Color(1f, 1f, 1f, 0f);
+                    buttonImage.color = transparentWhite;
+                    buttonImage.canvasRenderer.SetColor(transparentWhite);
+                    ConfigureBlossomPopVisual(sprite);
+                }
+                else
+                {
+                    buttonImage.color = Color.white;
+                    buttonImage.canvasRenderer.SetColor(Color.white);
+                    SetBlossomPopVisualActive(false);
+                }
             }
 
             // The supplied art already contains its outline, gloss and shadow.
@@ -325,6 +346,64 @@ namespace ChromaBlast
                 {
                     legacyEffects[i].enabled = false;
                 }
+            }
+        }
+
+        private void ConfigureBlossomPopVisual(Sprite sprite)
+        {
+            if (blossomPopVisual == null)
+            {
+                Transform existingVisual = popButton.transform.Find(BlossomPopVisualName);
+                if (existingVisual != null)
+                {
+                    blossomPopVisual = existingVisual.GetComponent<Image>();
+                }
+            }
+
+            if (blossomPopVisual == null)
+            {
+                GameObject visualObject = new GameObject(
+                    BlossomPopVisualName,
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+                visualObject.transform.SetParent(popButton.transform, false);
+                blossomPopVisual = visualObject.GetComponent<Image>();
+            }
+
+            RectTransform visualRect = blossomPopVisual.rectTransform;
+            visualRect.anchorMin = new Vector2(0.5f, 0.5f);
+            visualRect.anchorMax = visualRect.anchorMin;
+            visualRect.pivot = new Vector2(0.5f, 0.5f);
+            visualRect.anchoredPosition = Vector2.zero;
+            visualRect.sizeDelta = PopButtonSize * BlossomPopVisualScale;
+            visualRect.localRotation = Quaternion.identity;
+            visualRect.localScale = Vector3.one;
+
+            blossomPopVisual.sprite = sprite;
+            blossomPopVisual.color = Color.white;
+            blossomPopVisual.type = Image.Type.Simple;
+            blossomPopVisual.preserveAspect = true;
+            blossomPopVisual.raycastTarget = false;
+            blossomPopVisual.canvasRenderer.SetColor(Color.white);
+            blossomPopVisual.transform.SetAsLastSibling();
+            blossomPopVisual.gameObject.SetActive(true);
+        }
+
+        private void SetBlossomPopVisualActive(bool active)
+        {
+            if (blossomPopVisual == null && popButton != null)
+            {
+                Transform existingVisual = popButton.transform.Find(BlossomPopVisualName);
+                if (existingVisual != null)
+                {
+                    blossomPopVisual = existingVisual.GetComponent<Image>();
+                }
+            }
+
+            if (blossomPopVisual != null)
+            {
+                blossomPopVisual.gameObject.SetActive(active);
             }
         }
 

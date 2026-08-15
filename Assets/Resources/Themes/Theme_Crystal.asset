@@ -26,6 +26,10 @@ MonoBehaviour:
   tileMagenta: {fileID: 21300000, guid: 7f353d1647b643e4b6ffa0d59353fa6c, type: 3}
   tileLime: {fileID: 21300000, guid: 27d9d54074bc46f9baf833427b3f6675, type: 3}
   tileAmber: {fileID: 21300000, guid: 95a42275bebb4660ac88c2a5e7f27777, type: 3}
+  popButtonCyan: {fileID: 21300000, guid: e040185f61b57b847b59b079892a6fac, type: 3}
+  popButtonMagenta: {fileID: 21300000, guid: bfe79a72c8a7d1843899d4e928104287, type: 3}
+  popButtonLime: {fileID: 21300000, guid: adc8f7e79c7794f40a4beca932cfe98b, type: 3}
+  popButtonAmber: {fileID: 21300000, guid: 3dda4a74cc425bb48bf3389226f7d329, type: 3}
   effectColorCyan: {r: 0.9098039, g: 0, b: 0.4509804, a: 1}
   effectColorMagenta: {r: 0.9098039, g: 0.75686276, b: 0, a: 1}
   effectColorLime: {r: 0.4509804, g: 0, b: 0.9098039, a: 1}
