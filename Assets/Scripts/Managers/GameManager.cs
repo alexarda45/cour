@@ -353,7 +353,7 @@ namespace ChromaBlast
                 board.ClearPreview();
                 ResetMoveHint(false);
                 hud.ShowInvalidMove();
-                AudioManager.Instance?.PlayClick();
+                AudioManager.Instance?.PlayInvalid();
                 Haptics.Light();
                 return false;
             }

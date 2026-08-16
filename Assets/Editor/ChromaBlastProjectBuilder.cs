@@ -455,8 +455,11 @@ public static class ChromaBlastProjectBuilder
         music.transform.SetParent(managers.transform, false);
         GameObject sfx = new GameObject("SfxSource", typeof(AudioSource));
         sfx.transform.SetParent(managers.transform, false);
+        GameObject clearSfx = new GameObject("ClearSfxSource", typeof(AudioSource));
+        clearSfx.transform.SetParent(managers.transform, false);
         SetObject(audioManager, "musicSource", music.GetComponent<AudioSource>());
         SetObject(audioManager, "sfxSource", sfx.GetComponent<AudioSource>());
+        SetObject(audioManager, "clearSfxSource", clearSfx.GetComponent<AudioSource>());
         SetObject(audioManager, "audioListener", audioListener);
 
         _ = saveManager;

@@ -12,13 +12,17 @@ namespace ChromaBlast
         [Header("Sources")]
         [SerializeField] private AudioSource musicSource;
         [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private AudioSource clearSfxSource;
         [SerializeField] private AudioListener audioListener;
 
         [Header("Clips")]
         [SerializeField] private AudioClip musicClip;
         [SerializeField] private AudioClip clickClip;
+        [SerializeField] private AudioClip pickupClip;
         [SerializeField] private AudioClip placeClip;
+        [SerializeField] private AudioClip invalidClip;
         [SerializeField] private AudioClip clearClip;
+        [SerializeField] private AudioClip strongClearClip;
         [SerializeField] private AudioClip pureClip;
         [SerializeField] private AudioClip popClip;
         [SerializeField] private AudioClip gameOverClip;
@@ -114,19 +118,33 @@ namespace ChromaBlast
             PlayOneShot(clickClip, 0.32f);
         }
 
+        public void PlayPickup()
+        {
+            PlayOneShot(pickupClip != null ? pickupClip : clickClip, 0.32f);
+        }
+
         public void PlayPlace()
         {
             PlayOneShot(placeClip, 0.62f);
         }
 
+        public void PlayInvalid()
+        {
+            PlayOneShot(invalidClip != null ? invalidClip : clickClip, 0.32f);
+        }
+
         public void PlayClear(int lines)
         {
-            if (clearClip == null)
+            int noteCount = Mathf.Clamp(lines, 1, 4);
+            AudioClip baseClip = lines >= 2 && strongClearClip != null
+                ? strongClearClip
+                : clearClip;
+            if (baseClip == null)
             {
                 return;
             }
 
-            StartCoroutine(PlayClearArpeggio(Mathf.Clamp(lines, 1, 4)));
+            StartCoroutine(PlayClearArpeggio(baseClip, noteCount));
         }
 
         public void PlayPure()
@@ -175,34 +193,39 @@ namespace ChromaBlast
             }
         }
 
-        private IEnumerator PlayClearArpeggio(int notes)
+        private IEnumerator PlayClearArpeggio(AudioClip clip, int notes)
         {
             float[] pitches = { 0.94f, 1.06f, 1.18f, 1.34f };
             for (int i = 0; i < notes; i++)
             {
-                if (sfxSource != null)
+                if (clearSfxSource != null)
                 {
-                    sfxSource.pitch = pitches[i];
+                    clearSfxSource.pitch = pitches[i];
                 }
 
-                PlayOneShot(clearClip, 0.54f);
+                PlayOneShot(clearSfxSource, clip, 0.54f);
                 yield return new WaitForSeconds(0.042f);
             }
 
-            if (sfxSource != null)
+            if (clearSfxSource != null)
             {
-                sfxSource.pitch = 1f;
+                clearSfxSource.pitch = 1f;
             }
         }
 
         private void PlayOneShot(AudioClip clip, float volume)
         {
-            if (Muted || clip == null || sfxSource == null)
+            PlayOneShot(sfxSource, clip, volume);
+        }
+
+        private void PlayOneShot(AudioSource source, AudioClip clip, float volume)
+        {
+            if (Muted || clip == null || source == null)
             {
                 return;
             }
 
-            sfxSource.PlayOneShot(clip, volume);
+            source.PlayOneShot(clip, volume);
         }
 
         private void EnsureSources()
@@ -217,12 +240,35 @@ namespace ChromaBlast
                 sfxSource = gameObject.AddComponent<AudioSource>();
             }
 
+            if (clearSfxSource == null)
+            {
+                Transform clearSourceTransform = transform.Find("ClearSfxSource");
+                if (clearSourceTransform == null)
+                {
+                    GameObject clearSourceObject = new GameObject("ClearSfxSource");
+                    clearSourceObject.transform.SetParent(transform, false);
+                    clearSfxSource = clearSourceObject.AddComponent<AudioSource>();
+                }
+                else
+                {
+                    clearSfxSource = clearSourceTransform.GetComponent<AudioSource>();
+                    if (clearSfxSource == null)
+                    {
+                        clearSfxSource = clearSourceTransform.gameObject.AddComponent<AudioSource>();
+                    }
+                }
+            }
+
             musicSource.playOnAwake = false;
             sfxSource.playOnAwake = false;
+            clearSfxSource.playOnAwake = false;
             musicSource.spatialBlend = 0f;
             sfxSource.spatialBlend = 0f;
+            clearSfxSource.spatialBlend = 0f;
             musicSource.volume = 0.16f;
             sfxSource.volume = 0.82f;
+            clearSfxSource.volume = 0.82f;
+            clearSfxSource.pitch = 1f;
         }
 
         private void EnsureAudioListener()
@@ -259,8 +305,11 @@ namespace ChromaBlast
         private void GenerateDefaultClipsIfNeeded()
         {
             clickClip ??= CreateToneClip("Soft_Click", 620f, 0.038f, 0.13f, Wave.Sine);
+            pickupClip ??= clickClip;
             placeClip ??= CreateToneClip("Soft_Place", 246.94f, 0.07f, 0.22f, Wave.Triangle, 329.63f);
+            invalidClip ??= clickClip;
             clearClip ??= CreateToneClip("Soft_Clear", 493.88f, 0.10f, 0.22f, Wave.Triangle);
+            strongClearClip ??= clearClip;
             pureClip ??= CreateChordClip("Soft_Pure", new[] { 392f, 493.88f, 587.33f, 783.99f }, 0.36f, 0.24f);
             popClip ??= CreatePopClip();
             gameOverClip ??= CreateDescendingClip();
@@ -418,6 +467,11 @@ namespace ChromaBlast
             if (sfxSource != null)
             {
                 sfxSource.mute = Muted;
+            }
+
+            if (clearSfxSource != null)
+            {
+                clearSfxSource.mute = Muted;
             }
         }
     }

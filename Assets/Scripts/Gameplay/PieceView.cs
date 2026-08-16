@@ -105,7 +105,7 @@ namespace ChromaBlast
             // Reinforce the per-piece zero-threshold setting at press time in case
             // an input module refreshes PointerEventData between initialization and drag.
             eventData.useDragThreshold = false;
-            AudioManager.Instance?.PlayClick();
+            AudioManager.Instance?.PlayPickup();
             if (!canCurrentlyFit)
             {
                 ShakeUnavailable();
@@ -245,6 +245,7 @@ namespace ChromaBlast
             Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
             if (!gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera))
             {
+                AudioManager.Instance?.PlayInvalid();
                 StopPickupScale();
                 ResetHeldVisualState();
                 ReturnToSlot();
