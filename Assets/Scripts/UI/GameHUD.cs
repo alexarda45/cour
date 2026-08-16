@@ -423,12 +423,28 @@ namespace ChromaBlast
 
         public void PunchScore(bool pure)
         {
+            ApplyScorePunch(pure ? 0.10f : 0.06f, pure ? 0.22f : 0.19f);
+        }
+
+        public void PunchScore(ClearResult result, int chain)
+        {
+            int linesCleared = result == null ? 0 : result.linesCleared;
+            bool premiumClear = linesCleared >= 3
+                || (result != null && result.pureLines > 0)
+                || chain >= 4;
+            float amplitude = premiumClear ? 0.10f : linesCleared >= 2 ? 0.08f : 0.06f;
+            float duration = premiumClear ? 0.22f : linesCleared >= 2 ? 0.20f : 0.18f;
+            ApplyScorePunch(amplitude, duration);
+        }
+
+        private void ApplyScorePunch(float amplitude, float duration)
+        {
             if (scoreText != null)
             {
                 suppressNextScoreAutoPunch = true;
                 scoreText.transform.DOKill();
                 scoreText.transform.localScale = Vector3.one;
-                scoreText.transform.DOPunchScale(Vector3.one * 0.06f, 0.22f, 7, 0.78f);
+                scoreText.transform.DOPunchScale(Vector3.one * amplitude, duration, 6, 0.72f);
             }
         }
 
@@ -532,25 +548,25 @@ namespace ChromaBlast
         public void ShowPopReady(ChromaColor color, int targetCount)
         {
             Color popColor = ChromaPalette.GetColor(color);
-            string colorName = ChromaPalette.GetRomanianName(color).ToUpperInvariant();
-            popupLayer?.Show($"POP GATA\n{colorName} x{targetCount}", popColor, 44, new Vector2(0f, 178f));
-            ShowFeedback($"APASA POP {colorName}", popColor, 1.05f);
+            string colorName = GetEnglishColorName(color);
+            popupLayer?.Show($"POP READY\n{colorName} x{targetCount}", popColor, 44, new Vector2(0f, 178f));
+            ShowFeedback($"PRESS POP {colorName}", popColor, 1.05f);
             Flash(popColor, 0.12f, 0.18f);
         }
 
         public void ShowRewardedChromaReady(ChromaColor color)
         {
             Color popColor = ChromaPalette.GetColor(color);
-            string colorName = ChromaPalette.GetRomanianName(color).ToUpperInvariant();
-            popupLayer?.Show($"+CHROMA\nPOP {colorName} GATA", popColor, 46, new Vector2(0f, 205f));
-            ShowFeedback($"POP {colorName} GATA", popColor, 1.0f);
+            string colorName = GetEnglishColorName(color);
+            popupLayer?.Show($"+CHROMA\n{colorName} POP READY", popColor, 46, new Vector2(0f, 205f));
+            ShowFeedback($"{colorName} POP READY", popColor, 1.0f);
             Flash(popColor, 0.16f, 0.20f);
         }
 
         public void ShowPopUnavailable(ChromaColor color)
         {
             Color popColor = ChromaPalette.GetColor(color);
-            ShowFeedback("POP FARA CELULE", popColor, 0.58f);
+            ShowFeedback("POP HAS NO TILES", popColor, 0.58f);
         }
 
         public void ShowTimeBonus(float seconds)
@@ -563,24 +579,24 @@ namespace ChromaBlast
 
             Color color = new Color(0.65f, 1f, 0.26f, 1f);
             popupLayer?.Show($"+{rounded}s", color, 46, new Vector2(0f, 90f));
-            ShowFeedback($"+{rounded}s TIMP", color, 0.42f);
+            ShowFeedback($"+{rounded}s TIME", color, 0.42f);
         }
 
         public void ShowInvalidMove()
         {
-            ShowFeedback("NU INCAPE", new Color(1f, 0.18f, 0.28f, 1f), 0.7f);
+            ShowFeedback("DOESN'T FIT", new Color(1f, 0.18f, 0.28f, 1f), 0.7f);
         }
 
         public void ShowNoFitPiece()
         {
-            ShowFeedback("NU ARE LOC", new Color(1f, 0.62f, 0.18f, 1f), 0.55f);
+            ShowFeedback("NO SPACE", new Color(1f, 0.62f, 0.18f, 1f), 0.55f);
         }
 
         public void ShowUsePopToContinue(ChromaColor color)
         {
             Color popColor = ChromaPalette.GetColor(color);
-            popupLayer?.Show($"FOLOSESTE POP\n{ChromaPalette.GetRomanianName(color).ToUpperInvariant()}", popColor, 42, new Vector2(0f, 165f));
-            ShowFeedback("POP TE SALVEAZA", popColor, 0.9f);
+            popupLayer?.Show($"USE POP\n{GetEnglishColorName(color)}", popColor, 42, new Vector2(0f, 165f));
+            ShowFeedback("POP CAN SAVE YOU", popColor, 0.9f);
         }
 
         public void SetMission(string mission, bool completed)
@@ -592,8 +608,8 @@ namespace ChromaBlast
         public void ShowMissionComplete(int rewardScore)
         {
             Color color = new Color(0.65f, 1f, 0.26f, 1f);
-            popupLayer?.Show($"MISIUNE COMPLETA\n+{rewardScore}", color, 48, new Vector2(0f, 25f));
-            ShowFeedback($"MISIUNE +{rewardScore}", color, 0.65f);
+            popupLayer?.Show($"MISSION COMPLETE\n+{rewardScore}", color, 48, new Vector2(0f, 25f));
+            ShowFeedback($"MISSION +{rewardScore}", color, 0.65f);
             Flash(color, 0.18f, 0.22f);
             if (missionText != null)
             {
@@ -604,8 +620,9 @@ namespace ChromaBlast
         public void ShowAchievement(AchievementReward reward)
         {
             Color color = new Color(1f, 0.82f, 0.35f, 1f);
-            popupLayer?.Show($"REALIZARE\n{reward.title}\n+{reward.coins} MONEDE", color, 44, new Vector2(0f, 165f));
-            ShowFeedback($"{reward.title} +{reward.coins} MONEDE", color, 0.8f);
+            string title = GetEnglishAchievementTitle(reward.id);
+            popupLayer?.Show($"ACHIEVEMENT\n{title}\n+{reward.coins} COINS", color, 44, new Vector2(0f, 165f));
+            ShowFeedback($"{title} +{reward.coins} COINS", color, 0.8f);
             Flash(color, 0.22f, 0.26f);
         }
 
@@ -617,8 +634,8 @@ namespace ChromaBlast
             }
 
             Color color = new Color(1f, 0.82f, 0.35f, 1f);
-            popupLayer?.Show($"SCOR {milestoneScore}\n+{coins} MONEDE", color, 44, new Vector2(0f, 220f));
-            ShowFeedback($"BONUS +{coins} MONEDE", color, 0.72f);
+            popupLayer?.Show($"SCORE {milestoneScore}\n+{coins} COINS", color, 44, new Vector2(0f, 220f));
+            ShowFeedback($"BONUS +{coins} COINS", color, 0.72f);
             Flash(color, 0.16f, 0.22f);
         }
 
@@ -630,9 +647,9 @@ namespace ChromaBlast
             }
 
             Color color = new Color(1f, 0.82f, 0.35f, 1f);
-            string title = string.IsNullOrEmpty(questName) ? "OBIECTIV ZILNIC" : questName;
-            popupLayer?.Show($"{title}\n+{coins} MONEDE", color, 44, new Vector2(0f, 235f));
-            ShowFeedback($"ZILNIC +{coins} MONEDE", color, 0.78f);
+            string title = GetEnglishDailyQuestTitle(questName);
+            popupLayer?.Show($"{title}\n+{coins} COINS", color, 44, new Vector2(0f, 235f));
+            ShowFeedback($"DAILY +{coins} COINS", color, 0.78f);
             Flash(color, 0.18f, 0.24f);
         }
 
@@ -644,8 +661,6 @@ namespace ChromaBlast
             }
 
             Color color = new Color(1f, 0.82f, 0.35f, 1f);
-            popupLayer?.Show($"APROAPE\n+{scoreAdded}", color, 40, new Vector2(0f, 95f));
-            ShowFeedback($"APROAPE +{scoreAdded}", color, 0.44f);
             Flash(color, 0.08f, 0.14f);
         }
 
@@ -657,8 +672,6 @@ namespace ChromaBlast
             }
 
             Color color = new Color(0.1f, 0.9f, 1f, 1f);
-            popupLayer?.Show($"PIESA MARE\n{cells} CELULE +{scoreAdded}", color, 38, new Vector2(0f, 80f));
-            ShowFeedback($"PIESA MARE +{scoreAdded}", color, 0.40f);
             Flash(color, 0.06f, 0.12f);
         }
 
@@ -672,9 +685,6 @@ namespace ChromaBlast
             Color color = boardEmpty
                 ? new Color(1f, 0.82f, 0.35f, 1f)
                 : new Color(0.65f, 1f, 0.26f, 1f);
-            string title = boardEmpty ? "TABLA CURATA" : "SPATIU LIBER";
-            popupLayer?.Show($"{title}\n+{scoreAdded}", color, boardEmpty ? 58 : 48, new Vector2(0f, 360f));
-            ShowFeedback($"{title} +{scoreAdded}", color, 0.72f);
             Flash(color, boardEmpty ? 0.28f : 0.18f, 0.26f);
         }
 
@@ -685,8 +695,10 @@ namespace ChromaBlast
 
         public void ShowPlacedFeedback(int scoreAdded)
         {
-            string message = scoreAdded > 0 ? $"+{scoreAdded}" : "BUN";
-            ShowFeedback(message, new Color(0.1f, 0.9f, 1f, 1f), 0.28f);
+            if (scoreAdded > 0)
+            {
+                ShowFeedback($"+{scoreAdded}", new Color(0.1f, 0.9f, 1f, 1f), 0.28f);
+            }
         }
 
         public void ShowPlacementPreview(int lineCount, int pureLineCount)
@@ -709,11 +721,11 @@ namespace ChromaBlast
             }
             else if (lineCount == 1)
             {
-                message = "LINIE!";
+                message = "LINE!";
             }
             else if (lineCount == 2)
             {
-                message = "DUBLU!";
+                message = "DOUBLE!";
             }
             else
             {
@@ -725,7 +737,7 @@ namespace ChromaBlast
 
         public void ShowSmartMoveHint()
         {
-            ShowFeedback("INCEARCA AICI", new Color(0.65f, 1f, 0.26f, 1f), 0.58f);
+            ShowFeedback("TRY HERE", new Color(0.65f, 1f, 0.26f, 1f), 0.58f);
         }
 
         public void ShowTrayCompleteBonus(int scoreAdded)
@@ -736,8 +748,6 @@ namespace ChromaBlast
             }
 
             Color color = new Color(0.65f, 1f, 0.26f, 1f);
-            popupLayer?.Show($"TAVA COMPLETA\n+{scoreAdded}", color, 44, new Vector2(0f, 65f));
-            ShowFeedback($"TAVA +{scoreAdded}", color, 0.48f);
             Flash(color, 0.10f, 0.16f);
         }
 
@@ -4612,13 +4622,76 @@ namespace ChromaBlast
             pausePanelRoot.DOScale(1f, 0.14f).SetEase(Ease.OutBack);
         }
 
+        private static string GetEnglishColorName(ChromaColor color)
+        {
+            switch (color)
+            {
+                case ChromaColor.Cyan:
+                    return "CYAN";
+                case ChromaColor.Magenta:
+                    return "MAGENTA";
+                case ChromaColor.Lime:
+                    return "LIME";
+                case ChromaColor.Amber:
+                    return "GOLD";
+                default:
+                    return "COLOR";
+            }
+        }
+
+        private static string GetEnglishAchievementTitle(AchievementId id)
+        {
+            switch (id)
+            {
+                case AchievementId.FirstClear:
+                    return "FIRST LINE";
+                case AchievementId.FirstPure:
+                    return "PURE!";
+                case AchievementId.FirstPop:
+                    return "FIRST POP";
+                case AchievementId.ChainThree:
+                    return "CHAIN x3";
+                case AchievementId.ScoreThousand:
+                    return "SCORE 1000";
+                case AchievementId.TripleClear:
+                    return "TRIPLE CLEAR";
+                case AchievementId.FirstDaily:
+                    return "DAILY START";
+                case AchievementId.BoardSweep:
+                    return "BOARD CLEARED";
+                default:
+                    return "FIRST MOVE";
+            }
+        }
+
+        private static string GetEnglishDailyQuestTitle(string questName)
+        {
+            switch (questName)
+            {
+                case "MUTARI ZILNICE":
+                    return "DAILY MOVES";
+                case "LINII ZILNICE":
+                    return "DAILY LINES";
+                case "PURE ZILNIC":
+                    return "DAILY PURE";
+                case "POP ZILNIC":
+                    return "DAILY POP";
+                case "SCOR ZILNIC":
+                    return "DAILY SCORE";
+                case "OBIECTIVE":
+                    return "DAILY OBJECTIVES";
+                default:
+                    return "DAILY OBJECTIVE";
+            }
+        }
+
         private void ShowFeedback(string message, Color color, float duration)
         {
-            bool functionalHint = message == "NU INCAPE"
-                || message == "NU ARE LOC"
-                || message == "POP FARA CELULE"
-                || message == "POP TE SALVEAZA"
-                || message == "INCEARCA AICI";
+            bool functionalHint = message == "DOESN'T FIT"
+                || message == "NO SPACE"
+                || message == "POP HAS NO TILES"
+                || message == "POP CAN SAVE YOU"
+                || message == "TRY HERE";
             if (!functionalHint)
             {
                 return;
@@ -5394,7 +5467,7 @@ namespace ChromaBlast
                 {
                     scoreText.transform.DOKill();
                     scoreText.transform.localScale = Vector3.one;
-                    scoreText.transform.DOPunchScale(Vector3.one * 0.06f, 0.20f, 6, 0.74f);
+                    scoreText.transform.DOPunchScale(Vector3.one * 0.035f, 0.16f, 4, 0.58f);
                 }
             }
             else if (suppressNextScoreAutoPunch)
@@ -5425,7 +5498,7 @@ namespace ChromaBlast
                 int animationStart = displayedScore;
                 int animationTarget = targetScore;
                 float elapsed = 0f;
-                float duration = Mathf.Clamp(0.20f + Mathf.Abs(animationTarget - animationStart) / 1800f, 0.20f, 0.35f);
+                float duration = Mathf.Clamp(0.15f + Mathf.Abs(animationTarget - animationStart) / 2200f, 0.15f, 0.34f);
                 while (elapsed < duration && displayedScore != animationTarget)
                 {
                     if (animationTarget != targetScore)
@@ -5433,7 +5506,7 @@ namespace ChromaBlast
                         animationStart = displayedScore;
                         animationTarget = targetScore;
                         elapsed = 0f;
-                        duration = Mathf.Clamp(0.20f + Mathf.Abs(animationTarget - animationStart) / 1800f, 0.20f, 0.35f);
+                        duration = Mathf.Clamp(0.15f + Mathf.Abs(animationTarget - animationStart) / 2200f, 0.15f, 0.34f);
                     }
 
                     elapsed += Time.unscaledDeltaTime;

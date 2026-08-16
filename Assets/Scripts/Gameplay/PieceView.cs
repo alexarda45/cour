@@ -812,7 +812,7 @@ namespace ChromaBlast
 
             if (canClearLineNow)
             {
-                moveBadgeText.text = clearOpportunityCount > 1 ? $"x{Mathf.Min(9, clearOpportunityCount)}" : "LINIE";
+                moveBadgeText.text = clearOpportunityCount > 1 ? $"x{Mathf.Min(9, clearOpportunityCount)}" : "LINE";
                 moveBadgeText.color = new Color(0.02f, 0.03f, 0.08f, 1f);
                 moveBadgeBackground.color = clearOpportunityCount > 1
                     ? new Color(1f, 0.31f, 0.85f, 0.88f)

@@ -78,17 +78,22 @@ namespace ChromaBlast
             bool hasComboLabel = comboTier != ComboTier.None;
             Color scoreColor = Color.Lerp(placedPieceColor, Color.white, 0.72f);
             scoreColor.a = 1f;
+            int presentationTier = result.pureLines > 0 || result.linesCleared >= 3 || chain >= 4
+                ? 2
+                : result.linesCleared >= 2 ? 1 : 0;
             int scoreSize = result.pureLines > 0 ? 60 : hasComboLabel ? 56 : 52;
-            Vector2 scorePosition = hasComboLabel ? new Vector2(0f, -104f) : popupPosition;
+            Vector2 scorePosition = hasComboLabel
+                ? popupPosition + Vector2.down * 54f
+                : popupPosition;
             ShowInternal(
                 $"+{Mathf.Max(0, scoreAdded)}",
                 scoreColor,
                 scoreSize,
                 scorePosition,
-                0.94f,
-                hasComboLabel ? 52f : 70f,
-                hasComboLabel ? 0.78f : 0f,
-                hasComboLabel ? 1.06f : 1.14f,
+                0.80f + presentationTier * 0.04f,
+                58f + presentationTier * 8f,
+                0.76f,
+                1.12f + presentationTier * 0.03f,
                 false);
 
             if (hasComboLabel)
@@ -211,23 +216,29 @@ namespace ChromaBlast
             text.color = Color.white;
             text.enableVertexGradient = true;
             text.colorGradient = new VertexGradient(topColor, topColor, bottomColor, bottomColor);
-            text.outlineWidth = tier >= ComboTier.Amazing ? 0.28f : tier == ComboTier.Great ? 0.22f : 0.17f;
+            text.outlineWidth = tier == ComboTier.Perfect
+                ? 0.31f
+                : tier == ComboTier.Amazing ? 0.27f : tier == ComboTier.Great ? 0.22f : 0.16f;
             outlineColor.a = 1f;
             text.outlineColor = outlineColor;
 
             Outline glowOutline = textObject.AddComponent<Outline>();
-            glowColor.a = tier >= ComboTier.Amazing ? 0.82f : 0.58f;
+            glowColor.a = tier == ComboTier.Perfect
+                ? 0.86f
+                : tier == ComboTier.Amazing ? 0.76f : tier == ComboTier.Great ? 0.62f : 0.50f;
             glowOutline.effectColor = glowColor;
-            glowOutline.effectDistance = tier >= ComboTier.Amazing
-                ? new Vector2(5f, -5f)
-                : new Vector2(3f, -3f);
+            float glowDistance = tier == ComboTier.Perfect
+                ? 6f
+                : tier == ComboTier.Amazing ? 5f : tier == ComboTier.Great ? 4f : 3f;
+            glowOutline.effectDistance = new Vector2(glowDistance, -glowDistance);
             glowOutline.useGraphicAlpha = true;
 
             Shadow shadow = textObject.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0.035f, 0.12f, 0.92f);
-            shadow.effectDistance = tier >= ComboTier.Amazing
-                ? new Vector2(0f, -8f)
-                : new Vector2(0f, -6f);
+            float shadowDistance = tier == ComboTier.Perfect
+                ? 9f
+                : tier == ComboTier.Amazing ? 8f : tier == ComboTier.Great ? 7f : 5f;
+            shadow.effectDistance = new Vector2(0f, -shadowDistance);
             shadow.useGraphicAlpha = true;
 
             Image[] sparkles = CreateComboSparkles(root, sparkleCount, glowColor);
@@ -340,13 +351,57 @@ namespace ChromaBlast
             int chain,
             int linesCleared)
         {
-            float duration = tier >= ComboTier.Amazing ? 1.20f : tier == ComboTier.Great ? 1.12f : 1.05f;
-            float entranceDuration = tier >= ComboTier.Amazing ? 0.19f : 0.17f;
-            float settleEnd = entranceDuration + 0.14f;
-            float exitStart = duration - 0.28f;
-            float startRotation = Random.Range(-8f, 8f);
-            float peakScale = tier >= ComboTier.Amazing ? 1.19f : 1.15f;
-            float floatDistance = tier >= ComboTier.Amazing ? 30f : 24f;
+            float duration;
+            float entranceDuration;
+            float settleDuration;
+            float peakScale;
+            float floatDistance;
+            float maxGlowAlpha;
+            float rotationRange;
+            switch (tier)
+            {
+                case ComboTier.Perfect:
+                    duration = 1.16f;
+                    entranceDuration = 0.18f;
+                    settleDuration = 0.04f;
+                    peakScale = 1.21f;
+                    floatDistance = 30f;
+                    maxGlowAlpha = 1f;
+                    rotationRange = 6f;
+                    break;
+                case ComboTier.Amazing:
+                    duration = 1.10f;
+                    entranceDuration = 0.17f;
+                    settleDuration = 0.045f;
+                    peakScale = 1.18f;
+                    floatDistance = 26f;
+                    maxGlowAlpha = 0.90f;
+                    rotationRange = 5f;
+                    break;
+                case ComboTier.Great:
+                    duration = 1.02f;
+                    entranceDuration = 0.16f;
+                    settleDuration = 0.055f;
+                    peakScale = 1.15f;
+                    floatDistance = 22f;
+                    maxGlowAlpha = 0.78f;
+                    rotationRange = 4f;
+                    break;
+                default:
+                    duration = 0.92f;
+                    entranceDuration = 0.15f;
+                    settleDuration = 0.07f;
+                    peakScale = 1.11f;
+                    floatDistance = 18f;
+                    maxGlowAlpha = 0.66f;
+                    rotationRange = 3f;
+                    break;
+            }
+
+            float settleEnd = entranceDuration + settleDuration;
+            float exitDuration = tier >= ComboTier.Amazing ? 0.26f : 0.22f;
+            float exitStart = duration - exitDuration;
+            float startRotation = Random.Range(-rotationRange, rotationRange);
             Color baseGlowColor = glowOutline.effectColor;
             root.localScale = Vector3.zero;
             root.localRotation = Quaternion.Euler(0f, 0f, startRotation);
@@ -370,7 +425,7 @@ namespace ChromaBlast
                 else if (elapsed >= exitStart)
                 {
                     float exitT = Mathf.SmoothStep(0f, 1f, (elapsed - exitStart) / (duration - exitStart));
-                    scale = Mathf.Lerp(1f, 1.30f, exitT);
+                    scale = Mathf.Lerp(1f, 1.04f, exitT);
                 }
                 else
                 {
@@ -379,10 +434,7 @@ namespace ChromaBlast
 
                 root.localScale = Vector3.one * scale;
                 float rotationSettle = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / settleEnd));
-                float energyWobble = tier >= ComboTier.Amazing
-                    ? Mathf.Sin(Time.unscaledTime * 19f + chain + linesCleared) * 0.9f * (1f - t)
-                    : 0f;
-                root.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(startRotation, 0f, rotationSettle) + energyWobble);
+                root.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(startRotation, 0f, rotationSettle));
                 root.anchoredPosition = Vector2.up * (Mathf.SmoothStep(0f, 1f, t) * floatDistance);
 
                 float fade = elapsed < exitStart
@@ -392,7 +444,7 @@ namespace ChromaBlast
 
                 float glowPulse = 0.5f + Mathf.Sin(Time.unscaledTime * (tier >= ComboTier.Amazing ? 22f : 16f)) * 0.5f;
                 Color animatedGlow = baseGlowColor;
-                animatedGlow.a = Mathf.Lerp(0.42f, tier >= ComboTier.Amazing ? 1f : 0.78f, glowPulse) * fade;
+                animatedGlow.a = Mathf.Lerp(0.36f, maxGlowAlpha, glowPulse) * fade;
                 glowOutline.effectColor = animatedGlow;
                 AnimateComboSparkles(sparkles, t, fade, tier);
                 yield return null;
@@ -429,12 +481,19 @@ namespace ChromaBlast
                 float angle = (i / (float)sparkles.Length) * Mathf.PI * 2f + i * 0.37f;
                 Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
                 Vector2 start = new Vector2(direction.x * 90f, direction.y * 42f);
-                Vector2 end = new Vector2(
-                    direction.x * (tier >= ComboTier.Amazing ? 320f : 245f),
-                    direction.y * (tier >= ComboTier.Amazing ? 122f : 94f));
+                float sparkleDistanceX = tier == ComboTier.Perfect
+                    ? 340f
+                    : tier == ComboTier.Amazing ? 300f : tier == ComboTier.Great ? 250f : 220f;
+                float sparkleDistanceY = tier == ComboTier.Perfect
+                    ? 130f
+                    : tier == ComboTier.Amazing ? 116f : tier == ComboTier.Great ? 96f : 82f;
+                Vector2 end = new Vector2(direction.x * sparkleDistanceX, direction.y * sparkleDistanceY);
                 sparkle.rectTransform.anchoredPosition = Vector2.LerpUnclamped(start, end, burstEase);
                 float life = Mathf.Sin(burstT * Mathf.PI);
-                sparkle.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.45f, 1.20f, life);
+                float peakSparkleScale = tier == ComboTier.Perfect
+                    ? 1.25f
+                    : tier == ComboTier.Amazing ? 1.18f : tier == ComboTier.Great ? 1.12f : 1.05f;
+                sparkle.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.45f, peakSparkleScale, life);
                 sparkle.rectTransform.Rotate(0f, 0f, Time.unscaledDeltaTime * (90f + i * 13f));
                 Color sparkleColor = sparkle.color;
                 sparkleColor.a = life * parentFade * (i % 2 == 0 ? 0.95f : 0.72f);

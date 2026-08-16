@@ -94,9 +94,9 @@ namespace ChromaBlast
             if (label != null)
             {
                 label.text = usablePop
-                    ? $"GATA x{popTargetCount}"
+                    ? $"READY x{popTargetCount}"
                     : ready
-                    ? "GATA 0"
+                    ? "READY 0"
                     : $"{ShortColorName(color)} {amount}/{GameConstants.ChromaThreshold}";
             }
 

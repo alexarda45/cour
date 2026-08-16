@@ -434,7 +434,7 @@ namespace ChromaBlast
                 }
 
                 board.PlayComboShake(scoreManager.Chain);
-                hud.PunchScore(clearResult.pureLines > 0);
+                hud.PunchScore(clearResult, scoreManager.Chain);
                 hud.ShowClearFeedback(
                     clearResult,
                     scoreManager.Chain,
