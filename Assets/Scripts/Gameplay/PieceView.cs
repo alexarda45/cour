@@ -16,6 +16,15 @@ namespace ChromaBlast
         [SerializeField] private float minimumTouchSize = 128f;
 
         private const float TrayPieceVisualFill = 0.98f;
+        private const float PickupPeakScale = 1.075f;
+        private const float DragVisualScale = 1.03f;
+        private const float PickupRiseDuration = 0.065f;
+        private const float PickupSettleDuration = 0.025f;
+        private const float DragVisualResponseSeconds = 0.035f;
+        private const float MaxVisualDragLagPixels = 24f;
+        private const float InvalidHoverTintStrength = 0.16f;
+        private const float PickupShadowAlphaMultiplier = 1.16f;
+        private static readonly Color InvalidHoverTint = new Color(1f, 0.34f, 0.38f, 1f);
 
         private CanvasGroup canvasGroup;
         private Image hitArea;
@@ -33,6 +42,15 @@ namespace ChromaBlast
         private int lastPreviewLineCount = -1;
         private int lastPreviewPureLineCount = -1;
         private Coroutine invalidDropRoutine;
+        private Coroutine pickupScaleRoutine;
+        private Image[] heldVisualImages;
+        private Color[] heldVisualBaseColors;
+        private bool[] heldVisualTintEligible;
+        private bool[] heldVisualShadow;
+        private bool invalidHoverActive;
+        private bool pickupShadowEmphasisActive;
+        private Vector2 visualDragTarget;
+        private bool visualDragTargetInitialized;
 
         public PieceInstance Instance { get; private set; }
         public TraySlot SourceSlot { get; private set; }
@@ -53,11 +71,15 @@ namespace ChromaBlast
         {
             gameManager?.Board?.ClearPreview();
             StopInvalidDropFlash();
+            StopPickupScale();
         }
 
         private void OnDisable()
         {
             gameManager?.Board?.ClearPreview();
+            StopPickupScale();
+            ResetHeldVisualState();
+            visualDragTargetInitialized = false;
         }
 
         public void Initialize(
@@ -75,6 +97,7 @@ namespace ChromaBlast
             dragLayer = dragLayerRoot;
             currentCellSize = Mathf.Max(1f, sharedPreviewCellSize);
             RebuildBlocks(currentCellSize);
+            CacheHeldVisuals();
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -97,7 +120,10 @@ namespace ChromaBlast
             if (RectTransform != null && invalidDropRoutine == null && !dragging)
             {
                 RectTransform.DOKill();
-                RectTransform.localScale = Vector3.one * 1.04f;
+                CaptureHeldVisualBaseColors();
+                SetPickupShadowEmphasis(true);
+                StopPickupScale();
+                pickupScaleRoutine = StartCoroutine(PickupScaleRoutine());
             }
         }
 
@@ -105,8 +131,29 @@ namespace ChromaBlast
         {
             if (!dragging && RectTransform != null && invalidDropRoutine == null)
             {
+                StopPickupScale();
                 RectTransform.localScale = Vector3.one;
+                ResetHeldVisualState();
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (!dragging || !visualDragTargetInitialized || RectTransform == null)
+            {
+                return;
+            }
+
+            float response = Mathf.Max(0.001f, DragVisualResponseSeconds);
+            float blend = 1f - Mathf.Exp(-Time.unscaledDeltaTime / response);
+            Vector2 smoothed = Vector2.Lerp(RectTransform.anchoredPosition, visualDragTarget, blend);
+            Vector2 remaining = visualDragTarget - smoothed;
+            if (remaining.sqrMagnitude > MaxVisualDragLagPixels * MaxVisualDragLagPixels)
+            {
+                smoothed = visualDragTarget - remaining.normalized * MaxVisualDragLagPixels;
+            }
+
+            RectTransform.anchoredPosition = smoothed;
         }
 
         public void OnInitializePotentialDrag(PointerEventData eventData)
@@ -150,10 +197,20 @@ namespace ChromaBlast
             canvasGroup.blocksRaycasts = false;
             canvasGroup.alpha = 1f;
             RectTransform.SetAsLastSibling();
+            if (heldVisualImages == null || heldVisualImages.Length == 0)
+            {
+                CacheHeldVisuals();
+                CaptureHeldVisualBaseColors();
+                SetPickupShadowEmphasis(true);
+            }
             SetDragGlow(false, true);
             ApplyBoardDragLayout();
-            RectTransform.localScale = Vector3.one;
-            MoveToPointer(eventData);
+            if (pickupScaleRoutine == null)
+            {
+                RectTransform.localScale = Vector3.one * DragVisualScale;
+            }
+            visualDragTargetInitialized = false;
+            MoveToPointer(eventData, true);
             UpdatePreview(eventData);
             UpdateDragVisibility(eventData);
         }
@@ -178,6 +235,7 @@ namespace ChromaBlast
             }
 
             dragging = false;
+            visualDragTargetInitialized = false;
             gameManager.Board.ClearPreview();
             lastPreviewLineCount = -1;
             lastPreviewPureLineCount = -1;
@@ -187,6 +245,8 @@ namespace ChromaBlast
             Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
             if (!gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera))
             {
+                StopPickupScale();
+                ResetHeldVisualState();
                 ReturnToSlot();
                 PlayInvalidDropFlash();
                 return;
@@ -196,6 +256,8 @@ namespace ChromaBlast
             bool placed = gameManager.TryPlacePiece(this, origin);
             if (!placed)
             {
+                StopPickupScale();
+                ResetHeldVisualState();
                 ReturnToSlot();
                 PlayInvalidDropFlash();
             }
@@ -249,6 +311,9 @@ namespace ChromaBlast
         public void ReturnToSlot()
         {
             gameManager?.Board.ClearPreview();
+            StopPickupScale();
+            ResetHeldVisualState();
+            visualDragTargetInitialized = false;
             transform.DOKill();
             transform.SetParent(originalParent != null ? originalParent : SourceSlot.PieceContainer, true);
             ApplyBlockLayout(currentCellSize, currentCellSize * TrayPieceVisualFill);
@@ -270,7 +335,7 @@ namespace ChromaBlast
             Destroy(gameObject);
         }
 
-        private void MoveToPointer(PointerEventData eventData)
+        private void MoveToPointer(PointerEventData eventData, bool immediate = false)
         {
             Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
             if (dragLayer == null)
@@ -280,7 +345,12 @@ namespace ChromaBlast
             }
 
             RectTransformUtility.ScreenPointToLocalPointInRectangle(dragLayer, liftedPosition, eventData.pressEventCamera, out Vector2 localPoint);
-            RectTransform.anchoredPosition = localPoint;
+            visualDragTarget = localPoint;
+            if (immediate || !visualDragTargetInitialized)
+            {
+                RectTransform.anchoredPosition = visualDragTarget;
+                visualDragTargetInitialized = true;
+            }
         }
 
         private void UpdatePreview(PointerEventData eventData)
@@ -368,12 +438,163 @@ namespace ChromaBlast
 
         private void SetDragGlow(bool overBoard, bool validPlacement)
         {
-            if (hitArea == null)
+            SetInvalidHover(overBoard && !validPlacement);
+            if (hitArea != null)
+            {
+                hitArea.color = Color.clear;
+            }
+        }
+
+        private IEnumerator PickupScaleRoutine()
+        {
+            Vector3 startScale = RectTransform == null ? Vector3.one : RectTransform.localScale;
+            float elapsed = 0f;
+            while (elapsed < PickupRiseDuration && RectTransform != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / PickupRiseDuration);
+                float eased = 1f - (1f - t) * (1f - t) * (1f - t);
+                RectTransform.localScale = Vector3.Lerp(startScale, Vector3.one * PickupPeakScale, eased);
+                yield return null;
+            }
+
+            if (RectTransform != null)
+            {
+                RectTransform.localScale = Vector3.one * PickupPeakScale;
+            }
+
+            while (!dragging && RectTransform != null)
+            {
+                yield return null;
+            }
+
+            if (dragging && RectTransform != null)
+            {
+                elapsed = 0f;
+                Vector3 peakScale = RectTransform.localScale;
+                while (elapsed < PickupSettleDuration && RectTransform != null)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float t = Mathf.Clamp01(elapsed / PickupSettleDuration);
+                    float eased = t * t * (3f - 2f * t);
+                    RectTransform.localScale = Vector3.Lerp(peakScale, Vector3.one * DragVisualScale, eased);
+                    yield return null;
+                }
+
+                if (RectTransform != null)
+                {
+                    RectTransform.localScale = Vector3.one * DragVisualScale;
+                }
+            }
+
+            pickupScaleRoutine = null;
+        }
+
+        private void StopPickupScale()
+        {
+            if (pickupScaleRoutine != null)
+            {
+                StopCoroutine(pickupScaleRoutine);
+                pickupScaleRoutine = null;
+            }
+        }
+
+        private void CacheHeldVisuals()
+        {
+            heldVisualImages = blockRoot == null
+                ? GetComponentsInChildren<Image>(true)
+                : blockRoot.GetComponentsInChildren<Image>(true);
+            heldVisualBaseColors = new Color[heldVisualImages.Length];
+            heldVisualTintEligible = new bool[heldVisualImages.Length];
+            heldVisualShadow = new bool[heldVisualImages.Length];
+
+            for (int i = 0; i < heldVisualImages.Length; i++)
+            {
+                Image target = heldVisualImages[i];
+                bool isShadow = target != null && target.name.IndexOf("Shadow", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                heldVisualShadow[i] = isShadow;
+                heldVisualTintEligible[i] = target != null && target != hitArea && !isShadow;
+                heldVisualBaseColors[i] = target == null ? Color.white : target.color;
+            }
+        }
+
+        private void CaptureHeldVisualBaseColors()
+        {
+            if (heldVisualImages == null || heldVisualBaseColors == null)
             {
                 return;
             }
 
-            hitArea.color = Color.clear;
+            invalidHoverActive = false;
+            pickupShadowEmphasisActive = false;
+            for (int i = 0; i < heldVisualImages.Length; i++)
+            {
+                if (heldVisualImages[i] != null)
+                {
+                    heldVisualBaseColors[i] = heldVisualImages[i].color;
+                }
+            }
+        }
+
+        private void SetInvalidHover(bool active)
+        {
+            if (invalidHoverActive == active)
+            {
+                return;
+            }
+
+            invalidHoverActive = active;
+            RefreshHeldVisualColors();
+        }
+
+        private void SetPickupShadowEmphasis(bool active)
+        {
+            if (pickupShadowEmphasisActive == active)
+            {
+                return;
+            }
+
+            pickupShadowEmphasisActive = active;
+            RefreshHeldVisualColors();
+        }
+
+        private void ResetHeldVisualState()
+        {
+            invalidHoverActive = false;
+            pickupShadowEmphasisActive = false;
+            RefreshHeldVisualColors();
+        }
+
+        private void RefreshHeldVisualColors()
+        {
+            if (heldVisualImages == null || heldVisualBaseColors == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < heldVisualImages.Length; i++)
+            {
+                Image target = heldVisualImages[i];
+                if (target == null)
+                {
+                    continue;
+                }
+
+                Color color = heldVisualBaseColors[i];
+                if (pickupShadowEmphasisActive && heldVisualShadow[i])
+                {
+                    color.a = Mathf.Clamp01(color.a * PickupShadowAlphaMultiplier);
+                }
+
+                if (invalidHoverActive && heldVisualTintEligible[i])
+                {
+                    float alpha = color.a;
+                    color = Color.Lerp(color, InvalidHoverTint, InvalidHoverTintStrength);
+                    color.a = alpha;
+                }
+
+                target.color = color;
+            }
         }
 
         private void PlayInvalidDropFlash()
