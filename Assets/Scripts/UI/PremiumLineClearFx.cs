@@ -83,7 +83,11 @@ namespace ChromaBlast
 
             int requestedLines = Mathf.Clamp(result.linesCleared, 1, BoardSize * 2);
             int exactLineCount = clearedRows.Count + clearedColumns.Count;
-            float strength = Mathf.Clamp01(0.82f + Mathf.Max(0, chain - 1) * 0.045f);
+            float strength = Mathf.Clamp01(
+                0.82f
+                + Mathf.Max(0, requestedLines - 1) * 0.09f
+                + Mathf.Max(0, result.pureLines) * 0.04f
+                + Mathf.Max(0, chain - 1) * 0.045f);
 
             if (exactLineCount > 0)
             {

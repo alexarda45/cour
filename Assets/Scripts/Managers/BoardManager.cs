@@ -850,7 +850,7 @@ namespace ChromaBlast
             Color pieceColor = ChromaPalette.GetColor(completionColor);
             Color anticipationColor = Color.Lerp(pieceColor, Color.white, 0.34f);
             FlashCompletedLines(rows, columns, anticipationColor);
-            PlayCompletedLineGlow(rows, columns, pieceColor);
+            PlayCompletedLineGlow(rows, columns, pieceColor, result.pureLines);
 
             HashSet<Vector2Int> toClear = new HashSet<Vector2Int>();
             for (int i = 0; i < rows.Count; i++)
@@ -884,7 +884,10 @@ namespace ChromaBlast
                 float clearDelay = CalculateLineClearDelay(cell, rows, columns);
                 cells[cell.x, cell.y]?.PlayFlash(anticipationColor, clearDelay);
                 result.AddClearedCell(block.Color);
-                block.PlayClear(clearDelay);
+                float clearStrength = Mathf.Clamp01(
+                    Mathf.Max(0, result.linesCleared - 1) * 0.5f
+                    + result.pureLines * 0.25f);
+                block.PlayClear(clearDelay, clearStrength);
                 blocks[cell.x, cell.y] = null;
             }
 
@@ -1487,7 +1490,7 @@ namespace ChromaBlast
             }
         }
 
-        private void PlayCompletedLineGlow(List<int> rows, List<int> columns, Color color)
+        private void PlayCompletedLineGlow(List<int> rows, List<int> columns, Color color, int pureLines)
         {
             if (!MobilePerformance.UseFullJuice() || lineClearEffectLayer == null)
             {
@@ -1495,7 +1498,10 @@ namespace ChromaBlast
             }
 
             int totalLines = rows.Count + columns.Count;
-            float intensity = Mathf.Clamp(1f + Mathf.Max(0, totalLines - 1) * 0.045f, 1f, 1.18f);
+            float intensity = Mathf.Clamp(
+                1f + Mathf.Max(0, totalLines - 1) * 0.11f + Mathf.Max(0, pureLines) * 0.05f,
+                1f,
+                1.32f);
             int effectGeneration = lineClearEffectGeneration;
             int order = 0;
             for (int i = 0; i < rows.Count; i++)

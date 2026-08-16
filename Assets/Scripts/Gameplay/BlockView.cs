@@ -424,7 +424,7 @@ namespace ChromaBlast
             }
         }
 
-        public void PlayClear(float delay)
+        public void PlayClear(float delay, float impactStrength = 0f)
         {
             EndCompletionSpritePreview();
             if (!MobilePerformance.UseFullJuice())
@@ -433,7 +433,7 @@ namespace ChromaBlast
                 return;
             }
 
-            RunVisualRoutine(ClearJuicyRoutine(delay));
+            RunVisualRoutine(ClearJuicyRoutine(delay, impactStrength));
         }
 
         private IEnumerator QuickClearRoutine(float delay)
@@ -526,15 +526,16 @@ namespace ChromaBlast
             visualRoutine = null;
         }
 
-        private IEnumerator ClearJuicyRoutine(float delay)
+        private IEnumerator ClearJuicyRoutine(float delay, float impactStrength)
         {
             if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
 
-            SetAlpha(glowImage, MobilePerformance.LowEndMode ? 0.24f : 0.68f);
-            SetAlpha(highlightImage, MobilePerformance.LowEndMode ? 0.18f : 0.56f);
+            float clearStrength = Mathf.Clamp01(impactStrength);
+            SetAlpha(glowImage, MobilePerformance.LowEndMode ? 0.24f : Mathf.Lerp(0.68f, 0.80f, clearStrength));
+            SetAlpha(highlightImage, MobilePerformance.LowEndMode ? 0.18f : Mathf.Lerp(0.56f, 0.68f, clearStrength));
 
             UnityEngine.Color imageColor = image == null ? UnityEngine.Color.white : image.color;
             UnityEngine.Color tileColor = tileImage == null ? UnityEngine.Color.white : tileImage.color;
@@ -544,11 +545,12 @@ namespace ChromaBlast
             UnityEngine.Color innerColor = innerImage == null ? UnityEngine.Color.white : innerImage.color;
             UnityEngine.Color shineColor = shineImage == null ? UnityEngine.Color.white : shineImage.color;
 
-            yield return ScaleRoutine(Vector3.one, Vector3.one * 1.12f, 0.06f);
+            float peakScale = Mathf.Lerp(1.15f, 1.19f, clearStrength);
+            yield return ScaleRoutine(Vector3.one, Vector3.one * peakScale, 0.045f);
 
             float elapsed = 0f;
-            const float duration = 0.14f;
-            Vector3 startScale = Vector3.one * 1.12f;
+            const float duration = 0.13f;
+            Vector3 startScale = Vector3.one * peakScale;
             Vector3 endScale = Vector3.zero;
             while (elapsed < duration && this != null)
             {
