@@ -350,13 +350,16 @@ MonoBehaviour:
   audioListener: {fileID: 1477513779}
   musicClip: {fileID: 0}
   clickClip: {fileID: 8300000, guid: 1b7a3197694c418f8f233e81a7e96318, type: 3}
-  placeClip: {fileID: 8300000, guid: ceba4596d5bc4d5e9469d2ffe7717810, type: 3}
-  clearClip: {fileID: 8300000, guid: b5c17f5037254468b3fa353fb4890cf4, type: 3}
-  pureClip: {fileID: 8300000, guid: f19b6bcf16d546be90fb755c7e878b92, type: 3}
-  popClip: {fileID: 8300000, guid: 08158a0a6c7b4de8a3f1b8cef2a57d45, type: 3}
+  pickupClip: {fileID: 8300000, guid: 2f280628d71e47fb8583542df9343886, type: 3}
+  placeClip: {fileID: 8300000, guid: aa8f670484224540b490b94a9b7e241b, type: 3}
+  invalidClip: {fileID: 8300000, guid: e072cc589af6433c907620476dd9006d, type: 3}
+  clearClip: {fileID: 8300000, guid: 8fc217d809244ea897e2c83e71b9e897, type: 3}
+  strongClearClip: {fileID: 8300000, guid: 4d5393a9ccf5416589ec6241b3b996c7, type: 3}
+  pureClip: {fileID: 8300000, guid: 45c3f16b891f44f2b23ed5931e61f00c, type: 3}
+  popClip: {fileID: 8300000, guid: 0469396a5c124f2480a6f6280ce4e28c, type: 3}
   gameOverClip: {fileID: 8300000, guid: 20a814e24e0d4411ab80900f44486719, type: 3}
-  comboSmallClip: {fileID: 8300000, guid: 1d55b55b0b444dc49904ca599548d658, type: 3}
-  comboBigClip: {fileID: 8300000, guid: f19b6bcf16d546be90fb755c7e878b92, type: 3}
+  comboSmallClip: {fileID: 8300000, guid: ba2e84ebf28a457f8f3d23f292b543a6, type: 3}
+  comboBigClip: {fileID: 8300000, guid: 48a13b8bc2074f3da9c818bbbfeb6ea2, type: 3}
   toggleClip: {fileID: 8300000, guid: fefd870889f048afaa9c1b049d334bbf, type: 3}
 --- !u!114 &1477513781
 MonoBehaviour:
