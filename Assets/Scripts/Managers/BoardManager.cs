@@ -10,6 +10,26 @@ namespace ChromaBlast
         private const float FinalBoardGridPaddingX = 16f;
         private const float FinalBoardGridPaddingY = 9.5f;
         private const int MaxMagneticSnapRadius = 1;
+        private const int PopParticlePrewarmPerColor = 8;
+        private const int PopParticleMaximumPerColor = 16;
+        private const float PooledParticleReturnDelay = 0.60f;
+
+        private sealed class PooledClearParticle
+        {
+            public ParticleSystem particleSystem;
+            public Vector3 baseScale;
+            public bool inUse;
+            public float releaseTime;
+        }
+
+        private struct ScheduledParticleSpawn
+        {
+            public ChromaColor color;
+            public Vector3 worldPosition;
+            public float scaleMultiplier;
+            public float spawnTime;
+            public int popSequenceId;
+        }
 
         [Header("UI")]
         [SerializeField] private RectTransform boardRoot;
@@ -31,12 +51,18 @@ namespace ChromaBlast
         private readonly HashSet<Vector2Int> completionGlowCoordinates = new HashSet<Vector2Int>();
         private readonly List<LineGlowVisual> lineGlowPool = new List<LineGlowVisual>();
         private readonly List<IntersectionFlareVisual> intersectionFlarePool = new List<IntersectionFlareVisual>();
+        private readonly List<PooledClearParticle>[] clearParticlePools = new List<PooledClearParticle>[GameConstants.ColorCount];
+        private readonly List<PooledClearParticle> activeClearParticles = new List<PooledClearParticle>(GameConstants.ColorCount * PopParticleMaximumPerColor);
+        private readonly List<ScheduledParticleSpawn> scheduledPopParticleSpawns = new List<ScheduledParticleSpawn>(GameConstants.BoardSize * GameConstants.BoardSize);
 
         private RectTransform lineClearEffectLayer;
         private RectTransform completionGlowLayer;
+        private Transform clearParticlePoolRoot;
         private Coroutine completionPreviewPulseRoutine;
+        private Coroutine particlePoolPrewarmRoutine;
         private int activeCompletionGlows;
         private int lineClearEffectGeneration;
+        private int nextPopParticleSequenceId;
         private string previewShapeId;
         private Vector2Int previewOrigin = new Vector2Int(int.MinValue, int.MinValue);
 
@@ -49,11 +75,50 @@ namespace ChromaBlast
         public float CellVisualSize => Mathf.Max(1f, CellSize - cellPadding * 2f);
         public Vector2 LastClearScreenPosition { get; private set; }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public int LastPopPoppedTileCount { get; private set; }
+        public int LastPopParticlePoolSize { get; private set; }
+        public int LastPopPooledInstancesReused { get; private set; }
+        public int LastPopParticlePoolExpansions { get; private set; }
+        public int LastPopParticleInstantiations { get; private set; }
+        public int ActivePooledParticleCount => activeClearParticles.Count;
+#endif
+
         private void Awake()
         {
             EnsureLayers();
             EnsureRuntimePrefabs();
+            InitializeClearParticlePools();
             BuildCells();
+        }
+
+        private void Start()
+        {
+            if (MobilePerformance.UseFullJuice())
+            {
+                particlePoolPrewarmRoutine = StartCoroutine(PrewarmClearParticlePool());
+            }
+        }
+
+        private void Update()
+        {
+            ProcessScheduledPopParticleSpawns();
+            ReturnFinishedPooledParticles();
+        }
+
+        private void OnDestroy()
+        {
+            if (particlePoolPrewarmRoutine != null)
+            {
+                StopCoroutine(particlePoolPrewarmRoutine);
+                particlePoolPrewarmRoutine = null;
+            }
+
+            if (clearParticlePoolRoot != null)
+            {
+                Destroy(clearParticlePoolRoot.gameObject);
+                clearParticlePoolRoot = null;
+            }
         }
 
         public void BuildCells()
@@ -966,6 +1031,13 @@ namespace ChromaBlast
                 }
             }
 
+            Camera popParticleCamera = toPop.Count > 0 && MobilePerformance.UseFullJuice()
+                ? Camera.main
+                : null;
+            int popParticleSequenceId = toPop.Count > 0
+                ? BeginPopParticleSequence(toPop.Count)
+                : 0;
+
             for (int i = 0; i < toPop.Count; i++)
             {
                 Vector2Int cell = toPop[i];
@@ -975,7 +1047,7 @@ namespace ChromaBlast
                     continue;
                 }
 
-                SpawnClearParticles(block, i * 0.006f, 1.22f);
+                SchedulePopClearParticles(block, i * 0.006f, 1.22f, popParticleSequenceId, popParticleCamera);
                 Color popFlash = Color.Lerp(ChromaPalette.GetColor(color), Color.white, 0.66f);
                 cells[cell.x, cell.y]?.PlayFlash(popFlash, i * 0.006f);
                 block.PlayClear(i * 0.009f);
@@ -1930,73 +2002,359 @@ namespace ChromaBlast
             return new Color(0.1f, 0.9f, 1f, 1f);
         }
 
-        private void SpawnClearParticles(BlockView block, float delay = 0f, float scaleMultiplier = 1f)
+        private void SpawnClearParticles(BlockView block)
         {
-            if (block == null)
+            if (!MobilePerformance.UseFullJuice() || block == null || block.RectTransform == null)
             {
                 return;
             }
 
-            SpawnClearParticles(block, block.Color, delay, scaleMultiplier);
-        }
+            // Rewarded-revive clears are capped and intentionally retain their
+            // existing presentation path. POP uses the pooled path below.
+            if (clearParticlesByColor == null || clearParticlesByColor.Length <= (int)block.Color)
+            {
+                return;
+            }
 
-        private void SpawnClearParticles(BlockView block, ChromaColor effectColor, float delay = 0f, float scaleMultiplier = 1f)
-        {
-            if (!MobilePerformance.UseFullJuice() || block == null)
+            ParticleSystem prefab = clearParticlesByColor[(int)block.Color];
+            Camera camera = Camera.main;
+            if (prefab == null || camera == null)
             {
                 return;
             }
 
             Vector3 screen = RectTransformUtility.WorldToScreenPoint(null, block.RectTransform.position);
+            Vector3 world = camera.ScreenToWorldPoint(new Vector3(
+                screen.x,
+                screen.y,
+                Mathf.Abs(camera.transform.position.z)));
+            ParticleSystem particles = Instantiate(prefab, world, Quaternion.identity);
+            particles.Play();
+            Destroy(particles.gameObject, 2f);
+        }
 
-            if (delay <= 0.01f)
+        private int BeginPopParticleSequence(int poppedTileCount)
+        {
+            nextPopParticleSequenceId++;
+            if (nextPopParticleSequenceId == int.MaxValue)
             {
-                SpawnClearParticlesAt(effectColor, screen, scaleMultiplier);
+                nextPopParticleSequenceId = 1;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastPopPoppedTileCount = poppedTileCount;
+            LastPopParticlePoolSize = GetTotalPooledParticleCount();
+            LastPopPooledInstancesReused = 0;
+            LastPopParticlePoolExpansions = 0;
+            LastPopParticleInstantiations = 0;
+#endif
+            return nextPopParticleSequenceId;
+        }
+
+        private void SchedulePopClearParticles(
+            BlockView block,
+            float delay,
+            float scaleMultiplier,
+            int popSequenceId,
+            Camera particleCamera)
+        {
+            if (!MobilePerformance.UseFullJuice() || block == null || block.RectTransform == null)
+            {
                 return;
             }
 
-            StartCoroutine(SpawnClearParticlesDelayed(effectColor, screen, delay, scaleMultiplier));
-        }
-
-        private IEnumerator SpawnClearParticlesDelayed(ChromaColor color, Vector3 screen, float delay, float scaleMultiplier)
-        {
-            if (delay > 0f)
+            Vector3 screen = RectTransformUtility.WorldToScreenPoint(null, block.RectTransform.position);
+            if (!TryGetParticleWorldPosition(screen, particleCamera, out Vector3 world))
             {
-                yield return new WaitForSeconds(delay);
+                return;
             }
 
-            SpawnClearParticlesAt(color, screen, scaleMultiplier);
+            scheduledPopParticleSpawns.Add(new ScheduledParticleSpawn
+            {
+                color = block.Color,
+                worldPosition = world,
+                scaleMultiplier = scaleMultiplier,
+                spawnTime = Time.time + Mathf.Max(0f, delay),
+                popSequenceId = popSequenceId
+            });
         }
 
-        private void SpawnClearParticlesAt(ChromaColor color, Vector3 screen, float scaleMultiplier)
+        private void ProcessScheduledPopParticleSpawns()
+        {
+            if (scheduledPopParticleSpawns.Count == 0)
+            {
+                return;
+            }
+
+            if (!MobilePerformance.UseFullJuice())
+            {
+                scheduledPopParticleSpawns.Clear();
+                return;
+            }
+
+            float now = Time.time;
+            for (int i = scheduledPopParticleSpawns.Count - 1; i >= 0; i--)
+            {
+                ScheduledParticleSpawn scheduled = scheduledPopParticleSpawns[i];
+                if (scheduled.spawnTime > now)
+                {
+                    continue;
+                }
+
+                PlayPooledClearParticles(
+                    scheduled.color,
+                    scheduled.worldPosition,
+                    scheduled.scaleMultiplier,
+                    scheduled.popSequenceId);
+
+                int lastIndex = scheduledPopParticleSpawns.Count - 1;
+                scheduledPopParticleSpawns[i] = scheduledPopParticleSpawns[lastIndex];
+                scheduledPopParticleSpawns.RemoveAt(lastIndex);
+            }
+        }
+
+        private bool TryGetParticleWorldPosition(Vector3 screen, Camera camera, out Vector3 world)
+        {
+            if (camera == null)
+            {
+                world = Vector3.zero;
+                return false;
+            }
+
+            world = camera.ScreenToWorldPoint(new Vector3(
+                screen.x,
+                screen.y,
+                Mathf.Abs(camera.transform.position.z)));
+            return true;
+        }
+
+        private void EnsureClearParticlePoolRoot()
+        {
+            if (clearParticlePoolRoot != null)
+            {
+                return;
+            }
+
+            GameObject poolObject = new GameObject("ClearParticlePool");
+            clearParticlePoolRoot = poolObject.transform;
+        }
+
+        private void InitializeClearParticlePools()
+        {
+            for (int colorIndex = 0; colorIndex < GameConstants.ColorCount; colorIndex++)
+            {
+                if (clearParticlePools[colorIndex] == null)
+                {
+                    clearParticlePools[colorIndex] = new List<PooledClearParticle>(PopParticleMaximumPerColor);
+                }
+            }
+        }
+
+        private IEnumerator PrewarmClearParticlePool()
+        {
+            for (int instanceIndex = 0; instanceIndex < PopParticlePrewarmPerColor; instanceIndex++)
+            {
+                for (int colorIndex = 0; colorIndex < GameConstants.ColorCount; colorIndex++)
+                {
+                    CreatePooledClearParticle((ChromaColor)colorIndex);
+                }
+
+                // Spread the 32-instance prewarm across setup frames, never across a move.
+                yield return null;
+            }
+
+            particlePoolPrewarmRoutine = null;
+        }
+
+        private List<PooledClearParticle> GetClearParticlePool(ChromaColor color)
+        {
+            int colorIndex = Mathf.Clamp((int)color, 0, GameConstants.ColorCount - 1);
+            if (clearParticlePools[colorIndex] == null)
+            {
+                clearParticlePools[colorIndex] = new List<PooledClearParticle>(PopParticleMaximumPerColor);
+            }
+
+            return clearParticlePools[colorIndex];
+        }
+
+        private PooledClearParticle CreatePooledClearParticle(ChromaColor color)
+        {
+            if (clearParticlesByColor == null || clearParticlesByColor.Length <= (int)color)
+            {
+                return null;
+            }
+
+            ParticleSystem prefab = clearParticlesByColor[(int)color];
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            List<PooledClearParticle> pool = GetClearParticlePool(color);
+            if (pool.Count >= PopParticleMaximumPerColor)
+            {
+                return null;
+            }
+
+            EnsureClearParticlePoolRoot();
+            ParticleSystem particles = Instantiate(prefab, clearParticlePoolRoot);
+            particles.name = $"Pooled_{prefab.name}_{pool.Count}";
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particles.gameObject.SetActive(false);
+
+            PooledClearParticle pooled = new PooledClearParticle
+            {
+                particleSystem = particles,
+                baseScale = particles.transform.localScale
+            };
+            pool.Add(pooled);
+            return pooled;
+        }
+
+        private void PlayPooledClearParticles(ChromaColor color, Vector3 worldPosition, float scaleMultiplier, int popSequenceId)
         {
             if (!MobilePerformance.UseFullJuice())
             {
                 return;
             }
 
-            if (clearParticlesByColor == null || clearParticlesByColor.Length <= (int)color)
+            PooledClearParticle pooled = AcquirePooledClearParticle(color, popSequenceId);
+            if (pooled == null || pooled.particleSystem == null)
             {
                 return;
             }
 
-            ParticleSystem prefab = clearParticlesByColor[(int)color];
-            if (prefab == null)
+            Transform particleTransform = pooled.particleSystem.transform;
+            particleTransform.position = worldPosition;
+            particleTransform.rotation = Quaternion.identity;
+            particleTransform.localScale = pooled.baseScale * Mathf.Clamp(scaleMultiplier, 0.75f, 1.35f);
+
+            pooled.particleSystem.gameObject.SetActive(true);
+            pooled.particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            pooled.particleSystem.Play(true);
+            pooled.inUse = true;
+            pooled.releaseTime = Time.time + PooledParticleReturnDelay;
+            activeClearParticles.Add(pooled);
+        }
+
+        private PooledClearParticle AcquirePooledClearParticle(ChromaColor color, int popSequenceId)
+        {
+            List<PooledClearParticle> pool = GetClearParticlePool(color);
+            for (int i = 0; i < pool.Count; i++)
+            {
+                PooledClearParticle pooled = pool[i];
+                if (pooled != null && pooled.particleSystem != null && !pooled.inUse)
+                {
+                    RecordPooledParticleReuse(popSequenceId);
+                    return pooled;
+                }
+            }
+
+            if (pool.Count < PopParticleMaximumPerColor)
+            {
+                PooledClearParticle expanded = CreatePooledClearParticle(color);
+                if (expanded != null)
+                {
+                    RecordPooledParticleExpansion(popSequenceId);
+                    return expanded;
+                }
+            }
+
+            PooledClearParticle oldestActive = null;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                PooledClearParticle pooled = pool[i];
+                if (pooled != null
+                    && pooled.particleSystem != null
+                    && pooled.inUse
+                    && (oldestActive == null || pooled.releaseTime < oldestActive.releaseTime))
+                {
+                    oldestActive = pooled;
+                }
+            }
+
+            if (oldestActive == null)
+            {
+                return null;
+            }
+
+            ReturnPooledClearParticle(oldestActive);
+            RecordPooledParticleReuse(popSequenceId);
+            return oldestActive;
+        }
+
+        private void ReturnFinishedPooledParticles()
+        {
+            float now = Time.time;
+            for (int i = activeClearParticles.Count - 1; i >= 0; i--)
+            {
+                PooledClearParticle pooled = activeClearParticles[i];
+                if (pooled == null || pooled.particleSystem == null || now >= pooled.releaseTime)
+                {
+                    ReturnPooledClearParticle(pooled);
+                }
+            }
+        }
+
+        private void ReturnPooledClearParticle(PooledClearParticle pooled)
+        {
+            if (pooled == null)
             {
                 return;
             }
 
-            Camera camera = Camera.main;
-            if (camera == null)
+            activeClearParticles.Remove(pooled);
+            pooled.inUse = false;
+            pooled.releaseTime = 0f;
+
+            if (pooled.particleSystem == null)
             {
                 return;
             }
 
-            Vector3 world = camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, Mathf.Abs(camera.transform.position.z)));
-            ParticleSystem particles = Instantiate(prefab, world, Quaternion.identity);
-            particles.transform.localScale *= Mathf.Clamp(scaleMultiplier, 0.75f, 1.35f);
-            particles.Play();
-            Destroy(particles.gameObject, 2f);
+            pooled.particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            Transform particleTransform = pooled.particleSystem.transform;
+            particleTransform.position = Vector3.zero;
+            particleTransform.rotation = Quaternion.identity;
+            particleTransform.localScale = pooled.baseScale;
+            pooled.particleSystem.gameObject.SetActive(false);
+        }
+
+        private int GetTotalPooledParticleCount()
+        {
+            int total = 0;
+            for (int i = 0; i < clearParticlePools.Length; i++)
+            {
+                if (clearParticlePools[i] != null)
+                {
+                    total += clearParticlePools[i].Count;
+                }
+            }
+
+            return total;
+        }
+
+        private void RecordPooledParticleReuse(int popSequenceId)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (popSequenceId != 0 && popSequenceId == nextPopParticleSequenceId)
+            {
+                LastPopPooledInstancesReused++;
+                LastPopParticlePoolSize = GetTotalPooledParticleCount();
+            }
+#endif
+        }
+
+        private void RecordPooledParticleExpansion(int popSequenceId)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (popSequenceId != 0 && popSequenceId == nextPopParticleSequenceId)
+            {
+                LastPopParticlePoolExpansions++;
+                LastPopParticleInstantiations++;
+                LastPopParticlePoolSize = GetTotalPooledParticleCount();
+            }
+#endif
         }
 
         private void UpdateLastClearScreenPosition(HashSet<Vector2Int> clearedCells)
