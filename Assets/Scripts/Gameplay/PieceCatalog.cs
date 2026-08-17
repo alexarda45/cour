@@ -72,12 +72,22 @@ namespace ChromaBlast
         public static PieceInstance[] RandomSet(System.Random random, float difficulty01)
         {
             PieceInstance[] set = new PieceInstance[GameConstants.TraySize];
-            for (int i = 0; i < set.Length; i++)
+            FillRandomSet(set, random, difficulty01);
+            return set;
+        }
+
+        public static void FillRandomSet(PieceInstance[] destination, System.Random random, float difficulty01)
+        {
+            if (destination == null || random == null)
             {
-                set[i] = RandomPiece(random, difficulty01);
+                return;
             }
 
-            return set;
+            int count = Mathf.Min(destination.Length, GameConstants.TraySize);
+            for (int i = 0; i < count; i++)
+            {
+                destination[i] = RandomPiece(random, difficulty01);
+            }
         }
 
         private static PieceData WeightedRandomPiece(System.Random random, float difficulty01)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +14,23 @@ namespace ChromaBlast
         private static readonly Vector2 SlotSize = new Vector2(300f, 260f);
         private static readonly float[] SlotCentres = { -310f, 0f, 310f };
 
+        private sealed class GenerationMetrics
+        {
+            public bool placementOptionsReady;
+            public int placementOptions;
+            public bool clearOpportunitiesReady;
+            public int clearOpportunities;
+            public bool setupOpportunityReady;
+            public int setupOpportunity;
+
+            public void Reset()
+            {
+                placementOptionsReady = false;
+                clearOpportunitiesReady = false;
+                setupOpportunityReady = false;
+            }
+        }
+
         [SerializeField] private TraySlot[] traySlots;
         [SerializeField] private PieceView piecePrefab;
         [SerializeField] private BlockView pieceBlockPrefab;
@@ -20,6 +38,18 @@ namespace ChromaBlast
 
         private GameManager gameManager;
         private float sharedPreviewCellSize = SharedTrayCellSize;
+        private readonly Dictionary<string, GenerationMetrics> generationMetricCache = new Dictionary<string, GenerationMetrics>(32);
+        private BoardManager generationMetricBoard;
+        private bool generationEmptyCellsReady;
+        private int generationEmptyCells;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public int LastGenerationCandidateCount { get; private set; }
+        public int LastGenerationMetricEvaluations { get; private set; }
+        public int LastGenerationMetricCacheHits { get; private set; }
+        public int LastGenerationChunks { get; private set; }
+        public double LastGenerationElapsedMilliseconds { get; private set; }
+#endif
 
         public void Initialize(GameManager owner)
         {
@@ -85,45 +115,69 @@ namespace ChromaBlast
 
             difficulty01 = Mathf.Clamp01(difficulty01);
             assist01 = Mathf.Clamp01(assist01);
-            PieceInstance[] bestSet = null;
-            int bestScore = int.MinValue;
-            int bestFitCount = 0;
-
-            for (int attempt = 0; attempt < GameConstants.GuaranteedSetAttempts; attempt++)
+            BeginGenerationMetricCache(board);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            LastGenerationCandidateCount = 0;
+            LastGenerationMetricEvaluations = 0;
+            LastGenerationMetricCacheHits = 0;
+            LastGenerationChunks = 1;
+#endif
+            try
             {
-                PieceInstance[] set = PieceCatalog.RandomSet(random, difficulty01);
-                int fitCount = CountFittingPieces(board, set);
-                int score = ScoreSetForBoard(board, set, fitCount, difficulty01, assist01);
+                PieceInstance[] candidateSet = new PieceInstance[GameConstants.TraySize];
+                PieceInstance[] bestSet = null;
+                int bestScore = int.MinValue;
+                int bestFitCount = 0;
 
-                if (score > bestScore)
+                for (int attempt = 0; attempt < GameConstants.GuaranteedSetAttempts; attempt++)
                 {
-                    bestSet = set;
-                    bestScore = score;
-                    bestFitCount = fitCount;
+                    PieceCatalog.FillRandomSet(candidateSet, random, difficulty01);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LastGenerationCandidateCount++;
+#endif
+                    int fitCount = CountFittingPieces(board, candidateSet);
+                    int score = ScoreSetForBoard(board, candidateSet, fitCount, difficulty01, assist01);
+
+                    if (score > bestScore)
+                    {
+                        bestSet ??= new PieceInstance[GameConstants.TraySize];
+                        Array.Copy(candidateSet, bestSet, GameConstants.TraySize);
+                        bestScore = score;
+                        bestFitCount = fitCount;
+                    }
                 }
-            }
 
-            if (bestSet != null && bestFitCount > 0)
-            {
-                ImproveSetWithRescuePieces(board, bestSet, random, difficulty01, assist01);
-                EnsureSatisfyingPiece(board, bestSet, random, difficulty01, assist01);
-                EnsureComebackPiece(board, bestSet, random, assist01);
-                EnsureImmediateClearPiece(board, bestSet, random, assist01);
-                EnsureJuicySetMass(board, bestSet, random, difficulty01);
-                EnsureSatisfyingSetShapeMix(board, bestSet, random, difficulty01, assist01);
-                SpawnSet(bestSet);
+                if (bestSet != null && bestFitCount > 0)
+                {
+                    ImproveSetWithRescuePieces(board, bestSet, random, difficulty01, assist01);
+                    EnsureSatisfyingPiece(board, bestSet, random, difficulty01, assist01);
+                    EnsureComebackPiece(board, bestSet, random, assist01);
+                    EnsureImmediateClearPiece(board, bestSet, random, assist01);
+                    EnsureJuicySetMass(board, bestSet, random, difficulty01);
+                    EnsureSatisfyingSetShapeMix(board, bestSet, random, difficulty01, assist01);
+                    SpawnSet(bestSet);
+                    RefreshFitHints(board);
+                    return;
+                }
+
+                PieceInstance[] fallback = new[]
+                {
+                    new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount)),
+                    new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount)),
+                    new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount))
+                };
+                SpawnSet(fallback);
                 RefreshFitHints(board);
-                return;
             }
-
-            PieceInstance[] fallback = new[]
+            finally
             {
-                new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount)),
-                new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount)),
-                new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount))
-            };
-            SpawnSet(fallback);
-            RefreshFitHints(board);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                stopwatch.Stop();
+                LastGenerationElapsedMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+#endif
+                EndGenerationMetricCache();
+            }
         }
 
         public void SpawnSet(PieceInstance[] set)
@@ -194,8 +248,8 @@ namespace ChromaBlast
                     continue;
                 }
 
-                bool canFit = board != null && board.CanAnyPieceFit(piece.Instance);
-                int clearOpportunities = canFit ? board.CountClearOpportunities(piece.Instance) : 0;
+                bool canFit = board != null && CanAnyPieceFit(board, piece.Instance);
+                int clearOpportunities = canFit ? GetClearOpportunities(board, piece.Instance) : 0;
                 piece.SetCanFitNow(canFit, clearOpportunities);
             }
         }
@@ -427,12 +481,155 @@ namespace ChromaBlast
             return pieceObject.GetComponent<PieceView>();
         }
 
+        private void BeginGenerationMetricCache(BoardManager board)
+        {
+            foreach (GenerationMetrics metrics in generationMetricCache.Values)
+            {
+                metrics.Reset();
+            }
+
+            generationMetricBoard = board;
+            generationEmptyCellsReady = false;
+            generationEmptyCells = 0;
+        }
+
+        private void EndGenerationMetricCache()
+        {
+            generationMetricBoard = null;
+            generationEmptyCellsReady = false;
+        }
+
+        private GenerationMetrics GetGenerationMetrics(BoardManager board, PieceInstance piece)
+        {
+            if (board == null || piece == null || generationMetricBoard != board)
+            {
+                return null;
+            }
+
+            string shapeId = piece.shapeId;
+            if (!generationMetricCache.TryGetValue(shapeId, out GenerationMetrics metrics))
+            {
+                metrics = new GenerationMetrics();
+                generationMetricCache.Add(shapeId, metrics);
+            }
+            return metrics;
+        }
+
+        private int GetEmptyCells(BoardManager board)
+        {
+            if (board == null)
+            {
+                return 0;
+            }
+
+            if (generationMetricBoard != board)
+            {
+                return board.CountEmptyCells();
+            }
+
+            if (!generationEmptyCellsReady)
+            {
+                generationEmptyCells = board.CountEmptyCells();
+                generationEmptyCellsReady = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricEvaluations++;
+#endif
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                LastGenerationMetricCacheHits++;
+            }
+#endif
+            return generationEmptyCells;
+        }
+
+        private int GetPlacementOptions(BoardManager board, PieceInstance piece)
+        {
+            GenerationMetrics metrics = GetGenerationMetrics(board, piece);
+            if (metrics == null)
+            {
+                return board == null ? 0 : board.CountPlacementOptions(piece);
+            }
+
+            if (!metrics.placementOptionsReady)
+            {
+                metrics.placementOptions = board.CountPlacementOptions(piece);
+                metrics.placementOptionsReady = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricEvaluations++;
+#endif
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                LastGenerationMetricCacheHits++;
+            }
+#endif
+            return metrics.placementOptions;
+        }
+
+        private bool CanAnyPieceFit(BoardManager board, PieceInstance piece)
+        {
+            return GetPlacementOptions(board, piece) > 0;
+        }
+
+        private int GetClearOpportunities(BoardManager board, PieceInstance piece)
+        {
+            GenerationMetrics metrics = GetGenerationMetrics(board, piece);
+            if (metrics == null)
+            {
+                return board == null ? 0 : board.CountClearOpportunities(piece);
+            }
+
+            if (!metrics.clearOpportunitiesReady)
+            {
+                metrics.clearOpportunities = board.CountClearOpportunities(piece);
+                metrics.clearOpportunitiesReady = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricEvaluations++;
+#endif
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                LastGenerationMetricCacheHits++;
+            }
+#endif
+            return metrics.clearOpportunities;
+        }
+
+        private int GetSetupOpportunity(BoardManager board, PieceInstance piece)
+        {
+            GenerationMetrics metrics = GetGenerationMetrics(board, piece);
+            if (metrics == null)
+            {
+                return board == null ? 0 : board.ScoreBestSetupOpportunity(piece);
+            }
+
+            if (!metrics.setupOpportunityReady)
+            {
+                metrics.setupOpportunity = board.ScoreBestSetupOpportunity(piece);
+                metrics.setupOpportunityReady = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricEvaluations++;
+#endif
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                LastGenerationMetricCacheHits++;
+            }
+#endif
+            return metrics.setupOpportunity;
+        }
+
         private int CountFittingPieces(BoardManager board, PieceInstance[] set)
         {
             int count = 0;
             for (int i = 0; i < set.Length; i++)
             {
-                if (set[i] != null && board.CanAnyPieceFit(set[i]))
+                if (set[i] != null && CanAnyPieceFit(board, set[i]))
                 {
                     count++;
                 }
@@ -443,7 +640,7 @@ namespace ChromaBlast
 
         private int ScoreSetForBoard(BoardManager board, PieceInstance[] set, int fitCount, float difficulty01, float assist01)
         {
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             float tightBoard01 = Mathf.Clamp01((28f - emptyCells) / 20f);
             int placementOptions = 0;
             int clearOpportunities = 0;
@@ -457,9 +654,9 @@ namespace ChromaBlast
             {
                 if (set[i] != null)
                 {
-                    placementOptions += board.CountPlacementOptions(set[i]);
-                    clearOpportunities += board.CountClearOpportunities(set[i]);
-                    setupOpportunities += board.ScoreBestSetupOpportunity(set[i]);
+                    placementOptions += GetPlacementOptions(board, set[i]);
+                    clearOpportunities += GetClearOpportunities(board, set[i]);
+                    setupOpportunities += GetSetupOpportunity(board, set[i]);
                     int cells = set[i].Data.cells.Length;
                     totalCells += cells;
                     largestPiece = Mathf.Max(largestPiece, cells);
@@ -529,7 +726,7 @@ namespace ChromaBlast
 
         private void ImproveSetWithRescuePieces(BoardManager board, PieceInstance[] set, System.Random random, float difficulty01, float assist01)
         {
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             int targetFitCount = emptyCells >= 14 && difficulty01 < 0.80f ? 3 : emptyCells >= 6 ? 2 : 1;
             if (assist01 > 0.35f && emptyCells >= 10)
             {
@@ -558,7 +755,7 @@ namespace ChromaBlast
 
         private void EnsureSatisfyingPiece(BoardManager board, PieceInstance[] set, System.Random random, float difficulty01, float assist01)
         {
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             if (emptyCells < 18 || (difficulty01 > 0.92f && assist01 < 0.45f))
             {
                 return;
@@ -566,7 +763,7 @@ namespace ChromaBlast
 
             for (int i = 0; i < set.Length; i++)
             {
-                if (set[i] != null && set[i].Data.cells.Length >= 4 && board.CanAnyPieceFit(set[i]))
+                if (set[i] != null && set[i].Data.cells.Length >= 4 && CanAnyPieceFit(board, set[i]))
                 {
                     return;
                 }
@@ -600,14 +797,14 @@ namespace ChromaBlast
             int bestCurrentProgress = 0;
             for (int i = 0; i < set.Length; i++)
             {
-                if (set[i] == null || !board.CanAnyPieceFit(set[i]))
+                if (set[i] == null || !CanAnyPieceFit(board, set[i]))
                 {
                     continue;
                 }
 
                 bestCurrentProgress = Mathf.Max(
                     bestCurrentProgress,
-                    board.CountClearOpportunities(set[i]) * 1900 + board.ScoreBestSetupOpportunity(set[i]));
+                    GetClearOpportunities(board, set[i]) * 1900 + GetSetupOpportunity(board, set[i]));
             }
 
             int threshold = assist01 > 0.70f ? 450 : 1050;
@@ -638,7 +835,7 @@ namespace ChromaBlast
 
             for (int i = 0; i < set.Length; i++)
             {
-                if (set[i] != null && board.CountClearOpportunities(set[i]) > 0)
+                if (set[i] != null && GetClearOpportunities(board, set[i]) > 0)
                 {
                     return;
                 }
@@ -659,7 +856,7 @@ namespace ChromaBlast
 
         private void EnsureJuicySetMass(BoardManager board, PieceInstance[] set, System.Random random, float difficulty01)
         {
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             if (emptyCells < 18 || set == null)
             {
                 return;
@@ -699,7 +896,7 @@ namespace ChromaBlast
                 return;
             }
 
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             if (emptyCells < 16)
             {
                 return;
@@ -880,7 +1077,7 @@ namespace ChromaBlast
                     return i;
                 }
 
-                if (board.CountClearOpportunities(set[i]) > 0)
+                if (GetClearOpportunities(board, set[i]) > 0)
                 {
                     continue;
                 }
@@ -908,7 +1105,7 @@ namespace ChromaBlast
                 }
 
                 int cells = set[i].Data.cells.Length;
-                if (cells < bestCells && board.CanAnyPieceFit(set[i]))
+                if (cells < bestCells && CanAnyPieceFit(board, set[i]))
                 {
                     bestCells = cells;
                     bestIndex = i;
@@ -929,7 +1126,7 @@ namespace ChromaBlast
                     return i;
                 }
 
-                int options = board.CountPlacementOptions(set[i]);
+                int options = GetPlacementOptions(board, set[i]);
                 if (options < weakestOptions)
                 {
                     weakestOptions = options;
@@ -942,7 +1139,7 @@ namespace ChromaBlast
 
         private PieceInstance FindBestRescuePiece(BoardManager board, System.Random random)
         {
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             string[] rescueIds = emptyCells >= 18
                 ? new[]
                 {
@@ -996,7 +1193,7 @@ namespace ChromaBlast
             for (int i = 0; i < rescueIds.Length; i++)
             {
                 PieceInstance candidate = new PieceInstance(rescueIds[i], (ChromaColor)random.Next(GameConstants.ColorCount));
-                int options = board.CountPlacementOptions(candidate);
+                int options = GetPlacementOptions(board, candidate);
                 if (options <= 0)
                 {
                     continue;
@@ -1004,8 +1201,8 @@ namespace ChromaBlast
 
                 int cells = candidate.Data.cells.Length;
                 int score = options * (emptyCells >= 18 ? 70 : 100)
-                    + board.CountClearOpportunities(candidate) * 950
-                    + board.ScoreBestSetupOpportunity(candidate) * 42
+                    + GetClearOpportunities(board, candidate) * 950
+                    + GetSetupOpportunity(board, candidate) * 42
                     + cells * (emptyCells >= 18 ? 160 : 40);
                 if (emptyCells >= 18 && cells >= 4)
                 {
@@ -1051,13 +1248,13 @@ namespace ChromaBlast
                 "z4"
             };
 
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             PieceInstance best = null;
             int bestScore = int.MinValue;
             for (int i = 0; i < candidateIds.Length; i++)
             {
                 PieceInstance candidate = new PieceInstance(candidateIds[i], (ChromaColor)random.Next(GameConstants.ColorCount));
-                int options = board.CountPlacementOptions(candidate);
+                int options = GetPlacementOptions(board, candidate);
                 if (options <= 0)
                 {
                     continue;
@@ -1065,8 +1262,8 @@ namespace ChromaBlast
 
                 int cells = candidate.Data.cells.Length;
                 int score = options * 72
-                    + board.CountClearOpportunities(candidate) * 1000
-                    + board.ScoreBestSetupOpportunity(candidate) * 45
+                    + GetClearOpportunities(board, candidate) * 1000
+                    + GetSetupOpportunity(board, candidate) * 45
                     + cells * 140
                     + random.Next(18);
                 if (candidate.shapeId.StartsWith("line4", StringComparison.Ordinal)
@@ -1097,19 +1294,19 @@ namespace ChromaBlast
         {
             PieceInstance best = null;
             int bestScore = int.MinValue;
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             for (int i = 0; i < PieceCatalog.All.Count; i++)
             {
                 PieceData data = PieceCatalog.All[i];
                 PieceInstance candidate = new PieceInstance(data.id, (ChromaColor)random.Next(GameConstants.ColorCount));
-                int options = board.CountPlacementOptions(candidate);
+                int options = GetPlacementOptions(board, candidate);
                 if (options <= 0)
                 {
                     continue;
                 }
 
-                int clearOpportunities = board.CountClearOpportunities(candidate);
-                int setupOpportunities = board.ScoreBestSetupOpportunity(candidate);
+                int clearOpportunities = GetClearOpportunities(board, candidate);
+                int setupOpportunities = GetSetupOpportunity(board, candidate);
                 int cells = data.cells.Length;
                 int score = clearOpportunities * Mathf.RoundToInt(Mathf.Lerp(1900f, 3600f, assist01))
                     + setupOpportunities * Mathf.RoundToInt(Mathf.Lerp(38f, 72f, assist01))
@@ -1151,22 +1348,22 @@ namespace ChromaBlast
         {
             PieceInstance best = null;
             int bestScore = int.MinValue;
-            int emptyCells = board.CountEmptyCells();
+            int emptyCells = GetEmptyCells(board);
             for (int i = 0; i < PieceCatalog.All.Count; i++)
             {
                 PieceData data = PieceCatalog.All[i];
                 PieceInstance candidate = new PieceInstance(data.id, (ChromaColor)random.Next(GameConstants.ColorCount));
-                int clearOpportunities = board.CountClearOpportunities(candidate);
+                int clearOpportunities = GetClearOpportunities(board, candidate);
                 if (clearOpportunities <= 0)
                 {
                     continue;
                 }
 
-                int options = board.CountPlacementOptions(candidate);
+                int options = GetPlacementOptions(board, candidate);
                 int cells = data.cells.Length;
                 int score = clearOpportunities * Mathf.RoundToInt(Mathf.Lerp(5200f, 7600f, assist01))
                     + options * (emptyCells < 16 ? 75 : 48)
-                    + board.ScoreBestSetupOpportunity(candidate) * 16
+                    + GetSetupOpportunity(board, candidate) * 16
                     + cells * (emptyCells >= 20 ? 120 : 42)
                     + random.Next(24);
 
