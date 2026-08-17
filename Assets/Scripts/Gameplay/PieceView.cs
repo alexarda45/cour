@@ -110,9 +110,11 @@ namespace ChromaBlast
             {
                 ShakeUnavailable();
                 gameManager?.ShowNoFitPieceHint();
-                Haptics.Light();
+                Haptics.Invalid();
                 return;
             }
+
+            Haptics.Pickup();
 
             // The drag threshold is already zero, so there is no positional tween to
             // remove. Give the touch an immediate pickup response without starting a
@@ -175,7 +177,7 @@ namespace ChromaBlast
             {
                 ShakeUnavailable();
                 gameManager.ShowNoFitPieceHint();
-                Haptics.Light();
+                Haptics.Invalid();
                 return;
             }
 
@@ -246,6 +248,7 @@ namespace ChromaBlast
             if (!gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera))
             {
                 AudioManager.Instance?.PlayInvalid();
+                Haptics.Invalid();
                 StopPickupScale();
                 ResetHeldVisualState();
                 ReturnToSlot();

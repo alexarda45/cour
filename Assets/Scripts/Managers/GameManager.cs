@@ -354,7 +354,7 @@ namespace ChromaBlast
                 ResetMoveHint(false);
                 hud.ShowInvalidMove();
                 AudioManager.Instance?.PlayInvalid();
-                Haptics.Light();
+                Haptics.Invalid();
                 return false;
             }
 
@@ -374,7 +374,7 @@ namespace ChromaBlast
             ClearResult clearResult = board.ResolveClears(placedPiece.color);
             if (clearResult.linesCleared == 0)
             {
-                Haptics.Light();
+                Haptics.Place();
             }
 
             ScoreDelta delta = scoreManager.ApplyMove(clearResult, placedPiece.Data.cells.Length);
@@ -421,16 +421,13 @@ namespace ChromaBlast
             {
                 TryUnlockAchievement(AchievementId.FirstClear);
                 AudioManager.Instance?.PlayClear(clearResult.linesCleared);
-                bool strongClearFeedback = clearResult.linesCleared >= 2
-                    || clearResult.pureLines > 0
-                    || scoreManager.Chain >= 3;
-                if (strongClearFeedback)
+                if (clearResult.pureLines > 0)
                 {
-                    Haptics.Heavy();
+                    Haptics.Pure();
                 }
                 else
                 {
-                    Haptics.Medium();
+                    Haptics.Clear(clearResult.linesCleared, scoreManager.Chain);
                 }
 
                 board.PlayComboShake(scoreManager.Chain);
@@ -549,7 +546,7 @@ namespace ChromaBlast
             }
 
             AudioManager.Instance?.PlayPop();
-            Haptics.Heavy();
+            Haptics.Pop();
             hud.PunchScore(true);
             hud.PunchChroma(color);
             hud.ShowPopFeedback(color, popped, delta.totalAdded);
