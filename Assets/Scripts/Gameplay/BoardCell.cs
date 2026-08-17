@@ -161,7 +161,7 @@ namespace ChromaBlast
             }
         }
 
-        public void PlayFlash(Color flashColor, float delay)
+        public void PlayFlash(Color flashColor, float delay, float duration = 0.18f)
         {
             if (background == null || !MobilePerformance.UseFullJuice())
             {
@@ -173,7 +173,7 @@ namespace ChromaBlast
                 StopCoroutine(flashRoutine);
             }
 
-            flashRoutine = StartCoroutine(FlashRoutine(flashColor, delay));
+            flashRoutine = StartCoroutine(FlashRoutine(flashColor, delay, duration));
         }
 
         public void PlaySweep(Color sweepColor, float delay, bool strong)
@@ -333,7 +333,7 @@ namespace ChromaBlast
             invalidPreviewRoutine = null;
         }
 
-        private IEnumerator FlashRoutine(Color flashColor, float delay)
+        private IEnumerator FlashRoutine(Color flashColor, float delay, float duration)
         {
             if (delay > 0f)
             {
@@ -343,7 +343,7 @@ namespace ChromaBlast
             Color peak = Color.Lerp(flashColor, Color.white, 0.22f);
             peak.a = 1f;
             float elapsed = 0f;
-            const float duration = 0.18f;
+            duration = Mathf.Max(0.01f, duration);
             while (elapsed < duration && background != null)
             {
                 elapsed += Time.deltaTime;
@@ -371,7 +371,7 @@ namespace ChromaBlast
             peak.a = 1f;
 
             float elapsed = 0f;
-            const float inDuration = 0.045f;
+            const float inDuration = 0.028f;
             while (elapsed < inDuration && background != null)
             {
                 elapsed += Time.deltaTime;
@@ -381,7 +381,7 @@ namespace ChromaBlast
             }
 
             elapsed = 0f;
-            float outDuration = strong ? 0.17f : 0.13f;
+            float outDuration = strong ? 0.105f : 0.085f;
             while (elapsed < outDuration && background != null)
             {
                 elapsed += Time.deltaTime;

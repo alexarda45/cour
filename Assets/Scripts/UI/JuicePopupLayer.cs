@@ -13,6 +13,9 @@ namespace ChromaBlast
 
         private int activePopups;
         private RectTransform activeComboPopup;
+        private Coroutine activeComboRoutine;
+        private RectTransform activeScorePopup;
+        private Coroutine activeScorePopupRoutine;
         private TMP_FontAsset popupFont;
 
         private enum ComboTier
@@ -29,6 +32,9 @@ namespace ChromaBlast
             StopAllCoroutines();
             activePopups = 0;
             activeComboPopup = null;
+            activeComboRoutine = null;
+            activeScorePopup = null;
+            activeScorePopupRoutine = null;
 
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
@@ -90,11 +96,11 @@ namespace ChromaBlast
                 scoreColor,
                 scoreSize,
                 scorePosition,
-                0.80f + presentationTier * 0.04f,
+                0.46f + presentationTier * 0.04f,
                 58f + presentationTier * 8f,
                 0.76f,
                 1.12f + presentationTier * 0.03f,
-                false);
+                true);
 
             if (hasComboLabel)
             {
@@ -149,12 +155,7 @@ namespace ChromaBlast
 
         private void ShowComboLabel(ComboTier tier, int chain, int linesCleared, Color accentColor)
         {
-            if (activeComboPopup != null)
-            {
-                activeComboPopup.gameObject.SetActive(false);
-                Destroy(activeComboPopup.gameObject);
-                activeComboPopup = null;
-            }
+            CancelActiveComboPopup();
 
             if (tier >= ComboTier.Amazing)
             {
@@ -247,7 +248,7 @@ namespace ChromaBlast
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
             activeComboPopup = root;
-            StartCoroutine(AnimateComboLabel(
+            activeComboRoutine = StartCoroutine(AnimateComboLabel(
                 root,
                 canvasGroup,
                 glowOutline,
@@ -361,36 +362,36 @@ namespace ChromaBlast
             switch (tier)
             {
                 case ComboTier.Perfect:
-                    duration = 1.16f;
-                    entranceDuration = 0.18f;
-                    settleDuration = 0.04f;
+                    duration = 0.65f;
+                    entranceDuration = 0.09f;
+                    settleDuration = 0.025f;
                     peakScale = 1.21f;
                     floatDistance = 30f;
                     maxGlowAlpha = 1f;
                     rotationRange = 6f;
                     break;
                 case ComboTier.Amazing:
-                    duration = 1.10f;
-                    entranceDuration = 0.17f;
-                    settleDuration = 0.045f;
+                    duration = 0.60f;
+                    entranceDuration = 0.09f;
+                    settleDuration = 0.025f;
                     peakScale = 1.18f;
                     floatDistance = 26f;
                     maxGlowAlpha = 0.90f;
                     rotationRange = 5f;
                     break;
                 case ComboTier.Great:
-                    duration = 1.02f;
-                    entranceDuration = 0.16f;
-                    settleDuration = 0.055f;
+                    duration = 0.55f;
+                    entranceDuration = 0.09f;
+                    settleDuration = 0.025f;
                     peakScale = 1.15f;
                     floatDistance = 22f;
                     maxGlowAlpha = 0.78f;
                     rotationRange = 4f;
                     break;
                 default:
-                    duration = 0.92f;
-                    entranceDuration = 0.15f;
-                    settleDuration = 0.07f;
+                    duration = 0.50f;
+                    entranceDuration = 0.09f;
+                    settleDuration = 0.025f;
                     peakScale = 1.11f;
                     floatDistance = 18f;
                     maxGlowAlpha = 0.66f;
@@ -399,7 +400,7 @@ namespace ChromaBlast
             }
 
             float settleEnd = entranceDuration + settleDuration;
-            float exitDuration = tier >= ComboTier.Amazing ? 0.26f : 0.22f;
+            const float exitDuration = 0.10f;
             float exitStart = duration - exitDuration;
             float startRotation = Random.Range(-rotationRange, rotationRange);
             Color baseGlowColor = glowOutline.effectColor;
@@ -453,6 +454,7 @@ namespace ChromaBlast
             if (activeComboPopup == root)
             {
                 activeComboPopup = null;
+                activeComboRoutine = null;
             }
 
             if (root != null)
@@ -510,28 +512,37 @@ namespace ChromaBlast
             float travel,
             float startScale,
             float peakScale,
-            bool chainPopup,
+            bool numericScorePopup,
             bool emphasized = false)
         {
             bool fullJuice = MobilePerformance.UseFullJuice();
             int popupLimit = fullJuice ? maxPopups : Mathf.Min(3, maxPopups);
 
-            if (!chainPopup && activePopups >= popupLimit)
+            if (numericScorePopup)
+            {
+                CancelActiveScorePopup();
+            }
+
+            if (!numericScorePopup && activePopups >= popupLimit)
             {
                 return;
             }
 
             if (!fullJuice)
             {
-                duration = Mathf.Clamp(duration, 0.80f, 1f);
+                duration = numericScorePopup
+                    ? Mathf.Clamp(duration, 0.42f, 0.55f)
+                    : Mathf.Clamp(duration, 0.80f, 1f);
                 travel *= 0.82f;
                 peakScale = Mathf.Min(peakScale, emphasized ? 1.20f : 1.12f);
             }
 
-            duration = Mathf.Clamp(duration, 0.80f, 1.20f);
+            duration = numericScorePopup
+                ? Mathf.Clamp(duration, 0.42f, 0.55f)
+                : Mathf.Clamp(duration, 0.80f, 1.20f);
 
             GameObject textObject = new GameObject(
-                chainPopup ? "JuicePopup_Chain" : "JuicePopup",
+                numericScorePopup ? "JuicePopup_Score" : "JuicePopup",
                 typeof(RectTransform),
                 typeof(TextMeshProUGUI));
             textObject.transform.SetParent(transform, false);
@@ -582,16 +593,21 @@ namespace ChromaBlast
 
             activePopups++;
 
-            StartCoroutine(AnimatePopup(
+            Coroutine popupRoutine = StartCoroutine(AnimatePopup(
                 text,
                 textRect,
                 duration,
                 travel,
                 startScale,
                 peakScale,
-                chainPopup,
+                numericScorePopup,
                 emphasized,
                 accentGlow));
+            if (numericScorePopup)
+            {
+                activeScorePopup = textRect;
+                activeScorePopupRoutine = popupRoutine;
+            }
         }
 
         private IEnumerator AnimatePopup(
@@ -601,7 +617,7 @@ namespace ChromaBlast
             float travel,
             float startScale,
             float peakScale,
-            bool chainPopup,
+            bool numericScorePopup,
             bool emphasized,
             Outline accentGlow)
         {
@@ -665,9 +681,48 @@ namespace ChromaBlast
 
             activePopups = Mathf.Max(0, activePopups - 1);
 
+            if (numericScorePopup && activeScorePopup == textRect)
+            {
+                activeScorePopup = null;
+                activeScorePopupRoutine = null;
+            }
+
             if (textRect != null)
             {
                 Destroy(textRect.gameObject);
+            }
+        }
+
+        private void CancelActiveComboPopup()
+        {
+            if (activeComboRoutine != null)
+            {
+                StopCoroutine(activeComboRoutine);
+                activeComboRoutine = null;
+            }
+
+            if (activeComboPopup != null)
+            {
+                activeComboPopup.gameObject.SetActive(false);
+                Destroy(activeComboPopup.gameObject);
+                activeComboPopup = null;
+            }
+        }
+
+        private void CancelActiveScorePopup()
+        {
+            if (activeScorePopupRoutine != null)
+            {
+                StopCoroutine(activeScorePopupRoutine);
+                activeScorePopupRoutine = null;
+            }
+
+            if (activeScorePopup != null)
+            {
+                activeScorePopup.gameObject.SetActive(false);
+                Destroy(activeScorePopup.gameObject);
+                activeScorePopup = null;
+                activePopups = Mathf.Max(0, activePopups - 1);
             }
         }
 

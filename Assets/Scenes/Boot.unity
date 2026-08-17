@@ -361,6 +361,10 @@ MonoBehaviour:
   comboSmallClip: {fileID: 8300000, guid: ba2e84ebf28a457f8f3d23f292b543a6, type: 3}
   comboBigClip: {fileID: 8300000, guid: 48a13b8bc2074f3da9c818bbbfeb6ea2, type: 3}
   toggleClip: {fileID: 8300000, guid: fefd870889f048afaa9c1b049d334bbf, type: 3}
+  dragGridTickClips:
+  - {fileID: 8300000, guid: 2cc5be504cbe45e88e8bf04314f61fe0, type: 3}
+  - {fileID: 8300000, guid: 2414b79908984803b8f7498de64985ea, type: 3}
+  - {fileID: 8300000, guid: 679f432466414f96bb533dbf830beac6, type: 3}
 --- !u!114 &1477513781
 MonoBehaviour:
   m_ObjectHideFlags: 0

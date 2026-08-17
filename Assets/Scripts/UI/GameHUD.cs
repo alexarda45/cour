@@ -423,7 +423,7 @@ namespace ChromaBlast
 
         public void PunchScore(bool pure)
         {
-            ApplyScorePunch(pure ? 0.10f : 0.06f, pure ? 0.22f : 0.19f);
+            ApplyScorePunch(pure ? 0.10f : 0.06f, pure ? 0.14f : 0.11f);
         }
 
         public void PunchScore(ClearResult result, int chain)
@@ -433,7 +433,7 @@ namespace ChromaBlast
                 || (result != null && result.pureLines > 0)
                 || chain >= 4;
             float amplitude = premiumClear ? 0.10f : linesCleared >= 2 ? 0.08f : 0.06f;
-            float duration = premiumClear ? 0.22f : linesCleared >= 2 ? 0.20f : 0.18f;
+            float duration = premiumClear ? 0.14f : linesCleared >= 2 ? 0.12f : 0.11f;
             ApplyScorePunch(amplitude, duration);
         }
 
@@ -522,7 +522,7 @@ namespace ChromaBlast
                     : null;
                 premiumLineClearFx?.Play(boardRect, result, clearScreenPosition, accentColor, chain);
                 float alpha = Mathf.Clamp(0.12f + result.linesCleared * 0.04f + result.pureLines * 0.05f + styleBonus * 0.00016f, 0.12f, 0.34f);
-                Flash(Color.Lerp(accentColor, Color.white, 0.22f), alpha, 0.26f);
+                Flash(Color.Lerp(accentColor, Color.white, 0.22f), alpha, 0.14f);
             }
         }
 
@@ -5467,7 +5467,7 @@ namespace ChromaBlast
                 {
                     scoreText.transform.DOKill();
                     scoreText.transform.localScale = Vector3.one;
-                    scoreText.transform.DOPunchScale(Vector3.one * 0.035f, 0.16f, 4, 0.58f);
+                    scoreText.transform.DOPunchScale(Vector3.one * 0.035f, 0.10f, 4, 0.58f);
                 }
             }
             else if (suppressNextScoreAutoPunch)
@@ -5498,7 +5498,7 @@ namespace ChromaBlast
                 int animationStart = displayedScore;
                 int animationTarget = targetScore;
                 float elapsed = 0f;
-                float duration = Mathf.Clamp(0.15f + Mathf.Abs(animationTarget - animationStart) / 2200f, 0.15f, 0.34f);
+                float duration = GetScoreCountDuration(animationTarget - animationStart);
                 while (elapsed < duration && displayedScore != animationTarget)
                 {
                     if (animationTarget != targetScore)
@@ -5506,7 +5506,7 @@ namespace ChromaBlast
                         animationStart = displayedScore;
                         animationTarget = targetScore;
                         elapsed = 0f;
-                        duration = Mathf.Clamp(0.15f + Mathf.Abs(animationTarget - animationStart) / 2200f, 0.15f, 0.34f);
+                        duration = GetScoreCountDuration(animationTarget - animationStart);
                     }
 
                     elapsed += Time.unscaledDeltaTime;
@@ -5525,6 +5525,22 @@ namespace ChromaBlast
             }
 
             scoreCountRoutine = null;
+        }
+
+        private static float GetScoreCountDuration(int delta)
+        {
+            int absoluteDelta = Mathf.Abs(delta);
+            if (absoluteDelta <= 100)
+            {
+                return Mathf.Lerp(0.08f, 0.10f, absoluteDelta / 100f);
+            }
+
+            if (absoluteDelta <= 500)
+            {
+                return Mathf.Lerp(0.10f, 0.14f, (absoluteDelta - 100f) / 400f);
+            }
+
+            return Mathf.Lerp(0.14f, 0.20f, Mathf.Clamp01((absoluteDelta - 500f) / 2500f));
         }
 
         private void SetDisplayedScoreText(int value)

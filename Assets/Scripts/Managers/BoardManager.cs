@@ -787,7 +787,7 @@ namespace ChromaBlast
                 block.name = $"Block_{x}_{y}_{piece.color}";
                 ConfigureBoardRect((RectTransform)block.transform, x, y);
                 block.Initialize(piece.color, false);
-                cells[x, y]?.PlayFlash(ChromaPalette.GetColor(piece.color), placementDelay * 0.45f);
+                cells[x, y]?.PlayFlash(ChromaPalette.GetColor(piece.color), placementDelay * 0.45f, 0.11f);
                 block.PlayPlaced(placementDelay);
                 PlayPlacementImpact(x, y, piece.color, placementDelay * 0.65f);
                 blocks[x, y] = block;
@@ -806,7 +806,7 @@ namespace ChromaBlast
             float centerX = Mathf.Max(0f, (pieceWidth - 1) * 0.5f);
             float centerY = Mathf.Max(0f, (pieceHeight - 1) * 0.5f);
             float distanceFromCenter = Mathf.Abs(localCell.x - centerX) + Mathf.Abs(localCell.y - centerY);
-            return Mathf.Min(0.09f, orderIndex * 0.019f + distanceFromCenter * 0.006f);
+            return Mathf.Min(0.055f, orderIndex * 0.011f + distanceFromCenter * 0.004f);
         }
 
         public ClearResult ResolveClears()
@@ -882,7 +882,7 @@ namespace ChromaBlast
                 }
 
                 float clearDelay = CalculateLineClearDelay(cell, rows, columns);
-                cells[cell.x, cell.y]?.PlayFlash(anticipationColor, clearDelay);
+                cells[cell.x, cell.y]?.PlayFlash(anticipationColor, clearDelay, 0.12f);
                 result.AddClearedCell(block.Color);
                 float clearStrength = Mathf.Clamp01(
                     Mathf.Max(0, result.linesCleared - 1) * 0.5f
@@ -903,10 +903,10 @@ namespace ChromaBlast
                 return 0f;
             }
 
-            const float sweepLead = 0.085f;
-            const float cellStep = 0.021f;
-            const float lineStep = 0.006f;
-            const float jitter = 0.003f;
+            const float sweepLead = 0.050f;
+            const float cellStep = 0.013f;
+            const float lineStep = 0.004f;
+            const float jitter = 0.002f;
             float center = (GameConstants.BoardSize - 1) * 0.5f;
             float delay = float.MaxValue;
 
@@ -941,7 +941,8 @@ namespace ChromaBlast
                 0.028f + result.linesCleared * 0.012f + result.pureLines * 0.008f + result.cellsCleared * 0.0007f,
                 0.045f,
                 0.11f);
-            float duration = Mathf.Clamp(0.10f + result.linesCleared * 0.012f, 0.10f, 0.16f);
+            bool strong = result.linesCleared >= 2 || result.pureLines > 0;
+            float duration = strong ? 0.10f : 0.08f;
             cameraShake?.Shake(strength, duration);
         }
 
@@ -1468,10 +1469,10 @@ namespace ChromaBlast
             for (int i = 0; i < rows.Count; i++)
             {
                 int y = rows[i];
-                float lineDelay = lineOrder * 0.024f;
+                float lineDelay = lineOrder * 0.015f;
                 for (int x = 0; x < GameConstants.BoardSize; x++)
                 {
-                    cells[x, y]?.PlaySweep(color, lineDelay + x * 0.011f, strong);
+                    cells[x, y]?.PlaySweep(color, lineDelay + x * 0.007f, strong);
                 }
 
                 lineOrder++;
@@ -1480,10 +1481,10 @@ namespace ChromaBlast
             for (int i = 0; i < columns.Count; i++)
             {
                 int x = columns[i];
-                float lineDelay = lineOrder * 0.024f;
+                float lineDelay = lineOrder * 0.015f;
                 for (int y = 0; y < GameConstants.BoardSize; y++)
                 {
-                    cells[x, y]?.PlaySweep(color, lineDelay + y * 0.011f, strong);
+                    cells[x, y]?.PlaySweep(color, lineDelay + y * 0.007f, strong);
                 }
 
                 lineOrder++;
@@ -1506,12 +1507,12 @@ namespace ChromaBlast
             int order = 0;
             for (int i = 0; i < rows.Count; i++)
             {
-                PlayLineGlow(rows[i], true, color, order++ * 0.018f, intensity, effectGeneration);
+                PlayLineGlow(rows[i], true, color, order++ * 0.011f, intensity, effectGeneration);
             }
 
             for (int i = 0; i < columns.Count; i++)
             {
-                PlayLineGlow(columns[i], false, color, order++ * 0.018f, intensity, effectGeneration);
+                PlayLineGlow(columns[i], false, color, order++ * 0.011f, intensity, effectGeneration);
             }
 
             PlayIntersectionFlares(rows, columns, color, intensity, effectGeneration);
@@ -1633,7 +1634,7 @@ namespace ChromaBlast
             Color outerColor = sourceColor;
             Color coreColor = Color.Lerp(sourceColor, Color.white, 0.68f);
             Color beamColor = Color.Lerp(sourceColor, Color.white, 0.86f);
-            const float duration = 0.23f;
+            const float duration = 0.15f;
             float elapsed = 0f;
             while (elapsed < duration
                 && visual.root != null
@@ -1721,7 +1722,7 @@ namespace ChromaBlast
                     columns[columnListIndex],
                     rows[rowListIndex],
                     color,
-                    0.052f + i * 0.006f,
+                    0.032f + i * 0.004f,
                     intensity,
                     effectGeneration);
             }
@@ -1789,7 +1790,7 @@ namespace ChromaBlast
 
             Color outerColor = Color.Lerp(sourceColor, Color.white, 0.42f);
             Color coreColor = Color.Lerp(sourceColor, Color.white, 0.90f);
-            const float duration = 0.19f;
+            const float duration = 0.12f;
             float elapsed = 0f;
             while (elapsed < duration
                 && flare.root != null

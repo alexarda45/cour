@@ -128,6 +128,7 @@ namespace ChromaBlast
             if (!lifecycleSavePerformedWhileInactive)
             {
                 SaveCurrentClassicRun();
+                SaveManager.Instance?.FlushPendingSaveImmediate();
             }
         }
 
@@ -174,6 +175,7 @@ namespace ChromaBlast
             if (currentMode == GameMode.Classic && active)
             {
                 SaveCurrentClassicRun();
+                SaveManager.Instance?.FlushPendingSaveImmediate();
                 return;
             }
 
@@ -628,12 +630,14 @@ namespace ChromaBlast
             }
 
             StartGame(currentMode);
+            SaveManager.Instance?.FlushPendingSaveImmediate();
         }
 
         public void GoToMenu()
         {
             AudioManager.Instance?.PlayClick();
             SaveCurrentClassicRun();
+            SaveManager.Instance?.FlushPendingSaveImmediate();
             paused = false;
             SceneManager.LoadScene("Menu");
         }
@@ -922,7 +926,7 @@ namespace ChromaBlast
             hud.ShowPause(false);
             if (currentMode == GameMode.Classic)
             {
-                SaveManager.Instance?.ClearClassicRun();
+                SaveManager.Instance?.ClearClassicRunDeferred();
             }
 
             AudioManager.Instance?.PlayGameOver();
@@ -964,6 +968,8 @@ namespace ChromaBlast
                     save.MarkInterstitialShown();
                 }
             }
+
+            save?.FlushPendingSaveImmediate();
         }
 
         private void EvaluateGameOver()
@@ -1402,7 +1408,7 @@ namespace ChromaBlast
                 liveBestScore = currentScore;
                 if (save != null && save.TrySetHighScore(currentMode, currentScore))
                 {
-                    save.Save();
+                    save.RequestSave();
                 }
 
                 achievedNewBestThisRun = currentScore > roundStartingBestScore;

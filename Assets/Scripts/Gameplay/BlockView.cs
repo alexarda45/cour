@@ -396,7 +396,7 @@ namespace ChromaBlast
             transform.localScale = restingScale;
 
             float elapsed = 0f;
-            const float duration = 0.12f;
+            const float duration = 0.10f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
@@ -445,14 +445,14 @@ namespace ChromaBlast
 
             Vector3 startScale = transform.localScale;
             float elapsed = 0f;
-            const float duration = 0.15f;
+            const float duration = 0.115f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                transform.localScale = t < 0.35f
-                    ? Vector3.Lerp(startScale, Vector3.one * 1.10f, t / 0.35f)
-                    : Vector3.Lerp(Vector3.one * 1.10f, Vector3.zero, (t - 0.35f) / 0.65f);
+                transform.localScale = t < 0.22f
+                    ? Vector3.Lerp(startScale, Vector3.one * 1.10f, t / 0.22f)
+                    : Vector3.Lerp(Vector3.one * 1.10f, Vector3.zero, (t - 0.22f) / 0.78f);
                 yield return null;
             }
 
@@ -489,7 +489,7 @@ namespace ChromaBlast
             transform.localScale = restingScale;
 
             float elapsed = 0f;
-            const float duration = 0.14f;
+            const float duration = 0.10f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
@@ -546,10 +546,10 @@ namespace ChromaBlast
             UnityEngine.Color shineColor = shineImage == null ? UnityEngine.Color.white : shineImage.color;
 
             float peakScale = Mathf.Lerp(1.15f, 1.19f, clearStrength);
-            yield return ScaleRoutine(Vector3.one, Vector3.one * peakScale, 0.045f);
+            yield return ScaleRoutine(Vector3.one, Vector3.one * peakScale, 0.025f);
 
             float elapsed = 0f;
-            const float duration = 0.13f;
+            const float duration = 0.09f;
             Vector3 startScale = Vector3.one * peakScale;
             Vector3 endScale = Vector3.zero;
             while (elapsed < duration && this != null)

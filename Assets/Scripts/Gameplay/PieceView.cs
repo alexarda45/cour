@@ -49,6 +49,8 @@ namespace ChromaBlast
         private bool[] heldVisualShadow;
         private bool invalidHoverActive;
         private bool pickupShadowEmphasisActive;
+        private bool dragGridOriginInitialized;
+        private Vector2Int lastDragGridOrigin;
         private Vector2 visualDragTarget;
         private bool visualDragTargetInitialized;
 
@@ -79,6 +81,7 @@ namespace ChromaBlast
             gameManager?.Board?.ClearPreview();
             StopPickupScale();
             ResetHeldVisualState();
+            dragGridOriginInitialized = false;
             visualDragTargetInitialized = false;
         }
 
@@ -187,6 +190,7 @@ namespace ChromaBlast
             SetMoveBadgeVisible(false);
             lastPreviewLineCount = -1;
             lastPreviewPureLineCount = -1;
+            dragGridOriginInitialized = false;
             originalParent = (RectTransform)transform.parent;
             originalAnchoredPosition = RectTransform.anchoredPosition;
 
@@ -213,7 +217,7 @@ namespace ChromaBlast
             }
             visualDragTargetInitialized = false;
             MoveToPointer(eventData, true);
-            UpdatePreview(eventData);
+            UpdatePreview(eventData, false);
             UpdateDragVisibility(eventData);
         }
 
@@ -225,7 +229,7 @@ namespace ChromaBlast
             }
 
             MoveToPointer(eventData);
-            UpdatePreview(eventData);
+            UpdatePreview(eventData, true);
             UpdateDragVisibility(eventData);
         }
 
@@ -237,6 +241,7 @@ namespace ChromaBlast
             }
 
             dragging = false;
+            dragGridOriginInitialized = false;
             visualDragTargetInitialized = false;
             gameManager.Board.ClearPreview();
             lastPreviewLineCount = -1;
@@ -317,6 +322,7 @@ namespace ChromaBlast
             gameManager?.Board.ClearPreview();
             StopPickupScale();
             ResetHeldVisualState();
+            dragGridOriginInitialized = false;
             visualDragTargetInitialized = false;
             transform.DOKill();
             transform.SetParent(originalParent != null ? originalParent : SourceSlot.PieceContainer, true);
@@ -357,13 +363,31 @@ namespace ChromaBlast
             }
         }
 
-        private void UpdatePreview(PointerEventData eventData)
+        private void UpdatePreview(PointerEventData eventData, bool allowDragGridTick)
         {
             Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
             Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, liftedPosition, eventData.pressEventCamera);
             bool overBoard = gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera);
             if (overBoard)
             {
+                if (!dragGridOriginInitialized)
+                {
+                    dragGridOriginInitialized = true;
+                    lastDragGridOrigin = origin;
+                    if (allowDragGridTick)
+                    {
+                        AudioManager.Instance?.PlayDragGridTick();
+                    }
+                }
+                else if (origin != lastDragGridOrigin)
+                {
+                    lastDragGridOrigin = origin;
+                    if (allowDragGridTick)
+                    {
+                        AudioManager.Instance?.PlayDragGridTick();
+                    }
+                }
+
                 gameManager.Board.ShowPreview(Instance, origin);
             }
             else

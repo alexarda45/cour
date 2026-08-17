@@ -29,12 +29,18 @@ namespace ChromaBlast
         [SerializeField] private AudioClip comboSmallClip;
         [SerializeField] private AudioClip comboBigClip;
         [SerializeField] private AudioClip toggleClip;
+        [SerializeField] private AudioClip[] dragGridTickClips;
 
         public bool Muted { get; private set; }
         public bool SoundEnabled => !Muted;
         public bool MusicEnabled { get; private set; } = true;
 
         private const int SampleRate = 44100;
+        private const float DragGridTickCooldown = 0.04f;
+        private const float DragGridTickVolume = 0.20f;
+
+        private int lastDragGridTickIndex = -1;
+        private float lastDragGridTickTime = float.NegativeInfinity;
 
         private void Awake()
         {
@@ -177,6 +183,53 @@ namespace ChromaBlast
             PlayOneShot(toggleClip, 0.32f);
         }
 
+        public void PlayDragGridTick()
+        {
+            if (Muted || dragGridTickClips == null || dragGridTickClips.Length == 0)
+            {
+                return;
+            }
+
+            float now = Time.unscaledTime;
+            if (now - lastDragGridTickTime < DragGridTickCooldown)
+            {
+                return;
+            }
+
+            int startIndex = Random.Range(0, dragGridTickClips.Length);
+            int selectedIndex = -1;
+            for (int offset = 0; offset < dragGridTickClips.Length; offset++)
+            {
+                int candidateIndex = (startIndex + offset) % dragGridTickClips.Length;
+                if (candidateIndex != lastDragGridTickIndex && dragGridTickClips[candidateIndex] != null)
+                {
+                    selectedIndex = candidateIndex;
+                    break;
+                }
+            }
+
+            if (selectedIndex < 0)
+            {
+                for (int i = 0; i < dragGridTickClips.Length; i++)
+                {
+                    if (dragGridTickClips[i] != null)
+                    {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (selectedIndex < 0)
+            {
+                return;
+            }
+
+            lastDragGridTickIndex = selectedIndex;
+            lastDragGridTickTime = now;
+            PlayOneShot(dragGridTickClips[selectedIndex], DragGridTickVolume);
+        }
+
         private void PlayMusic()
         {
             if (musicSource == null || musicClip == null)
@@ -204,7 +257,7 @@ namespace ChromaBlast
                 }
 
                 PlayOneShot(clearSfxSource, clip, 0.54f);
-                yield return new WaitForSeconds(0.042f);
+                yield return new WaitForSeconds(0.028f);
             }
 
             if (clearSfxSource != null)

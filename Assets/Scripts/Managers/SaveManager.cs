@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Globalization;
 using System.IO;
 using UnityEngine;
@@ -121,6 +122,17 @@ namespace ChromaBlast
         private const string SaveFileName = "chroma_blast_save.json";
         private const string TemporarySaveFileName = "chroma_blast_save.tmp";
         private const string BackupSaveFileName = "chroma_blast_save.backup.json";
+        private const float NormalSaveDebounceSeconds = 0.28f;
+        private const float MaximumDirtySeconds = 1.75f;
+
+        private bool pendingSaveDirty;
+        private float firstDirtyTime;
+        private float latestSaveRequestTime;
+        private Coroutine pendingSaveRoutine;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public double LastFullSaveMilliseconds { get; private set; }
+#endif
 
         private string SavePath => Path.Combine(Application.persistentDataPath, SaveFileName);
         private string TemporarySavePath => Path.Combine(Application.persistentDataPath, TemporarySaveFileName);
@@ -137,6 +149,17 @@ namespace ChromaBlast
             Instance = this;
             DontDestroyOnLoad(gameObject);
             Load();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance != this)
+            {
+                return;
+            }
+
+            FlushPendingSaveImmediate();
+            Instance = null;
         }
 
         public void Load()
@@ -266,6 +289,74 @@ namespace ChromaBlast
 
         public void Save()
         {
+            MarkSaveDirty();
+            FlushPendingSaveImmediate();
+        }
+
+        public void RequestSave()
+        {
+            MarkSaveDirty();
+            if (pendingSaveRoutine == null && isActiveAndEnabled)
+            {
+                pendingSaveRoutine = StartCoroutine(FlushPendingSaveRoutine());
+            }
+        }
+
+        public void FlushPendingSaveImmediate()
+        {
+            if (pendingSaveRoutine != null)
+            {
+                StopCoroutine(pendingSaveRoutine);
+                pendingSaveRoutine = null;
+            }
+
+            if (!pendingSaveDirty)
+            {
+                return;
+            }
+
+            pendingSaveDirty = false;
+            WriteSaveToDisk();
+
+            if (pendingSaveDirty && pendingSaveRoutine == null && isActiveAndEnabled)
+            {
+                pendingSaveRoutine = StartCoroutine(FlushPendingSaveRoutine());
+            }
+        }
+
+        private void MarkSaveDirty()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (!pendingSaveDirty)
+            {
+                firstDirtyTime = now;
+            }
+
+            pendingSaveDirty = true;
+            latestSaveRequestTime = now;
+        }
+
+        private IEnumerator FlushPendingSaveRoutine()
+        {
+            while (pendingSaveDirty)
+            {
+                float now = Time.realtimeSinceStartup;
+                bool debounceElapsed = now - latestSaveRequestTime >= NormalSaveDebounceSeconds;
+                bool maximumWindowElapsed = now - firstDirtyTime >= MaximumDirtySeconds;
+                if (debounceElapsed || maximumWindowElapsed)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            pendingSaveRoutine = null;
+            FlushPendingSaveImmediate();
+        }
+
+        private void WriteSaveToDisk()
+        {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (dailyRewardsDebugMode)
             {
@@ -274,6 +365,9 @@ namespace ChromaBlast
             }
 #endif
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+#endif
             try
             {
                 string json = JsonUtility.ToJson(Data, true);
@@ -298,6 +392,13 @@ namespace ChromaBlast
                 TryDeleteTemporarySave();
                 Debug.LogError($"[SaveManager] Could not save player progress safely: {exception.Message}");
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            finally
+            {
+                stopwatch.Stop();
+                LastFullSaveMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+            }
+#endif
         }
 
         private void ReplaceMainSave(bool mainSaveIsValid)
@@ -477,7 +578,7 @@ namespace ChromaBlast
                 Data.dailyBestScore = Mathf.Max(Data.dailyBestScore, score);
             }
 
-            Save();
+            RequestSave();
             return coinsEarned;
         }
 
@@ -539,7 +640,7 @@ namespace ChromaBlast
 
             if (changed || totalCoins > 0)
             {
-                Save();
+                RequestSave();
             }
 
             return totalCoins;
@@ -572,7 +673,7 @@ namespace ChromaBlast
 
             if (changed || totalCoins > 0)
             {
-                Save();
+                RequestSave();
             }
 
             return totalCoins;
@@ -639,10 +740,20 @@ namespace ChromaBlast
             state.active = true;
             state.savedUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             Data.classicRun = state;
-            Save();
+            RequestSave();
         }
 
         public void ClearClassicRun()
+        {
+            ClearClassicRunInternal(false);
+        }
+
+        public void ClearClassicRunDeferred()
+        {
+            ClearClassicRunInternal(true);
+        }
+
+        private void ClearClassicRunInternal(bool deferDiskWrite)
         {
             if (Data.classicRun == null)
             {
@@ -650,7 +761,14 @@ namespace ChromaBlast
             }
 
             Data.classicRun = null;
-            Save();
+            if (deferDiskWrite)
+            {
+                RequestSave();
+            }
+            else
+            {
+                Save();
+            }
         }
 
         public void SetMuted(bool muted)
@@ -847,7 +965,7 @@ namespace ChromaBlast
 
             Data.achievementMask |= 1L << (int)achievement;
             Data.coins = Mathf.Max(0, Data.coins) + Mathf.Max(0, reward.coins);
-            Save();
+            RequestSave();
             return true;
         }
 
@@ -1149,7 +1267,7 @@ namespace ChromaBlast
             coinsClaimed = Mathf.Max(0, currentReward - previousReward);
             Data.dailyClaimedMedalIndex = medal.index;
             Data.coins = Mathf.Max(0, Data.coins) + coinsClaimed;
-            Save();
+            RequestSave();
             return coinsClaimed > 0;
         }
 
