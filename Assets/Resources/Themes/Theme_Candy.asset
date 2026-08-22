@@ -22,6 +22,7 @@ MonoBehaviour:
   gameOverBackground: {fileID: 21300000, guid: 121bfd905bc64f45ba401add0679db92, type: 3}
   themesPanelBackgroundSprite: {fileID: 21300000, guid: 164faa04a6be43ecbc8b0501524f7190, type: 3}
   boardSurfaceSprite: {fileID: 21300000, guid: 4c8d438887a44cd59f712d81f3ec2ee8, type: 3}
+  rescuePanelSprite: {fileID: 21300000, guid: 753d7996c24c44ddab88234b2d839e04, type: 3}
   tileCyan: {fileID: 21300000, guid: c9f50319ab584b378b81aa2b3f494d1a, type: 3}
   tileMagenta: {fileID: 21300000, guid: 7b78f4058c0345e3a4af4dd339c6a975, type: 3}
   tileLime: {fileID: 21300000, guid: 951ee15d5b1e4c119cb23eb10f031558, type: 3}

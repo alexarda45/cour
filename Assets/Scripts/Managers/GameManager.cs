@@ -1,4 +1,5 @@
 using System;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -9,6 +10,22 @@ namespace ChromaBlast
 {
     public class GameManager : MonoBehaviour
     {
+        private static readonly ProfilerMarker TryPlaceMarker = new ProfilerMarker("ChromaBlast.Gameplay.TryPlacePiece");
+        private static readonly ProfilerMarker ResolveClearsMarker = new ProfilerMarker("ChromaBlast.Gameplay.ResolveClears");
+        private static readonly ProfilerMarker ScoreProcessingMarker = new ProfilerMarker("ChromaBlast.Gameplay.ScoreProcessing");
+        private static readonly ProfilerMarker FlowStateMarker = new ProfilerMarker("ChromaBlast.Gameplay.FlowStateUpdate");
+        private static readonly ProfilerMarker GenerateNextTrayMarker = new ProfilerMarker("ChromaBlast.Gameplay.GenerateNextTray");
+        private static readonly ProfilerMarker HudRefreshMarker = new ProfilerMarker("ChromaBlast.UI.HudRefresh");
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static double LastTryPlaceMilliseconds { get; private set; }
+        public static double LastResolveClearsMilliseconds { get; private set; }
+        public static double LastScoreProcessingMilliseconds { get; private set; }
+        public static double LastFlowStateMilliseconds { get; private set; }
+        public static double LastGenerateNextTrayMilliseconds { get; private set; }
+        public static double LastHudRefreshMilliseconds { get; private set; }
+        public static double LastThirdPieceToNextTrayMilliseconds { get; private set; }
+#endif
         [Header("Managers")]
         [SerializeField] private BoardManager board;
         [SerializeField] private PieceSpawner pieceSpawner;
@@ -47,6 +64,19 @@ namespace ChromaBlast
         private int roundPops;
         private int roundBestChain;
         private int movesSinceClear;
+        private int traysGeneratedThisRun;
+        private int consecutiveReliefBiasedTrays;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Development-only balance telemetry. This stays out of player-facing UI
+        // and makes it possible to inspect a live Classic run beside the tray
+        // metrics exposed by PieceSpawner.
+        public int DebugClassicTrayNumber => currentMode == GameMode.Classic ? traysGeneratedThisRun : 0;
+        public int DebugPopUsesThisRun => currentMode == GameMode.Classic ? roundPops : 0;
+        public float DebugPopRechargeMultiplier => GetPopRechargeMultiplier();
+        public int DebugConsecutiveReliefBiasedTrays => currentMode == GameMode.Classic
+            ? consecutiveReliefBiasedTrays
+            : 0;
+#endif
         private int nextScoreMilestone;
         private int roundStartingBestScore;
         private int liveBestScore;
@@ -270,6 +300,8 @@ namespace ChromaBlast
 
         public void StartGame(GameMode mode)
         {
+            hud?.ClearActiveComboPresentation();
+            AudioManager.Instance?.StopComboVoice();
             currentMode = mode;
             roundStartingBestScore = SaveManager.Instance == null ? 0 : SaveManager.Instance.GetHighScore(mode);
             liveBestScore = roundStartingBestScore;
@@ -290,6 +322,9 @@ namespace ChromaBlast
             roundPops = 0;
             roundBestChain = 0;
             movesSinceClear = 0;
+            traysGeneratedThisRun = 0;
+            consecutiveReliefBiasedTrays = 0;
+            pieceSpawner?.ResetFlowState();
             nextScoreMilestone = GetInitialScoreMilestone();
             hud?.ResetNewBestFeedback();
 
@@ -301,6 +336,7 @@ namespace ChromaBlast
             roundMission = RoundMission.Create(mode, random);
             board.ClearBoard(false);
             scoreManager.ResetScore();
+            UpdatePopRechargeRequirement();
             gameOverUI.Hide();
             hud.ShowPause(false);
 
@@ -324,8 +360,12 @@ namespace ChromaBlast
             if (!restoredClassicRun)
             {
                 pieceSpawner.SpawnOpeningSatisfyingSet(board, random, GetPieceDifficulty());
-                ResetMoveHint();
-                if (!pieceSpawner.HasActivePieces())
+                if (pieceSpawner.HasActivePieces())
+                {
+                    RegisterOpeningTray();
+                    ResetMoveHint();
+                }
+                else
                 {
                     SpawnNextSet();
                 }
@@ -360,6 +400,13 @@ namespace ChromaBlast
                 return false;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long tryPlaceTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            TryPlaceMarker.Begin();
+            try
+            {
+
             if (currentMode == GameMode.Classic)
             {
                 CaptureUndo();
@@ -373,12 +420,27 @@ namespace ChromaBlast
 
             AudioManager.Instance?.PlayPlace();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            pieceSpawner?.RecordFlowTargetClearIfCompleted(board);
+#endif
+            ResolveClearsMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long resolveTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
             ClearResult clearResult = board.ResolveClears(placedPiece.color);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastResolveClearsMilliseconds = ElapsedMilliseconds(resolveTimingStart);
+#endif
+            ResolveClearsMarker.End();
             if (clearResult.linesCleared == 0)
             {
                 Haptics.Place();
             }
 
+            ScoreProcessingMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long scoreTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
             ScoreDelta delta = scoreManager.ApplyMove(clearResult, placedPiece.Data.cells.Length);
             bool trayCompleted = pieceSpawner.AllSlotsEmpty();
             int trayBonus = trayCompleted ? CalculateTrayCompleteBonus(clearResult) : 0;
@@ -410,6 +472,10 @@ namespace ChromaBlast
             {
                 scoreManager.AddBonusScore(setupBonus);
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastScoreProcessingMilliseconds = ElapsedMilliseconds(scoreTimingStart);
+#endif
+            ScoreProcessingMarker.End();
 
             int totalMoveScore = delta.totalAdded + trayBonus + styleBonus + boardSweepBonus + largePieceBonus + setupBonus;
             SaveManager.Instance?.RegisterMoveStats(clearResult, scoreManager.Chain, totalMoveScore);
@@ -503,7 +569,22 @@ namespace ChromaBlast
 
             if (trayCompleted)
             {
+                // Capture only the board the player actually produced. The
+                // resulting FlowState is transient and is used softly by the
+                // next tray; no move prediction or save data is involved.
+                FlowStateMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                long flowTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                pieceSpawner.CaptureFlowState(board);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastFlowStateMilliseconds = ElapsedMilliseconds(flowTimingStart);
+#endif
+                FlowStateMarker.End();
                 SpawnNextSet();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastThirdPieceToNextTrayMilliseconds = ElapsedMilliseconds(tryPlaceTimingStart);
+#endif
             }
 
             AnalyticsManager.Instance?.RecordMove(currentMode, scoreManager.Score, clearResult.linesCleared, clearResult.pureLines);
@@ -511,6 +592,14 @@ namespace ChromaBlast
             EvaluateGameOver();
             SaveCurrentClassicRun();
             return true;
+            }
+            finally
+            {
+                TryPlaceMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastTryPlaceMilliseconds = ElapsedMilliseconds(tryPlaceTimingStart);
+#endif
+            }
         }
 
         public void RequestPop(ChromaColor color)
@@ -519,6 +608,10 @@ namespace ChromaBlast
             {
                 return;
             }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            TracePopState("BEFORE", color);
+#endif
 
             int targetCount = board == null ? 0 : board.CountCellsOfColor(color);
             if (targetCount <= 0)
@@ -535,17 +628,25 @@ namespace ChromaBlast
             }
 
             int popped = board.PopColor(color);
-            ScoreDelta delta = scoreManager.ApplyPop(color, popped);
+            // Commit charge consumption and the new fatigue requirement as one
+            // state transition. This prevents ScoreManager.Changed from causing
+            // an intermediate HUD refresh before sibling latches are observed.
+            ScoreDelta delta = scoreManager.ApplyPop(color, popped, notifyChanged: false);
             ResetMoveHint(false);
             nextPopEscapeHintTime = 0f;
             if (popped > 0)
             {
                 roundPops++;
+                UpdatePopRechargeRequirement(notifyChanged: false);
                 movesSinceClear = 0;
                 SaveManager.Instance?.RegisterPopStats(popped);
                 TryAwardDailyQuestPop(popped);
                 TryUnlockAchievement(AchievementId.FirstPop);
             }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            TracePopState("AFTER GAMEPLAY STATE", color);
+#endif
 
             AudioManager.Instance?.PlayPop();
             Haptics.Pop();
@@ -557,6 +658,9 @@ namespace ChromaBlast
             TryAwardScoreMilestones();
             AnalyticsManager.Instance?.RecordPop(currentMode, color, popped, delta.totalAdded);
             RefreshHud();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            TracePopState("AFTER HUD", color);
+#endif
             EvaluateGameOver();
             SaveCurrentClassicRun();
         }
@@ -636,6 +740,9 @@ namespace ChromaBlast
         public void GoToMenu()
         {
             AudioManager.Instance?.PlayClick();
+            hud?.ClearActiveComboPresentation();
+            AudioManager.Instance?.StopComboVoice();
+            pieceSpawner?.ResetFlowState();
             SaveCurrentClassicRun();
             SaveManager.Instance?.FlushPendingSaveImmediate();
             paused = false;
@@ -858,6 +965,9 @@ namespace ChromaBlast
             roundPops = Mathf.Max(0, run.roundPops);
             roundBestChain = Mathf.Max(0, run.roundBestChain);
             movesSinceClear = Mathf.Max(0, run.movesSinceClear);
+            traysGeneratedThisRun = Mathf.Max(0, run.traysGeneratedThisRun);
+            consecutiveReliefBiasedTrays = Mathf.Max(0, run.consecutiveReliefBiasedTrays);
+            UpdatePopRechargeRequirement();
             nextScoreMilestone = run.nextScoreMilestone > 0
                 ? run.nextScoreMilestone
                 : GetNextScoreMilestoneAbove(scoreManager.Score);
@@ -903,6 +1013,8 @@ namespace ChromaBlast
                 roundPops = roundPops,
                 roundBestChain = roundBestChain,
                 movesSinceClear = movesSinceClear,
+                traysGeneratedThisRun = traysGeneratedThisRun,
+                consecutiveReliefBiasedTrays = consecutiveReliefBiasedTrays,
                 nextScoreMilestone = nextScoreMilestone,
                 revivedThisRound = revivedThisRound,
                 oceanRescueConsumedThisRound =
@@ -924,6 +1036,8 @@ namespace ChromaBlast
             paused = false;
             board.ClearPreview();
             hud.ShowPause(false);
+            hud.ClearActiveComboPresentation();
+            AudioManager.Instance?.StopComboVoice();
             if (currentMode == GameMode.Classic)
             {
                 SaveManager.Instance?.ClearClassicRunDeferred();
@@ -1382,15 +1496,150 @@ namespace ChromaBlast
             return Mathf.Clamp01(noClearAssist * 0.80f + tightBoardAssist * 0.24f);
         }
 
+        private void RegisterOpeningTray()
+        {
+            if (currentMode == GameMode.Classic)
+            {
+                traysGeneratedThisRun = 1;
+                consecutiveReliefBiasedTrays = 0;
+            }
+        }
+
+        private float GetClassicRunPressure(int trayNumber)
+        {
+            if (currentMode != GameMode.Classic)
+            {
+                return 0f;
+            }
+
+            float trayPressure;
+            if (trayNumber <= 5)
+            {
+                trayPressure = 0f;
+            }
+            else if (trayNumber <= 10)
+            {
+                trayPressure = Mathf.Lerp(0.03f, 0.18f, (trayNumber - 6) / 4f);
+            }
+            else if (trayNumber <= 18)
+            {
+                trayPressure = Mathf.Lerp(0.22f, 0.58f, (trayNumber - 11) / 7f);
+            }
+            else
+            {
+                trayPressure = Mathf.Min(0.75f, 0.62f + (trayNumber - 19) * 0.025f);
+            }
+
+            // POP remains a powerful rescue. Its use contributes only a small
+            // extra planning demand and never creates a sudden pressure jump.
+            float popPressure = Mathf.Min(0.12f, roundPops * 0.03f);
+            return Mathf.Clamp01(trayPressure + popPressure);
+        }
+
+        private float GetPopRechargeMultiplier()
+        {
+            if (currentMode != GameMode.Classic)
+            {
+                return 1f;
+            }
+
+            switch (roundPops)
+            {
+                case 0:
+                    return 1f;
+                case 1:
+                    return 1.35f;
+                case 2:
+                    return 1.70f;
+                case 3:
+                    return 2.10f;
+                default:
+                    return 2.50f;
+            }
+        }
+
+        private void UpdatePopRechargeRequirement(bool notifyChanged = true)
+        {
+            scoreManager?.SetPopRechargeMultiplier(GetPopRechargeMultiplier(), notifyChanged);
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void TracePopState(string stage, ChromaColor selectedColor)
+        {
+            if (scoreManager == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < GameConstants.ColorCount; i++)
+            {
+                ChromaColor tracedColor = (ChromaColor)i;
+                int targetCount = board == null ? 0 : board.CountCellsOfColor(tracedColor);
+                bool visible = false;
+                bool interactable = false;
+                bool hasViewState = hud != null && hud.DebugTryGetPopViewState(
+                    tracedColor,
+                    out visible,
+                    out interactable);
+                Debug.Log(
+                    $"[POP STATE] {stage}; used={selectedColor}; color={tracedColor}; "
+                    + $"charge={scoreManager.GetChroma(tracedColor)}; "
+                    + $"required={scoreManager.CurrentPopRequirement}; "
+                    + $"ready={scoreManager.IsPopReady(tracedColor)}; "
+                    + $"latched={scoreManager.DebugGetPopReadyLatch(tracedColor)}; "
+                    + $"targets={targetCount}; visible={(hasViewState && visible)}; "
+                    + $"interactable={(hasViewState && interactable)}");
+            }
+        }
+#endif
+
         private void SpawnNextSet(float assistOverride = -1f)
         {
+            GenerateNextTrayMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long timingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            try
+            {
             float assist = assistOverride >= 0f ? Mathf.Clamp01(assistOverride) : GetPieceAssist();
-            pieceSpawner.SpawnGuaranteedSet(board, random, GetPieceDifficulty(), assist);
+            int nextTrayNumber = currentMode == GameMode.Classic
+                ? traysGeneratedThisRun + 1
+                : 0;
+            float runPressure = GetClassicRunPressure(nextTrayNumber);
+            pieceSpawner.SpawnGuaranteedSet(
+                board,
+                random,
+                GetPieceDifficulty(),
+                assist,
+                runPressure,
+                currentMode == GameMode.Classic ? consecutiveReliefBiasedTrays : 0,
+                nextTrayNumber);
+            if (currentMode == GameMode.Classic)
+            {
+                traysGeneratedThisRun = nextTrayNumber;
+                consecutiveReliefBiasedTrays = pieceSpawner.LastGenerationReliefBiased
+                    ? consecutiveReliefBiasedTrays + 1
+                    : 0;
+            }
             ResetMoveHint();
+            }
+            finally
+            {
+                GenerateNextTrayMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerateNextTrayMilliseconds = ElapsedMilliseconds(timingStart);
+#endif
+            }
         }
 
         private void RefreshHud()
         {
+            HudRefreshMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long timingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            try
+            {
             if (hud == null || scoreManager == null)
             {
                 return;
@@ -1422,7 +1671,24 @@ namespace ChromaBlast
             hud.Refresh(currentMode, scoreManager, liveBestScore, blitzTimeRemaining, undoAvailable, nextScoreMilestone, GetPopTargetCounts());
             RefreshMissionHud();
             pieceSpawner?.RefreshFitHints(board);
+            }
+            finally
+            {
+                HudRefreshMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastHudRefreshMilliseconds = ElapsedMilliseconds(timingStart);
+#endif
+            }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static double ElapsedMilliseconds(long startTimestamp)
+        {
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp)
+                * 1000.0
+                / System.Diagnostics.Stopwatch.Frequency;
+        }
+#endif
 
         private int[] GetPopTargetCounts()
         {

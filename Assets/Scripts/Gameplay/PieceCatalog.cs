@@ -4,6 +4,31 @@ using UnityEngine;
 
 namespace ChromaBlast
 {
+#if UNITY_EDITOR
+    // Phase 8's shape-classification data is retained only for the Editor-only
+    // balance report. It is excluded from player builds and never participates
+    // in production tray selection.
+    public enum PieceSatisfactionClass
+    {
+        A,
+        B,
+        C,
+        D
+    }
+
+    public readonly struct PieceErgonomicProfile
+    {
+        public readonly int satisfactionScore;
+        public readonly PieceSatisfactionClass satisfactionClass;
+
+        public PieceErgonomicProfile(int satisfactionScore, PieceSatisfactionClass satisfactionClass)
+        {
+            this.satisfactionScore = satisfactionScore;
+            this.satisfactionClass = satisfactionClass;
+        }
+    }
+#endif
+
     public static class PieceCatalog
     {
         private static readonly List<PieceData> Pieces = new List<PieceData>
@@ -39,6 +64,9 @@ namespace ChromaBlast
         };
 
         private static readonly Dictionary<string, PieceData> ById = BuildLookup();
+#if UNITY_EDITOR
+        private static readonly Dictionary<string, PieceErgonomicProfile> EditorErgonomicProfiles = BuildEditorErgonomicProfiles();
+#endif
 
         public static IReadOnlyList<PieceData> All => Pieces;
 
@@ -52,6 +80,15 @@ namespace ChromaBlast
             return ById["single"];
         }
 
+#if UNITY_EDITOR
+        public static PieceErgonomicProfile GetErgonomicProfile(PieceData data)
+        {
+            return data != null && EditorErgonomicProfiles.TryGetValue(data.id, out PieceErgonomicProfile profile)
+                ? profile
+                : default;
+        }
+#endif
+
         public static PieceInstance RandomPiece(System.Random random)
         {
             return RandomPiece(random, 0.5f);
@@ -59,7 +96,12 @@ namespace ChromaBlast
 
         public static PieceInstance RandomPiece(System.Random random, float difficulty01)
         {
-            PieceData data = WeightedRandomPiece(random, Mathf.Clamp01(difficulty01));
+            return RandomPiece(random, difficulty01, allowStair5: true);
+        }
+
+        public static PieceInstance RandomPiece(System.Random random, float difficulty01, bool allowStair5)
+        {
+            PieceData data = WeightedRandomPiece(random, Mathf.Clamp01(difficulty01), allowStair5);
             ChromaColor color = (ChromaColor)random.Next(GameConstants.ColorCount);
             return new PieceInstance(data.id, color);
         }
@@ -78,6 +120,15 @@ namespace ChromaBlast
 
         public static void FillRandomSet(PieceInstance[] destination, System.Random random, float difficulty01)
         {
+            FillRandomSet(destination, random, difficulty01, allowStair5: true);
+        }
+
+        public static void FillRandomSet(
+            PieceInstance[] destination,
+            System.Random random,
+            float difficulty01,
+            bool allowStair5)
+        {
             if (destination == null || random == null)
             {
                 return;
@@ -86,21 +137,37 @@ namespace ChromaBlast
             int count = Mathf.Min(destination.Length, GameConstants.TraySize);
             for (int i = 0; i < count; i++)
             {
-                destination[i] = RandomPiece(random, difficulty01);
+                destination[i] = RandomPiece(random, difficulty01, allowStair5);
             }
         }
 
-        private static PieceData WeightedRandomPiece(System.Random random, float difficulty01)
+        private static PieceData WeightedRandomPiece(System.Random random, float difficulty01, bool allowStair5)
         {
             float totalWeight = 0f;
             for (int i = 0; i < Pieces.Count; i++)
             {
+                // plus5 stays in the catalog for serialized ID stability, but
+                // human playtesting rejected it as a runtime gameplay shape.
+                // Keep this exclusion at the source of every random gameplay
+                // pool so Classic, Blitz, and fallback generation agree.
+                if (Pieces[i].id == "plus5"
+                    || (!allowStair5 && Pieces[i].id == "stair5"))
+                {
+                    continue;
+                }
+
                 totalWeight += WeightFor(Pieces[i], difficulty01);
             }
 
             float roll = (float)(random.NextDouble() * totalWeight);
             for (int i = 0; i < Pieces.Count; i++)
             {
+                if (Pieces[i].id == "plus5"
+                    || (!allowStair5 && Pieces[i].id == "stair5"))
+                {
+                    continue;
+                }
+
                 roll -= WeightFor(Pieces[i], difficulty01);
                 if (roll <= 0f)
                 {
@@ -108,7 +175,16 @@ namespace ChromaBlast
                 }
             }
 
-            return Pieces[Pieces.Count - 1];
+            for (int i = Pieces.Count - 1; i >= 0; i--)
+            {
+                if (Pieces[i].id != "plus5"
+                    && (allowStair5 || Pieces[i].id != "stair5"))
+                {
+                    return Pieces[i];
+                }
+            }
+
+            return Pieces[0];
         }
 
         private static float WeightFor(PieceData data, float difficulty01)
@@ -197,6 +273,97 @@ namespace ChromaBlast
 
             return lookup;
         }
+
+#if UNITY_EDITOR
+        private static Dictionary<string, PieceErgonomicProfile> BuildEditorErgonomicProfiles()
+        {
+            Dictionary<string, PieceErgonomicProfile> profiles = new Dictionary<string, PieceErgonomicProfile>(Pieces.Count);
+            for (int pieceIndex = 0; pieceIndex < Pieces.Count; pieceIndex++)
+            {
+                PieceData data = Pieces[pieceIndex];
+                int turns = 0;
+                int branches = 0;
+                for (int cellIndex = 0; cellIndex < data.cells.Length; cellIndex++)
+                {
+                    Vector2Int cell = data.cells[cellIndex];
+                    int neighbours = 0;
+                    bool hasHorizontalNeighbour = false;
+                    bool hasVerticalNeighbour = false;
+                    for (int otherIndex = 0; otherIndex < data.cells.Length; otherIndex++)
+                    {
+                        if (cellIndex == otherIndex)
+                        {
+                            continue;
+                        }
+
+                        Vector2Int other = data.cells[otherIndex];
+                        int deltaX = other.x - cell.x;
+                        int deltaY = other.y - cell.y;
+                        if (Mathf.Abs(deltaX) + Mathf.Abs(deltaY) != 1)
+                        {
+                            continue;
+                        }
+
+                        neighbours++;
+                        hasHorizontalNeighbour |= deltaX != 0;
+                        hasVerticalNeighbour |= deltaY != 0;
+                    }
+
+                    if (neighbours >= 3)
+                    {
+                        branches++;
+                    }
+                    else if (neighbours == 2 && hasHorizontalNeighbour && hasVerticalNeighbour)
+                    {
+                        turns++;
+                    }
+                }
+
+                int footprint = data.width * data.height;
+                int gaps = Mathf.Max(0, footprint - data.cells.Length);
+                int compactness = footprint <= 0 ? 0 : Mathf.RoundToInt(data.cells.Length * 100f / footprint);
+                bool isStraight = data.width == 1 || data.height == 1;
+                bool isFullRectangle = gaps == 0;
+                int ergonomicTurns = isFullRectangle ? 0 : turns;
+                int ergonomicBranches = isFullRectangle ? 0 : branches;
+                int score = 28
+                    + Mathf.RoundToInt(compactness * 0.30f)
+                    + (isFullRectangle ? 24 : 0)
+                    + (isStraight ? 18 : 0)
+                    + (data.cells.Length >= 3 && data.cells.Length <= 5 ? 13 : 0)
+                    + (!isStraight && ergonomicBranches == 0 ? 14 : 0)
+                    - gaps * 4
+                    - ergonomicTurns * 7
+                    - ergonomicBranches * 10;
+
+                if (ergonomicTurns >= 2 && compactness < 65)
+                {
+                    score -= 20;
+                }
+
+                if (data.cells.Length >= 8)
+                {
+                    score -= 25;
+                }
+                else if (data.cells.Length >= 6)
+                {
+                    score -= 4;
+                }
+
+                score = Mathf.Clamp(score, 0, 100);
+                PieceSatisfactionClass satisfactionClass = score >= 84
+                    ? PieceSatisfactionClass.A
+                    : score >= 55
+                        ? PieceSatisfactionClass.B
+                        : score >= 38
+                            ? PieceSatisfactionClass.C
+                            : PieceSatisfactionClass.D;
+                profiles.Add(data.id, new PieceErgonomicProfile(score, satisfactionClass));
+            }
+
+            return profiles;
+        }
+#endif
 
         private static PieceData P(string id, params Vector2Int[] cells)
         {

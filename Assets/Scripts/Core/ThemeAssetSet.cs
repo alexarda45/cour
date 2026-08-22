@@ -18,6 +18,7 @@ namespace ChromaBlast
         [SerializeField] private Sprite gameOverBackground;
         [SerializeField] private Sprite themesPanelBackgroundSprite;
         [SerializeField] private Sprite boardSurfaceSprite;
+        [SerializeField] private Sprite rescuePanelSprite;
 
         [Header("Tile Artwork")]
         [SerializeField] private Sprite tileCyan;
@@ -86,6 +87,7 @@ namespace ChromaBlast
         public Sprite GameOverBackground => gameOverBackground;
         public Sprite ThemesPanelBackgroundSprite => themesPanelBackgroundSprite;
         public Sprite BoardSurfaceSprite => boardSurfaceSprite;
+        public Sprite RescuePanelSprite => rescuePanelSprite;
         public Color CapsuleTintColor => WithOpaqueAlpha(capsuleTintColor);
         public Color CrownTintColor => WithOpaqueAlpha(crownTintColor);
         public Sprite CapsuleSprite => capsuleSprite;

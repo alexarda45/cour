@@ -36,6 +36,12 @@ namespace ChromaBlast
         private Coroutine readyPulseRoutine;
         private Image blossomPopVisual;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public ChromaColor DebugColor => color;
+        public bool DebugPopVisible => popButton != null && popButton.gameObject.activeInHierarchy;
+        public bool DebugPopInteractable => popButton != null && popButton.interactable;
+#endif
+
         private void OnEnable()
         {
             ThemeCatalog.ThemeChanged += HandleThemeChanged;
@@ -73,7 +79,8 @@ namespace ChromaBlast
                 DisableLegacyPopButtonText();
             }
 
-            ApplyCleanHudVisibility(false);
+            ApplyCleanHudVisibility();
+            SetPopAvailability(false);
         }
 
         public void Refresh(int amount, float normalized, bool ready)
@@ -84,6 +91,9 @@ namespace ChromaBlast
         public void Refresh(int amount, float normalized, bool ready, int popTargetCount)
         {
             RefreshThemeColor();
+            // This is deliberately per-color state. A POP is visible only when
+            // this exact color can be used on the live board; one consumed color
+            // must never alter a ready sibling's root, hit area, or interaction.
             bool usablePop = ready && popTargetCount > 0;
 
             if (slider != null)
@@ -100,12 +110,8 @@ namespace ChromaBlast
                     : $"{ShortColorName(color)} {amount}/{GameConstants.ChromaThreshold}";
             }
 
-            if (popButton != null)
-            {
-                popButton.interactable = usablePop;
-            }
-
-            ApplyCleanHudVisibility(usablePop);
+            ApplyCleanHudVisibility();
+            SetPopAvailability(usablePop);
 
             if (usablePop && !wasReady)
             {
@@ -219,7 +225,7 @@ namespace ChromaBlast
             }
         }
 
-        private void ApplyCleanHudVisibility(bool showPopButton)
+        private void ApplyCleanHudVisibility()
         {
             if (!CleanGameplayHud)
             {
@@ -233,13 +239,7 @@ namespace ChromaBlast
 
             if (popButton != null)
             {
-                popButton.gameObject.SetActive(showPopButton);
-                if (showPopButton)
-                {
-                    // Button.OnEnable reapplies its ColorBlock when the ready button becomes active.
-                    // Reassert the authored sprite and neutral white tint after that transition.
-                    ConfigurePopButtonVisual();
-                }
+                ConfigurePopButtonVisual();
             }
 
             if (popButtonText != null)
@@ -410,6 +410,25 @@ namespace ChromaBlast
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
             ConfigurePopButtonVisual();
+        }
+
+        private void SetPopAvailability(bool usablePop)
+        {
+            if (popButton == null)
+            {
+                return;
+            }
+
+            // Visibility, interactability and pulse ownership are all derived
+            // from this ChromaBarView's own color only. Inactive roots are not
+            // dimmed placeholders and remain out of the raycast/layout path.
+            if (!usablePop)
+            {
+                StopReadyPulse();
+            }
+
+            popButton.interactable = usablePop;
+            popButton.gameObject.SetActive(usablePop);
         }
 
         private static Sprite LoadPopButtonSprite(string resourcePath)

@@ -84,6 +84,10 @@ namespace ChromaBlast
         public int roundPops;
         public int roundBestChain;
         public int movesSinceClear;
+        // Classic-run-only balance state. It intentionally never becomes a
+        // permanent player profile penalty and is safe for older save data.
+        public int traysGeneratedThisRun;
+        public int consecutiveReliefBiasedTrays;
         public int nextScoreMilestone;
         public bool revivedThisRound;
         public bool oceanRescueConsumedThisRound;

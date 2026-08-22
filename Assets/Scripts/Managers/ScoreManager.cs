@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace ChromaBlast
@@ -30,13 +31,28 @@ namespace ChromaBlast
         private const int ClearedCellBonus = 12;
         private const int PopScorePerCell = 90;
         private const int LargePopBonus = 300;
+        private const float MinimumPopRechargeMultiplier = 1f;
+
+        private sealed class PopReadySnapshot
+        {
+            public readonly bool[] ready = new bool[GameConstants.ColorCount];
+        }
+
+        // Undo snapshots stay schema-compatible while retaining exact per-color
+        // readiness in memory. Persisted legacy snapshots are reconstructed
+        // conservatively in Restore without adding fields to SaveData.
+        private static readonly ConditionalWeakTable<ScoreSnapshot, PopReadySnapshot> PopReadySnapshots =
+            new ConditionalWeakTable<ScoreSnapshot, PopReadySnapshot>();
 
         public event Action Changed;
 
         public int Score { get; private set; }
         public int Chain { get; private set; }
+        public float PopRechargeMultiplier { get; private set; } = MinimumPopRechargeMultiplier;
+        public int CurrentPopRequirement => Mathf.CeilToInt(GameConstants.ChromaThreshold * PopRechargeMultiplier);
 
         private readonly int[] chroma = new int[GameConstants.ColorCount];
+        private readonly bool[] popReadyLatched = new bool[GameConstants.ColorCount];
 
         public void ResetScore()
         {
@@ -45,6 +61,7 @@ namespace ChromaBlast
             for (int i = 0; i < chroma.Length; i++)
             {
                 chroma[i] = 0;
+                popReadyLatched[i] = false;
             }
 
             Changed?.Invoke();
@@ -115,13 +132,17 @@ namespace ChromaBlast
             }
         }
 
-        public ScoreDelta ApplyPop(ChromaColor color, int cellsPopped)
+        public ScoreDelta ApplyPop(ChromaColor color, int cellsPopped, bool notifyChanged = true)
         {
             ScoreDelta delta = new ScoreDelta();
             if (cellsPopped <= 0)
             {
                 chroma[(int)color] = 0;
-                Changed?.Invoke();
+                popReadyLatched[(int)color] = false;
+                if (notifyChanged)
+                {
+                    Changed?.Invoke();
+                }
                 return delta;
             }
 
@@ -129,7 +150,11 @@ namespace ChromaBlast
             delta.totalAdded = delta.popScore;
             Score += delta.totalAdded;
             chroma[(int)color] = 0;
-            Changed?.Invoke();
+            popReadyLatched[(int)color] = false;
+            if (notifyChanged)
+            {
+                Changed?.Invoke();
+            }
             return delta;
         }
 
@@ -147,8 +172,22 @@ namespace ChromaBlast
 
         public void AddRewardedChroma(ChromaColor color)
         {
-            chroma[(int)color] = GameConstants.ChromaThreshold;
+            chroma[(int)color] = CurrentPopRequirement;
+            popReadyLatched[(int)color] = true;
             Changed?.Invoke();
+        }
+
+        public void SetPopRechargeMultiplier(float multiplier, bool notifyChanged = true)
+        {
+            // Fatigue applies to future charging only. A color that already
+            // reached READY stays latched until that exact color is consumed.
+            // Do not rewrite sibling charge values when the global requirement
+            // changes; that was the source of the all-POP-disappear bug.
+            PopRechargeMultiplier = Mathf.Max(MinimumPopRechargeMultiplier, multiplier);
+            if (notifyChanged)
+            {
+                Changed?.Invoke();
+            }
         }
 
         public int GetChroma(ChromaColor color)
@@ -158,12 +197,17 @@ namespace ChromaBlast
 
         public float GetChroma01(ChromaColor color)
         {
-            return Mathf.Clamp01(chroma[(int)color] / (float)GameConstants.ChromaThreshold);
+            if (popReadyLatched[(int)color])
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp01(chroma[(int)color] / (float)CurrentPopRequirement);
         }
 
         public bool IsPopReady(ChromaColor color)
         {
-            return chroma[(int)color] >= GameConstants.ChromaThreshold;
+            return popReadyLatched[(int)color];
         }
 
         public ScoreSnapshot CreateSnapshot()
@@ -175,6 +219,8 @@ namespace ChromaBlast
                 chroma = new int[GameConstants.ColorCount]
             };
             Array.Copy(chroma, snapshot.chroma, chroma.Length);
+            PopReadySnapshot latchSnapshot = PopReadySnapshots.GetOrCreateValue(snapshot);
+            Array.Copy(popReadyLatched, latchSnapshot.ready, popReadyLatched.Length);
             return snapshot;
         }
 
@@ -193,13 +239,52 @@ namespace ChromaBlast
                 chroma[i] = snapshot.chroma != null && i < snapshot.chroma.Length ? snapshot.chroma[i] : 0;
             }
 
+            if (PopReadySnapshots.TryGetValue(snapshot, out PopReadySnapshot latchSnapshot))
+            {
+                Array.Copy(latchSnapshot.ready, popReadyLatched, popReadyLatched.Length);
+            }
+            else
+            {
+                // Older/on-disk snapshots have no latch sidecar. Preserve an
+                // already-earned READY state player-favorably without changing
+                // the serialized schema. New charge still uses the current
+                // fatigue requirement after that color is consumed.
+                for (int i = 0; i < popReadyLatched.Length; i++)
+                {
+                    popReadyLatched[i] = chroma[i] >= GameConstants.ChromaThreshold;
+                }
+            }
+
             Changed?.Invoke();
         }
 
         private void AddChroma(ChromaColor color, int amount)
         {
             int index = (int)color;
-            chroma[index] = Mathf.Min(GameConstants.ChromaThreshold, chroma[index] + amount);
+            if (popReadyLatched[index])
+            {
+                return;
+            }
+
+            chroma[index] = Mathf.Min(CurrentPopRequirement, chroma[index] + amount);
+            if (chroma[index] >= CurrentPopRequirement)
+            {
+                popReadyLatched[index] = true;
+            }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public bool DebugGetPopReadyLatch(ChromaColor color)
+        {
+            return popReadyLatched[(int)color];
+        }
+
+        public void DebugSetPopState(ChromaColor color, int amount, bool readyLatched)
+        {
+            int index = (int)color;
+            chroma[index] = Mathf.Max(0, amount);
+            popReadyLatched[index] = readyLatched;
+        }
+#endif
     }
 }

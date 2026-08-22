@@ -73,6 +73,14 @@ namespace ChromaBlast
         private const float BeachSettingsControlWidth = 220f;
         private const float BeachSettingsControlHeight = 82f;
         private const float OceanBoardFrameRadius = 0.30f;
+        private const int BlitzUrgentThreshold = 15;
+        private const int BlitzCriticalThreshold = 5;
+        private const int BlitzFinalEmphasisThreshold = 3;
+        private const float BlitzUrgentPulseScale = 1.06f;
+        private const float BlitzCriticalPulseScale = 1.10f;
+        private const float BlitzFinalPulseScale = 1.13f;
+        private const float BlitzUrgentPulseDuration = 0.16f;
+        private const float BlitzCriticalPulseDuration = 0.14f;
 
         [Header("Text")]
         [SerializeField] private TMP_Text modeText;
@@ -405,21 +413,51 @@ namespace ChromaBlast
             if (!visible)
             {
                 lastDisplayedBlitzSecond = -1;
-                SetBlitzTimerUrgency(false);
+                ResetBlitzTimerPresentation();
                 return;
             }
 
             int seconds = Mathf.Max(0, Mathf.CeilToInt(blitzSeconds));
-            timerText.text = seconds.ToString();
             if (seconds == lastDisplayedBlitzSecond)
             {
                 return;
             }
 
+            timerText.text = seconds.ToString();
             ApplyBlitzTimerPalette(seconds);
-            SetBlitzTimerUrgency(seconds <= 10);
+            UpdateBlitzTimerUrgency(seconds, lastDisplayedBlitzSecond);
             lastDisplayedBlitzSecond = seconds;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public bool DebugTryGetPopViewState(
+            ChromaColor color,
+            out bool visible,
+            out bool interactable)
+        {
+            visible = false;
+            interactable = false;
+            if (chromaBars == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < chromaBars.Length; i++)
+            {
+                ChromaBarView bar = chromaBars[i];
+                if (bar == null || bar.DebugColor != color)
+                {
+                    continue;
+                }
+
+                visible = bar.DebugPopVisible;
+                interactable = bar.DebugPopInteractable;
+                return true;
+            }
+
+            return false;
+        }
+#endif
 
         public void PunchScore(bool pure)
         {
@@ -522,8 +560,13 @@ namespace ChromaBlast
                     : null;
                 premiumLineClearFx?.Play(boardRect, result, clearScreenPosition, accentColor, chain);
                 float alpha = Mathf.Clamp(0.12f + result.linesCleared * 0.04f + result.pureLines * 0.05f + styleBonus * 0.00016f, 0.12f, 0.34f);
-                Flash(Color.Lerp(accentColor, Color.white, 0.22f), alpha, 0.14f);
+                Flash(Color.Lerp(accentColor, Color.white, 0.22f), alpha, 0.070f);
             }
+        }
+
+        public void ClearActiveComboPresentation()
+        {
+            popupLayer?.ClearActiveComboPresentation();
         }
 
         private void DisableLegacyChainText()
@@ -753,6 +796,14 @@ namespace ChromaBlast
 
         public void ShowPause(bool visible)
         {
+            // GameManager pauses through its active state rather than time scale.
+            // Stop any in-flight cosmetic timer pulse so it cannot continue behind
+            // the pause panel or retrigger immediately on resume.
+            if (visible)
+            {
+                ResetBlitzTimerPresentation();
+            }
+
             bool blossomPause = IsBlossomSettingsActive();
             if (blossomPause && visible && !blossomScoreVisibilityCaptured)
             {
@@ -5086,7 +5137,7 @@ namespace ChromaBlast
 
             timerText.color = Color.white;
             timerText.enableVertexGradient = true;
-            if (seconds <= 10)
+            if (seconds <= BlitzCriticalThreshold)
             {
                 timerText.colorGradient = new VertexGradient(
                     new Color32(255, 244, 244, 255),
@@ -5097,7 +5148,7 @@ namespace ChromaBlast
                 return;
             }
 
-            if (seconds <= 20)
+            if (seconds <= BlitzUrgentThreshold)
             {
                 timerText.colorGradient = new VertexGradient(
                     new Color32(255, 255, 244, 255),
@@ -5116,23 +5167,45 @@ namespace ChromaBlast
             timerText.outlineColor = new Color32(70, 145, 218, 230);
         }
 
-        private void SetBlitzTimerUrgency(bool urgent)
+        private void UpdateBlitzTimerUrgency(int seconds, int previousSecond)
         {
             if (timerText == null)
             {
                 return;
             }
 
-            if (urgent)
+            if (seconds <= 0)
             {
-                if (blitzUrgencyRoutine != null)
-                {
-                    return;
-                }
+                ResetBlitzTimerPresentation();
+                return;
+            }
 
-                timerText.transform.DOKill();
-                timerText.transform.localScale = Vector3.one;
-                blitzUrgencyRoutine = StartCoroutine(BlitzUrgencyPulseRoutine());
+            if (seconds <= BlitzCriticalThreshold)
+            {
+                bool finalCountdown = seconds <= BlitzFinalEmphasisThreshold;
+                StartBlitzTimerPulse(
+                    finalCountdown ? BlitzFinalPulseScale : BlitzCriticalPulseScale,
+                    BlitzCriticalPulseDuration);
+                return;
+            }
+
+            bool enteredUrgent = seconds <= BlitzUrgentThreshold
+                && previousSecond > BlitzUrgentThreshold;
+            if (enteredUrgent)
+            {
+                StartBlitzTimerPulse(BlitzUrgentPulseScale, BlitzUrgentPulseDuration);
+                return;
+            }
+
+            // No persistent pulse above the critical threshold. If time was restored
+            // by a bonus, immediately return to the stable timer presentation.
+            ResetBlitzTimerPresentation();
+        }
+
+        private void StartBlitzTimerPulse(float peakScale, float duration)
+        {
+            if (timerText == null)
+            {
                 return;
             }
 
@@ -5142,22 +5215,50 @@ namespace ChromaBlast
                 blitzUrgencyRoutine = null;
             }
 
+            timerText.transform.DOKill();
             timerText.transform.localScale = Vector3.one;
+            blitzUrgencyRoutine = StartCoroutine(BlitzUrgencyPulseRoutine(peakScale, duration));
         }
 
-        private IEnumerator BlitzUrgencyPulseRoutine()
+        private void ResetBlitzTimerPresentation()
         {
-            const float cycleDuration = 0.68f;
-            const float pulseScale = 0.10f;
+            if (blitzUrgencyRoutine != null)
+            {
+                StopCoroutine(blitzUrgencyRoutine);
+                blitzUrgencyRoutine = null;
+            }
+
+            if (timerText != null)
+            {
+                timerText.transform.DOKill();
+                timerText.transform.localScale = Vector3.one;
+            }
+        }
+
+        private IEnumerator BlitzUrgencyPulseRoutine(float peakScale, float duration)
+        {
+            if (timerText == null)
+            {
+                blitzUrgencyRoutine = null;
+                yield break;
+            }
+
+            Transform timerTransform = timerText.transform;
+            float safeDuration = Mathf.Max(0.01f, duration);
             float elapsed = 0f;
 
-            while (timerText != null)
+            while (timerText != null && elapsed < safeDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float phase = Mathf.Repeat(elapsed, cycleDuration) / cycleDuration;
-                float strength = 0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f);
-                timerText.transform.localScale = Vector3.one * (1f + pulseScale * strength);
+                float progress = Mathf.Clamp01(elapsed / safeDuration);
+                float strength = Mathf.Sin(progress * Mathf.PI);
+                timerTransform.localScale = Vector3.one * Mathf.Lerp(1f, peakScale, strength);
                 yield return null;
+            }
+
+            if (timerText != null && timerText.transform == timerTransform)
+            {
+                timerTransform.localScale = Vector3.one;
             }
 
             blitzUrgencyRoutine = null;
@@ -5532,15 +5633,15 @@ namespace ChromaBlast
             int absoluteDelta = Mathf.Abs(delta);
             if (absoluteDelta <= 100)
             {
-                return Mathf.Lerp(0.08f, 0.10f, absoluteDelta / 100f);
+                return Mathf.Lerp(0.035f, 0.045f, absoluteDelta / 100f);
             }
 
             if (absoluteDelta <= 500)
             {
-                return Mathf.Lerp(0.10f, 0.14f, (absoluteDelta - 100f) / 400f);
+                return Mathf.Lerp(0.050f, 0.065f, (absoluteDelta - 100f) / 400f);
             }
 
-            return Mathf.Lerp(0.14f, 0.20f, Mathf.Clamp01((absoluteDelta - 500f) / 2500f));
+            return Mathf.Lerp(0.065f, 0.10f, Mathf.Clamp01((absoluteDelta - 500f) / 2500f));
         }
 
         private void SetDisplayedScoreText(int value)

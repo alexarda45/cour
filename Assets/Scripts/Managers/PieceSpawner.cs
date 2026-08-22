@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,6 +8,18 @@ namespace ChromaBlast
 {
     public class PieceSpawner : MonoBehaviour
     {
+        private static readonly ProfilerMarker GenerateTrayMarker = new ProfilerMarker("ChromaBlast.Generation.GenerateNextTray");
+        private static readonly ProfilerMarker CandidateEvaluationMarker = new ProfilerMarker("ChromaBlast.Generation.Evaluate56Candidates");
+        private static readonly ProfilerMarker DeepProjectionMarker = new ProfilerMarker("ChromaBlast.Generation.DeepTop4Projection");
+        private static readonly ProfilerMarker ContinuationConstructionMarker = new ProfilerMarker("ChromaBlast.Generation.ConstructContinuation");
+        public enum BoardOccupancyState
+        {
+            Open,
+            Balanced,
+            Pressured,
+            Critical
+        }
+
         // One presentation cell size for every piece in the active three-piece tray.
         // Board placement continues to use PieceView's board-scale transition.
         private const float SharedTrayCellSize = 54f;
@@ -16,6 +29,8 @@ namespace ChromaBlast
 
         private sealed class GenerationMetrics
         {
+            public bool profileReady;
+            public GenerationPlacementProfile profile;
             public bool placementOptionsReady;
             public int placementOptions;
             public bool clearOpportunitiesReady;
@@ -25,10 +40,59 @@ namespace ChromaBlast
 
             public void Reset()
             {
+                profileReady = false;
                 placementOptionsReady = false;
                 clearOpportunitiesReady = false;
                 setupOpportunityReady = false;
             }
+        }
+
+        private readonly struct SetupPayoffKey : IEquatable<SetupPayoffKey>
+        {
+            private readonly string setupShapeId;
+            private readonly string payoffShapeId;
+
+            public SetupPayoffKey(string setupShapeId, string payoffShapeId)
+            {
+                this.setupShapeId = setupShapeId;
+                this.payoffShapeId = payoffShapeId;
+            }
+
+            public bool Equals(SetupPayoffKey other)
+            {
+                return string.Equals(setupShapeId, other.setupShapeId, StringComparison.Ordinal)
+                    && string.Equals(payoffShapeId, other.payoffShapeId, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is SetupPayoffKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((setupShapeId == null ? 0 : setupShapeId.GetHashCode()) * 397)
+                        ^ (payoffShapeId == null ? 0 : payoffShapeId.GetHashCode());
+                }
+            }
+        }
+
+        private struct SetupPayoffAnalysis
+        {
+            public int legacyScore;
+            public int pureScore;
+        }
+
+        // FlowState is intentionally run-temporary. It captures up to two useful
+        // lines from the actual board after a tray is consumed; it is never saved
+        // and never dictates an exact placement for the next tray.
+        private struct FlowTarget
+        {
+            public bool row;
+            public int lineIndex;
+            public int filledCells;
         }
 
         [SerializeField] private TraySlot[] traySlots;
@@ -39,9 +103,45 @@ namespace ChromaBlast
         private GameManager gameManager;
         private float sharedPreviewCellSize = SharedTrayCellSize;
         private readonly Dictionary<string, GenerationMetrics> generationMetricCache = new Dictionary<string, GenerationMetrics>(32);
+        private readonly Dictionary<SetupPayoffKey, int> generationSetupPayoffCache = new Dictionary<SetupPayoffKey, int>(128);
         private BoardManager generationMetricBoard;
         private bool generationEmptyCellsReady;
         private int generationEmptyCells;
+        private const int OpenPureSetupDiversityBonus = 2500;
+        private const int RelaxFlowDeepCandidateCount = 4;
+        private const int LateChallengeCandidateCapacity = GameConstants.GuaranteedSetAttempts;
+        private static readonly string[] ContinuationShapeIds =
+        {
+            "single",
+            "line2_h", "line2_v",
+            "line3_h", "line3_v",
+            "line4_h", "line4_v",
+            "line5_h", "line5_v",
+            "square2",
+            "corner3", "corner3_m",
+            "l4", "l4_m", "l4_r", "l4_rm"
+        };
+        private readonly FlowTarget[] flowTargets = new FlowTarget[2];
+        private int flowTargetCount;
+        private PieceInstance[] continuationShapeCandidates;
+        private readonly PieceInstance[] constructedContinuationSet = new PieceInstance[GameConstants.TraySize];
+        private readonly PieceInstance[][] relaxFlowCandidateSets =
+        {
+            new PieceInstance[GameConstants.TraySize],
+            new PieceInstance[GameConstants.TraySize],
+            new PieceInstance[GameConstants.TraySize],
+            new PieceInstance[GameConstants.TraySize]
+        };
+        private readonly int[] relaxFlowCandidateScores = new int[RelaxFlowDeepCandidateCount];
+        private readonly int[] relaxFlowCandidateFitCounts = new int[RelaxFlowDeepCandidateCount];
+        private int relaxFlowCandidateCount;
+        private PieceInstance[][] lateChallengeCandidateSets;
+        private readonly int[] lateChallengeCandidateScores = new int[LateChallengeCandidateCapacity];
+        private readonly int[] lateChallengeCandidateEaseScores = new int[LateChallengeCandidateCapacity];
+        private readonly int[] lateChallengeCandidateFitCounts = new int[LateChallengeCandidateCapacity];
+        private int lateChallengeCandidateCount;
+
+        public bool LastGenerationReliefBiased { get; private set; }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public int LastGenerationCandidateCount { get; private set; }
@@ -49,6 +149,35 @@ namespace ChromaBlast
         public int LastGenerationMetricCacheHits { get; private set; }
         public int LastGenerationChunks { get; private set; }
         public double LastGenerationElapsedMilliseconds { get; private set; }
+        public double LastCandidateEvaluationMilliseconds { get; private set; }
+        public double LastDeepProjectionMilliseconds { get; private set; }
+        public double LastContinuationConstructionMilliseconds { get; private set; }
+        public int LastGenerationSelectedScore { get; private set; }
+        public int LastGenerationOccupiedCells { get; private set; }
+        public BoardOccupancyState LastGenerationOccupancyState { get; private set; }
+        public float LastGenerationRunPressure { get; private set; }
+        public int LastGenerationImmediateClearOpportunities { get; private set; }
+        public int LastGenerationSetupOpportunities { get; private set; }
+        public int LastGenerationSetupPayoffOpportunities { get; private set; }
+        public int LastGenerationLegacySetupPayoffOpportunities { get; private set; }
+        public int LastGenerationPureSetupOpportunities { get; private set; }
+        public int LastGenerationPureSetupWithoutImmediateClearOpportunities { get; private set; }
+        public int LastGenerationImmediateClearSetupOverlap { get; private set; }
+        public bool LastGenerationOpenDiversityBonusApplied { get; private set; }
+        public int LastGenerationAdjacencyContacts { get; private set; }
+        public int LastGenerationLineProgress { get; private set; }
+        public int LastGenerationCleanlinessScore { get; private set; }
+        public int LastGenerationRelaxFlowScore { get; private set; }
+        public int LastGenerationProjectedOccupiedCells { get; private set; }
+        public int LastGenerationProjectedLargestEmptyRegion { get; private set; }
+        public int LastGenerationProjectedFragmentation { get; private set; }
+        public int LastGenerationFlowTargetCount { get; private set; }
+        public bool LastGenerationMatchedFlowTarget { get; private set; }
+        public bool LastGenerationConstructedContinuation { get; private set; }
+        public bool LastFlowTargetProducedClear { get; private set; }
+        public int LastGenerationTrayEaseScore { get; private set; }
+        public bool LastGenerationChallengeBandFallback { get; private set; }
+        public bool LastGenerationCriticalChallengeBypass { get; private set; }
 #endif
 
         public void Initialize(GameManager owner)
@@ -56,6 +185,672 @@ namespace ChromaBlast
             gameManager = owner;
             EnsureRuntimePrefabs();
             EnsureTraySlots();
+            EnsureLateChallengeBuffers();
+        }
+
+        public void ResetFlowState()
+        {
+            flowTargetCount = 0;
+            for (int i = 0; i < flowTargets.Length; i++)
+            {
+                flowTargets[i] = default;
+            }
+        }
+
+        // Called only after the player has consumed a real tray. The next tray
+        // can softly continue what is actually left on board, without persisting
+        // any of this transient assistance.
+        public void CaptureFlowState(BoardManager board)
+        {
+            ResetFlowState();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastFlowTargetProducedClear = false;
+#endif
+            if (board == null)
+            {
+                return;
+            }
+
+            for (int orientation = 0; orientation < 2; orientation++)
+            {
+                bool row = orientation == 0;
+                for (int line = 0; line < GameConstants.BoardSize; line++)
+                {
+                    int filled = board.GetGenerationLineFill(row, line);
+                    // ContinuationIntent starts earlier than the former near-line
+                    // FlowTarget. Two occupied cells are enough to identify a
+                    // readable row/column objective; the actual A -> B verifier
+                    // still rejects vague shape compatibility during selection.
+                    if (filled < 2 || filled > GameConstants.BoardSize - 1)
+                    {
+                        continue;
+                    }
+
+                    int score = GetContinuationIntentPriority(filled);
+
+                    InsertFlowTarget(row, line, filled, score);
+                }
+            }
+        }
+
+        // Called after a real piece is placed but before the normal clear pass.
+        // This is diagnostic-only: it records whether the player actually closed
+        // a carried target and never influences the move, score, or clear itself.
+        public void RecordFlowTargetClearIfCompleted(BoardManager board)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (board == null || flowTargetCount == 0 || LastFlowTargetProducedClear)
+            {
+                return;
+            }
+
+            for (int i = 0; i < flowTargetCount; i++)
+            {
+                FlowTarget target = flowTargets[i];
+                if (board.IsGenerationFlowTargetComplete(target.row, target.lineIndex))
+                {
+                    LastFlowTargetProducedClear = true;
+                    return;
+                }
+            }
+#endif
+        }
+
+        private void InsertFlowTarget(bool row, int lineIndex, int filledCells, int score)
+        {
+            int insertAt = flowTargetCount;
+            if (insertAt >= flowTargets.Length)
+            {
+                insertAt = flowTargets.Length - 1;
+            }
+
+            while (insertAt > 0 && score > GetFlowTargetPriority(flowTargets[insertAt - 1]))
+            {
+                if (insertAt < flowTargets.Length)
+                {
+                    flowTargets[insertAt] = flowTargets[insertAt - 1];
+                }
+
+                insertAt--;
+            }
+
+            if (insertAt < flowTargets.Length
+                && (flowTargetCount < flowTargets.Length || score > GetFlowTargetPriority(flowTargets[insertAt])))
+            {
+                flowTargets[insertAt] = new FlowTarget
+                {
+                    row = row,
+                    lineIndex = lineIndex,
+                    filledCells = filledCells
+                };
+                if (flowTargetCount < flowTargets.Length)
+                {
+                    flowTargetCount++;
+                }
+            }
+        }
+
+        private static int GetFlowTargetPriority(FlowTarget target)
+        {
+            return GetContinuationIntentPriority(target.filledCells);
+        }
+
+        private static int GetContinuationIntentPriority(int filledCells)
+        {
+            switch (filledCells)
+            {
+                case 6:
+                    return 1400;
+                case 5:
+                    return 1250;
+                case 4:
+                    return 1050;
+                case 7:
+                    return 900;
+                case 3:
+                    return 760;
+                case 2:
+                    return 520;
+                default:
+                    return 0;
+            }
+        }
+
+        private void BeginRelaxFlowCandidateSelection()
+        {
+            relaxFlowCandidateCount = 0;
+            for (int i = 0; i < relaxFlowCandidateScores.Length; i++)
+            {
+                relaxFlowCandidateScores[i] = int.MinValue;
+                relaxFlowCandidateFitCounts[i] = 0;
+            }
+        }
+
+        private void EnsureLateChallengeBuffers()
+        {
+            if (lateChallengeCandidateSets != null)
+            {
+                return;
+            }
+
+            lateChallengeCandidateSets = new PieceInstance[LateChallengeCandidateCapacity][];
+            for (int i = 0; i < lateChallengeCandidateSets.Length; i++)
+            {
+                lateChallengeCandidateSets[i] = new PieceInstance[GameConstants.TraySize];
+            }
+        }
+
+        private void BeginLateChallengeSelection()
+        {
+            EnsureLateChallengeBuffers();
+            lateChallengeCandidateCount = 0;
+        }
+
+        private void ConsiderLateChallengeCandidate(
+            BoardManager board,
+            PieceInstance[] candidate,
+            int normalScore,
+            int fitCount)
+        {
+            if (candidate == null || fitCount < 2)
+            {
+                return;
+            }
+
+            int easeScore = CalculateTrayEaseScore(board, candidate, out int totalPlacementOptions);
+            if (totalPlacementOptions < 5)
+            {
+                return;
+            }
+
+            int insertAt = lateChallengeCandidateCount;
+            while (insertAt > 0
+                && easeScore < lateChallengeCandidateEaseScores[insertAt - 1])
+            {
+                if (insertAt < LateChallengeCandidateCapacity)
+                {
+                    lateChallengeCandidateScores[insertAt] = lateChallengeCandidateScores[insertAt - 1];
+                    lateChallengeCandidateEaseScores[insertAt] = lateChallengeCandidateEaseScores[insertAt - 1];
+                    lateChallengeCandidateFitCounts[insertAt] = lateChallengeCandidateFitCounts[insertAt - 1];
+                    Array.Copy(
+                        lateChallengeCandidateSets[insertAt - 1],
+                        lateChallengeCandidateSets[insertAt],
+                        GameConstants.TraySize);
+                }
+
+                insertAt--;
+            }
+
+            if (insertAt >= LateChallengeCandidateCapacity)
+            {
+                return;
+            }
+
+            lateChallengeCandidateScores[insertAt] = normalScore;
+            lateChallengeCandidateEaseScores[insertAt] = easeScore;
+            lateChallengeCandidateFitCounts[insertAt] = fitCount;
+            Array.Copy(candidate, lateChallengeCandidateSets[insertAt], GameConstants.TraySize);
+            if (lateChallengeCandidateCount < LateChallengeCandidateCapacity)
+            {
+                lateChallengeCandidateCount++;
+            }
+        }
+
+        private int CalculateTrayEaseScore(
+            BoardManager board,
+            PieceInstance[] candidate,
+            out int totalPlacementOptions)
+        {
+            totalPlacementOptions = 0;
+            int minimumPlacementOptions = int.MaxValue;
+            int immediateClears = 0;
+            int setupValue = 0;
+            int cleanliness = 0;
+            for (int i = 0; i < candidate.Length; i++)
+            {
+                if (candidate[i] == null)
+                {
+                    minimumPlacementOptions = 0;
+                    continue;
+                }
+
+                GenerationPlacementProfile profile = GetGenerationPlacementProfile(board, candidate[i]);
+                totalPlacementOptions += profile.placementOptions;
+                minimumPlacementOptions = Mathf.Min(minimumPlacementOptions, profile.placementOptions);
+                immediateClears += profile.clearOpportunities;
+                setupValue += profile.bestSetupScore;
+                cleanliness += profile.bestCleanlinessScore;
+            }
+
+            if (minimumPlacementOptions == int.MaxValue)
+            {
+                minimumPlacementOptions = 0;
+            }
+
+            return totalPlacementOptions * 120
+                + minimumPlacementOptions * 520
+                + immediateClears * 820
+                + setupValue * 4
+                + cleanliness * 2;
+        }
+
+        private PieceInstance[] SelectLateChallengeCandidate(
+            int classicTrayNumber,
+            out int selectedScore,
+            out int selectedFitCount,
+            out int selectedEaseScore,
+            out bool usedFallback)
+        {
+            selectedScore = int.MinValue;
+            selectedFitCount = 0;
+            selectedEaseScore = 0;
+            usedFallback = false;
+            if (lateChallengeCandidateCount <= 0)
+            {
+                return null;
+            }
+
+            GetLateChallengeEaseBand(classicTrayNumber, out float lowerPercentile, out float upperPercentile);
+            int lastIndex = lateChallengeCandidateCount - 1;
+            int lowerIndex = Mathf.Clamp(
+                Mathf.CeilToInt(lastIndex * lowerPercentile),
+                0,
+                lastIndex);
+            int upperIndex = Mathf.Clamp(
+                Mathf.FloorToInt(lastIndex * upperPercentile),
+                lowerIndex,
+                lastIndex);
+            int selectedIndex = -1;
+            for (int i = lowerIndex; i <= upperIndex; i++)
+            {
+                if (lateChallengeCandidateScores[i] <= selectedScore)
+                {
+                    continue;
+                }
+
+                selectedIndex = i;
+                selectedScore = lateChallengeCandidateScores[i];
+            }
+
+            if (selectedIndex < 0)
+            {
+                usedFallback = true;
+                selectedIndex = Mathf.Clamp((lowerIndex + upperIndex) / 2, 0, lastIndex);
+                selectedScore = lateChallengeCandidateScores[selectedIndex];
+            }
+
+            selectedFitCount = lateChallengeCandidateFitCounts[selectedIndex];
+            selectedEaseScore = lateChallengeCandidateEaseScores[selectedIndex];
+            return lateChallengeCandidateSets[selectedIndex];
+        }
+
+        private static void GetLateChallengeEaseBand(
+            int classicTrayNumber,
+            out float lowerPercentile,
+            out float upperPercentile)
+        {
+            if (classicTrayNumber <= 11)
+            {
+                lowerPercentile = 0.55f;
+                upperPercentile = 0.75f;
+            }
+            else if (classicTrayNumber <= 15)
+            {
+                lowerPercentile = 0.40f;
+                upperPercentile = 0.60f;
+            }
+            else if (classicTrayNumber <= 20)
+            {
+                lowerPercentile = 0.25f;
+                upperPercentile = 0.45f;
+            }
+            else
+            {
+                lowerPercentile = 0.15f;
+                upperPercentile = 0.35f;
+            }
+        }
+
+        private void ConsiderRelaxFlowCandidate(PieceInstance[] candidateSet, int score, int fitCount)
+        {
+            int insertAt = relaxFlowCandidateCount;
+            if (insertAt >= RelaxFlowDeepCandidateCount)
+            {
+                insertAt = RelaxFlowDeepCandidateCount - 1;
+            }
+
+            while (insertAt > 0 && score > relaxFlowCandidateScores[insertAt - 1])
+            {
+                if (insertAt < RelaxFlowDeepCandidateCount)
+                {
+                    relaxFlowCandidateScores[insertAt] = relaxFlowCandidateScores[insertAt - 1];
+                    relaxFlowCandidateFitCounts[insertAt] = relaxFlowCandidateFitCounts[insertAt - 1];
+                    Array.Copy(
+                        relaxFlowCandidateSets[insertAt - 1],
+                        relaxFlowCandidateSets[insertAt],
+                        GameConstants.TraySize);
+                }
+
+                insertAt--;
+            }
+
+            if (insertAt >= RelaxFlowDeepCandidateCount
+                || (relaxFlowCandidateCount >= RelaxFlowDeepCandidateCount
+                    && score <= relaxFlowCandidateScores[insertAt]))
+            {
+                return;
+            }
+
+            relaxFlowCandidateScores[insertAt] = score;
+            relaxFlowCandidateFitCounts[insertAt] = fitCount;
+            Array.Copy(candidateSet, relaxFlowCandidateSets[insertAt], GameConstants.TraySize);
+            if (relaxFlowCandidateCount < RelaxFlowDeepCandidateCount)
+            {
+                relaxFlowCandidateCount++;
+            }
+        }
+
+        private PieceInstance[] SelectRelaxFlowCandidate(
+            BoardManager board,
+            int classicTrayNumber,
+            out int selectedScore,
+            out int selectedFitCount)
+        {
+            selectedScore = int.MinValue;
+            selectedFitCount = 0;
+            PieceInstance[] selected = null;
+            float projectionWeight = GetRelaxFlowProjectionWeight(classicTrayNumber);
+            float continuityStrength = GetFlowContinuityStrength(classicTrayNumber);
+            GenerationFlowProjection selectedProjection = default;
+            int selectedFlowScore = 0;
+            bool selectedMatchedFlowTarget = false;
+
+            for (int i = 0; i < relaxFlowCandidateCount; i++)
+            {
+                PieceInstance[] candidate = relaxFlowCandidateSets[i];
+                GenerationFlowProjection projection = board.EvaluateGenerationFlowProjection(candidate);
+                int flowScore = CalculateFlowContinuityScore(
+                    board,
+                    candidate,
+                    continuityStrength,
+                    classicTrayNumber,
+                    out bool matchedFlowTarget);
+                int score = relaxFlowCandidateScores[i]
+                    + Mathf.RoundToInt(projection.cleanlinessScore * projectionWeight)
+                    + flowScore;
+                if (score <= selectedScore)
+                {
+                    continue;
+                }
+
+                selected = candidate;
+                selectedScore = score;
+                selectedFitCount = relaxFlowCandidateFitCounts[i];
+                selectedProjection = projection;
+                selectedFlowScore = flowScore;
+                selectedMatchedFlowTarget = matchedFlowTarget;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (selected != null)
+            {
+                LastGenerationRelaxFlowScore = selectedFlowScore;
+                LastGenerationProjectedOccupiedCells = selectedProjection.finalOccupiedCells;
+                LastGenerationProjectedLargestEmptyRegion = selectedProjection.largestEmptyRegion;
+                LastGenerationProjectedFragmentation = selectedProjection.emptyRegionCount;
+                LastGenerationMatchedFlowTarget = selectedMatchedFlowTarget;
+            }
+#endif
+            return selected;
+        }
+
+        private int CalculateFlowContinuityScore(
+            BoardManager board,
+            PieceInstance[] set,
+            float strength,
+            int classicTrayNumber,
+            out bool matchedFlowTarget)
+        {
+            matchedFlowTarget = false;
+            if (board == null || set == null || flowTargetCount == 0 || strength <= 0f)
+            {
+                return 0;
+            }
+
+            int bestTargetScore = 0;
+            for (int targetIndex = 0; targetIndex < flowTargetCount; targetIndex++)
+            {
+                FlowTarget target = flowTargets[targetIndex];
+                for (int continuationIndex = 0; continuationIndex < set.Length; continuationIndex++)
+                {
+                    PieceInstance continuationPiece = set[continuationIndex];
+                    if (continuationPiece == null)
+                    {
+                        continue;
+                    }
+
+                    for (int payoffIndex = 0; payoffIndex < set.Length; payoffIndex++)
+                    {
+                        if (payoffIndex == continuationIndex || set[payoffIndex] == null)
+                        {
+                            continue;
+                        }
+
+                        // This is deliberately stricter than a geometric
+                        // overlap test: A must land on the captured target and
+                        // the bounded virtual board must prove that B can pay
+                        // that setup off with a clear.
+                        int payoffScore = board.ScoreGenerationFlowTargetPayoff(
+                            continuationPiece,
+                            set[payoffIndex],
+                            target.row,
+                            target.lineIndex,
+                            out int continuationAdvance,
+                            out bool completesTarget);
+                        if (payoffScore <= 0 || continuationAdvance <= 0)
+                        {
+                            continue;
+                        }
+
+                        bool hasFlexibleThirdPiece = false;
+                        for (int flexIndex = 0; flexIndex < set.Length; flexIndex++)
+                        {
+                            if (flexIndex != continuationIndex
+                                && flexIndex != payoffIndex
+                                && set[flexIndex] != null
+                                && GetPlacementOptions(board, set[flexIndex]) >= 4)
+                            {
+                                hasFlexibleThirdPiece = true;
+                                break;
+                            }
+                        }
+
+                        // A continuation is only strong when the remaining third
+                        // piece is still broadly playable. This keeps the early
+                        // eligibility gate from selecting a flashy A -> B payoff
+                        // that strands the player with an awkward third piece.
+                        if (!hasFlexibleThirdPiece)
+                        {
+                            continue;
+                        }
+
+                        int relationshipScore = continuationAdvance * 1600
+                            + payoffScore * 16
+                            + 2300
+                            + 1000
+                            + (completesTarget ? 480 : 0);
+                        bestTargetScore = Mathf.Max(bestTargetScore, relationshipScore);
+                    }
+                }
+            }
+
+            matchedFlowTarget = bestTargetScore > 0;
+            return Mathf.RoundToInt(bestTargetScore * strength * GetFlowAssistBoost(classicTrayNumber));
+        }
+
+        private static float GetFlowContinuityStrength(int classicTrayNumber)
+        {
+            if (classicTrayNumber <= 4)
+            {
+                return 1.35f;
+            }
+
+            if (classicTrayNumber <= 6)
+            {
+                return 0.90f;
+            }
+
+            return classicTrayNumber <= 8 ? 0.45f : 0f;
+        }
+
+        private static float GetFlowAssistBoost(int classicTrayNumber)
+        {
+            if (classicTrayNumber <= 4)
+            {
+                return 1.90f;
+            }
+
+            if (classicTrayNumber <= 6)
+            {
+                return 1.40f;
+            }
+
+            return classicTrayNumber <= 8 ? 1.10f : 1f;
+        }
+
+        private static float GetRelaxFlowProjectionWeight(int classicTrayNumber)
+        {
+            if (classicTrayNumber <= 4)
+            {
+                return 1f;
+            }
+
+            if (classicTrayNumber <= 6)
+            {
+                return 0.75f;
+            }
+
+            return classicTrayNumber <= 8 ? 0.40f : 0f;
+        }
+
+        // If none of the ordinary 56 candidates services an early intent, build
+        // one bounded tray from existing catalog shapes. A and B must pass the
+        // same actual-board target/payoff proof used by normal selection, while
+        // C is retained from the ordinary Phase 7H winner and must have at least
+        // four legal placements. No shape, placement, or clear is manufactured.
+        private bool TryConstructReadableContinuation(
+            BoardManager board,
+            PieceInstance[] normalWinner,
+            System.Random random,
+            out int fitCount)
+        {
+            fitCount = 0;
+            if (board == null || normalWinner == null || random == null || flowTargetCount <= 0)
+            {
+                return false;
+            }
+
+            int flexibleIndex = -1;
+            int bestFlexOptions = 3;
+            for (int i = 0; i < normalWinner.Length; i++)
+            {
+                PieceInstance candidate = normalWinner[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                int options = GetPlacementOptions(board, candidate);
+                if (options > bestFlexOptions)
+                {
+                    bestFlexOptions = options;
+                    flexibleIndex = i;
+                }
+            }
+
+            if (flexibleIndex < 0)
+            {
+                return false;
+            }
+
+            EnsureContinuationShapeCandidates();
+            PieceInstance bestAdvancePiece = null;
+            PieceInstance bestPayoffPiece = null;
+            int bestRelationshipScore = 0;
+            for (int targetIndex = 0; targetIndex < flowTargetCount; targetIndex++)
+            {
+                FlowTarget target = flowTargets[targetIndex];
+                for (int advanceIndex = 0; advanceIndex < continuationShapeCandidates.Length; advanceIndex++)
+                {
+                    PieceInstance advancePiece = continuationShapeCandidates[advanceIndex];
+                    int advanceOptions = GetPlacementOptions(board, advancePiece);
+                    if (advanceOptions <= 0)
+                    {
+                        continue;
+                    }
+
+                    for (int payoffIndex = 0; payoffIndex < continuationShapeCandidates.Length; payoffIndex++)
+                    {
+                        PieceInstance payoffPiece = continuationShapeCandidates[payoffIndex];
+                        int payoffScore = board.ScoreGenerationFlowTargetPayoff(
+                            advancePiece,
+                            payoffPiece,
+                            target.row,
+                            target.lineIndex,
+                            out int continuationAdvance,
+                            out bool completesTarget);
+                        if (payoffScore <= 0 || continuationAdvance <= 0)
+                        {
+                            continue;
+                        }
+
+                        int relationshipScore = payoffScore * 16
+                            + continuationAdvance * 1800
+                            + Mathf.Min(advanceOptions, 12) * 80
+                            + (completesTarget ? 700 : 0);
+                        if (relationshipScore <= bestRelationshipScore)
+                        {
+                            continue;
+                        }
+
+                        bestRelationshipScore = relationshipScore;
+                        bestAdvancePiece = advancePiece;
+                        bestPayoffPiece = payoffPiece;
+                    }
+                }
+            }
+
+            if (bestAdvancePiece == null || bestPayoffPiece == null)
+            {
+                return false;
+            }
+
+            PieceInstance flexiblePiece = normalWinner[flexibleIndex];
+            constructedContinuationSet[0] = new PieceInstance(
+                bestAdvancePiece.shapeId,
+                (ChromaColor)random.Next(GameConstants.ColorCount));
+            constructedContinuationSet[1] = new PieceInstance(
+                bestPayoffPiece.shapeId,
+                (ChromaColor)random.Next(GameConstants.ColorCount));
+            constructedContinuationSet[2] = new PieceInstance(
+                flexiblePiece.shapeId,
+                flexiblePiece.color);
+            fitCount = CountFittingPieces(board, constructedContinuationSet);
+            return fitCount > 0;
+        }
+
+        private void EnsureContinuationShapeCandidates()
+        {
+            if (continuationShapeCandidates != null)
+            {
+                return;
+            }
+
+            continuationShapeCandidates = new PieceInstance[ContinuationShapeIds.Length];
+            for (int i = 0; i < ContinuationShapeIds.Length; i++)
+            {
+                continuationShapeCandidates[i] = new PieceInstance(ContinuationShapeIds[i], ChromaColor.Cyan);
+            }
         }
 
         public void SpawnGuaranteedSet(BoardManager board, System.Random random)
@@ -65,7 +860,7 @@ namespace ChromaBlast
 
         public void SpawnGuaranteedSet(BoardManager board, System.Random random, float difficulty01)
         {
-            SpawnGuaranteedSet(board, random, difficulty01, 0f);
+            SpawnGuaranteedSet(board, random, difficulty01, 0f, 0f, 0, 0);
         }
 
         public void SpawnOpeningSatisfyingSet(BoardManager board, System.Random random, float difficulty01)
@@ -105,7 +900,14 @@ namespace ChromaBlast
             RefreshFitHints(board);
         }
 
-        public void SpawnGuaranteedSet(BoardManager board, System.Random random, float difficulty01, float assist01)
+        public void SpawnGuaranteedSet(
+            BoardManager board,
+            System.Random random,
+            float difficulty01,
+            float assist01,
+            float runPressure01 = 0f,
+            int consecutiveReliefBiasedTrays = 0,
+            int classicTrayNumber = 0)
         {
             EnsureTraySlots();
             if (board == null || random == null || traySlots == null || traySlots.Length == 0)
@@ -115,30 +917,126 @@ namespace ChromaBlast
 
             difficulty01 = Mathf.Clamp01(difficulty01);
             assist01 = Mathf.Clamp01(assist01);
+            runPressure01 = Mathf.Clamp01(runPressure01);
+            consecutiveReliefBiasedTrays = Mathf.Max(0, consecutiveReliefBiasedTrays);
+            classicTrayNumber = Mathf.Max(0, classicTrayNumber);
+            // Two strong relief trays in a row are enough. The next selection stays
+            // fair, but stops forcing another near-perfect bailout set.
+            float loopAdjustedAssist = consecutiveReliefBiasedTrays >= 2
+                ? assist01 * 0.52f
+                : assist01;
             BeginGenerationMetricCache(board);
+            GenerateTrayMarker.Begin();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
             LastGenerationCandidateCount = 0;
             LastGenerationMetricEvaluations = 0;
             LastGenerationMetricCacheHits = 0;
             LastGenerationChunks = 1;
+            LastGenerationSelectedScore = 0;
+            LastGenerationOccupiedCells = GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board);
+            LastGenerationOccupancyState = GetOccupancyState(LastGenerationOccupiedCells);
+            LastGenerationRunPressure = runPressure01;
+            LastGenerationImmediateClearOpportunities = 0;
+            LastGenerationSetupOpportunities = 0;
+            LastGenerationSetupPayoffOpportunities = 0;
+            LastGenerationLegacySetupPayoffOpportunities = 0;
+            LastGenerationPureSetupOpportunities = 0;
+            LastGenerationPureSetupWithoutImmediateClearOpportunities = 0;
+            LastGenerationImmediateClearSetupOverlap = 0;
+            LastGenerationOpenDiversityBonusApplied = false;
+            LastGenerationAdjacencyContacts = 0;
+            LastGenerationLineProgress = 0;
+            LastGenerationCleanlinessScore = 0;
+            LastGenerationRelaxFlowScore = 0;
+            LastGenerationProjectedOccupiedCells = 0;
+            LastGenerationProjectedLargestEmptyRegion = 0;
+            LastGenerationProjectedFragmentation = 0;
+            LastGenerationFlowTargetCount = flowTargetCount;
+            LastGenerationMatchedFlowTarget = false;
+            LastGenerationConstructedContinuation = false;
+            LastGenerationTrayEaseScore = 0;
+            LastGenerationChallengeBandFallback = false;
+            LastGenerationCriticalChallengeBypass = false;
+            LastCandidateEvaluationMilliseconds = 0d;
+            LastDeepProjectionMilliseconds = 0d;
+            LastContinuationConstructionMilliseconds = 0d;
 #endif
+            LastGenerationReliefBiased = false;
             try
             {
                 PieceInstance[] candidateSet = new PieceInstance[GameConstants.TraySize];
                 PieceInstance[] bestSet = null;
                 int bestScore = int.MinValue;
                 int bestFitCount = 0;
+                bool selectedByStrongContinuationGate = false;
+                bool selectedByLateChallengeBand = false;
+                BoardOccupancyState generationOccupancyState = GetOccupancyState(
+                    GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board));
+                bool useLateChallengeBand = GameSession.SelectedMode == GameMode.Classic
+                    && classicTrayNumber >= 9
+                    && generationOccupancyState != BoardOccupancyState.Critical;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationCriticalChallengeBypass = GameSession.SelectedMode == GameMode.Classic
+                    && classicTrayNumber >= 9
+                    && generationOccupancyState == BoardOccupancyState.Critical;
+#endif
+                bool allowLateClassicStair5 = CanConsiderStair5InRandomSet(runPressure01);
+                bool boundedContinuationGate = GameSession.SelectedMode == GameMode.Classic
+                    && classicTrayNumber >= 1
+                    && classicTrayNumber <= 6
+                    && flowTargetCount > 0;
+                bool useRelaxFlow = GameSession.SelectedMode == GameMode.Classic
+                    && classicTrayNumber >= 7
+                    && classicTrayNumber <= 8;
+                BeginRelaxFlowCandidateSelection();
+                BeginLateChallengeSelection();
 
+                CandidateEvaluationMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                long candidateTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
                 for (int attempt = 0; attempt < GameConstants.GuaranteedSetAttempts; attempt++)
                 {
-                    PieceCatalog.FillRandomSet(candidateSet, random, difficulty01);
+                    PieceCatalog.FillRandomSet(candidateSet, random, difficulty01, allowLateClassicStair5);
+                    ReplaceIneligibleClassicStair5(board, candidateSet, random, difficulty01, runPressure01);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     LastGenerationCandidateCount++;
 #endif
                     int fitCount = CountFittingPieces(board, candidateSet);
-                    int score = ScoreSetForBoard(board, candidateSet, fitCount, difficulty01, assist01);
-
+                    int score = ScoreSetForBoard(
+                        board,
+                        candidateSet,
+                        fitCount,
+                        difficulty01,
+                        loopAdjustedAssist,
+                        runPressure01,
+                        consecutiveReliefBiasedTrays,
+                        classicTrayNumber);
+                    if (useLateChallengeBand)
+                    {
+                        ConsiderLateChallengeCandidate(board, candidateSet, score, fitCount);
+                    }
+                    if (boundedContinuationGate)
+                    {
+                        // Inspect all existing 56 legal candidates. If a strict
+                        // target-bound A -> B clear with a flexible third exists,
+                        // only that reusable subset may win this early tray.
+                        CalculateFlowContinuityScore(
+                            board,
+                            candidateSet,
+                            GetFlowContinuityStrength(classicTrayNumber),
+                            classicTrayNumber,
+                            out bool hasStrongContinuation);
+                        if (hasStrongContinuation)
+                        {
+                            ConsiderRelaxFlowCandidate(candidateSet, score, fitCount);
+                        }
+                    }
+                    else if (useRelaxFlow)
+                    {
+                        ConsiderRelaxFlowCandidate(candidateSet, score, fitCount);
+                    }
                     if (score > bestScore)
                     {
                         bestSet ??= new PieceInstance[GameConstants.TraySize];
@@ -147,15 +1045,150 @@ namespace ChromaBlast
                         bestFitCount = fitCount;
                     }
                 }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastCandidateEvaluationMilliseconds = ElapsedMilliseconds(candidateTimingStart);
+#endif
+                CandidateEvaluationMarker.End();
+
+                if (boundedContinuationGate && relaxFlowCandidateCount > 0)
+                {
+                    // Candidate storage is sorted by the ordinary board score,
+                    // so this is the normal best winner inside the strict early
+                    // strong-continuation subset rather than a manufactured tray.
+                    bestSet ??= new PieceInstance[GameConstants.TraySize];
+                    Array.Copy(relaxFlowCandidateSets[0], bestSet, GameConstants.TraySize);
+                    bestScore = relaxFlowCandidateScores[0];
+                    bestFitCount = relaxFlowCandidateFitCounts[0];
+                    selectedByStrongContinuationGate = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LastGenerationMatchedFlowTarget = true;
+#endif
+                }
+                else if (boundedContinuationGate && bestSet != null)
+                {
+                    ContinuationConstructionMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    long constructionTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                    bool constructed = TryConstructReadableContinuation(
+                        board,
+                        bestSet,
+                        random,
+                        out int constructedFitCount);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LastContinuationConstructionMilliseconds = ElapsedMilliseconds(constructionTimingStart);
+#endif
+                    ContinuationConstructionMarker.End();
+                    if (constructed)
+                    {
+                        Array.Copy(constructedContinuationSet, bestSet, GameConstants.TraySize);
+                        bestFitCount = constructedFitCount;
+                        bestScore = ScoreSetForBoard(
+                            board,
+                            bestSet,
+                            bestFitCount,
+                            difficulty01,
+                            loopAdjustedAssist,
+                            runPressure01,
+                            consecutiveReliefBiasedTrays,
+                            classicTrayNumber);
+                        selectedByStrongContinuationGate = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        LastGenerationMatchedFlowTarget = true;
+                        LastGenerationConstructedContinuation = true;
+#endif
+                    }
+                }
+
+                if (!selectedByStrongContinuationGate && useRelaxFlow && relaxFlowCandidateCount > 0)
+                {
+                    DeepProjectionMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    long projectionTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                    PieceInstance[] relaxedSelection = SelectRelaxFlowCandidate(
+                        board,
+                        classicTrayNumber,
+                        out int relaxedScore,
+                        out int relaxedFitCount);
+                    if (relaxedSelection != null)
+                    {
+                        bestSet ??= new PieceInstance[GameConstants.TraySize];
+                        Array.Copy(relaxedSelection, bestSet, GameConstants.TraySize);
+                        bestScore = relaxedScore;
+                        bestFitCount = relaxedFitCount;
+                    }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LastDeepProjectionMilliseconds = ElapsedMilliseconds(projectionTimingStart);
+#endif
+                    DeepProjectionMarker.End();
+                }
+
+                if (useLateChallengeBand)
+                {
+                    PieceInstance[] challengeSelection = SelectLateChallengeCandidate(
+                        classicTrayNumber,
+                        out int challengeScore,
+                        out int challengeFitCount,
+                        out int challengeEaseScore,
+                        out bool challengeFallback);
+                    if (challengeSelection != null)
+                    {
+                        bestSet ??= new PieceInstance[GameConstants.TraySize];
+                        Array.Copy(challengeSelection, bestSet, GameConstants.TraySize);
+                        bestScore = challengeScore;
+                        bestFitCount = challengeFitCount;
+                        selectedByLateChallengeBand = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        LastGenerationTrayEaseScore = challengeEaseScore;
+                        LastGenerationChallengeBandFallback = challengeFallback;
+#endif
+                    }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    else
+                    {
+                        LastGenerationChallengeBandFallback = true;
+                    }
+#endif
+                }
 
                 if (bestSet != null && bestFitCount > 0)
                 {
-                    ImproveSetWithRescuePieces(board, bestSet, random, difficulty01, assist01);
-                    EnsureSatisfyingPiece(board, bestSet, random, difficulty01, assist01);
-                    EnsureComebackPiece(board, bestSet, random, assist01);
-                    EnsureImmediateClearPiece(board, bestSet, random, assist01);
-                    EnsureJuicySetMass(board, bestSet, random, difficulty01);
-                    EnsureSatisfyingSetShapeMix(board, bestSet, random, difficulty01, assist01);
+                    BoardOccupancyState selectionState = GetOccupancyState(
+                        GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board));
+                    bool lateNonEssentialCuration = GameSession.SelectedMode == GameMode.Classic
+                        && classicTrayNumber >= 9
+                        && selectionState != BoardOccupancyState.Critical;
+                    float postSelectionAssist = loopAdjustedAssist
+                        * GetLateNonEssentialAssistScale(classicTrayNumber, selectionState);
+
+                    // An early strict-continuation winner has already proven
+                    // an actual A -> B target sequence plus a flexible third
+                    // piece. Do not replace any member after selection or the
+                    // hard eligibility guarantee would no longer be true.
+                    // All other winners retain the established fit rescue and
+                    // optional presentation curation.
+                    if (!selectedByStrongContinuationGate && !selectedByLateChallengeBand)
+                    {
+                        ImproveSetWithRescuePieces(board, bestSet, random, difficulty01, loopAdjustedAssist);
+                        if (!lateNonEssentialCuration)
+                        {
+                            EnsureSatisfyingPiece(board, bestSet, random, difficulty01, postSelectionAssist);
+                            EnsureComebackPiece(board, bestSet, random, postSelectionAssist);
+                            EnsureImmediateClearPiece(board, bestSet, random, postSelectionAssist);
+                            EnsureJuicySetMass(board, bestSet, random, difficulty01);
+                            EnsureSatisfyingSetShapeMix(board, bestSet, random, difficulty01, postSelectionAssist);
+                        }
+                    }
+                    RecordSelectedGenerationMetrics(
+                        board,
+                        bestSet,
+                        CountFittingPieces(board, bestSet),
+                        difficulty01,
+                        loopAdjustedAssist,
+                        runPressure01,
+                        consecutiveReliefBiasedTrays,
+                        classicTrayNumber);
                     SpawnSet(bestSet);
                     RefreshFitHints(board);
                     return;
@@ -167,6 +1200,15 @@ namespace ChromaBlast
                     new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount)),
                     new PieceInstance("single", (ChromaColor)random.Next(GameConstants.ColorCount))
                 };
+                RecordSelectedGenerationMetrics(
+                    board,
+                    fallback,
+                    CountFittingPieces(board, fallback),
+                    difficulty01,
+                    loopAdjustedAssist,
+                    runPressure01,
+                    consecutiveReliefBiasedTrays,
+                    classicTrayNumber);
                 SpawnSet(fallback);
                 RefreshFitHints(board);
             }
@@ -176,9 +1218,19 @@ namespace ChromaBlast
                 stopwatch.Stop();
                 LastGenerationElapsedMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
 #endif
+                GenerateTrayMarker.End();
                 EndGenerationMetricCache();
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static double ElapsedMilliseconds(long startTimestamp)
+        {
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp)
+                * 1000.0
+                / System.Diagnostics.Stopwatch.Frequency;
+        }
+#endif
 
         public void SpawnSet(PieceInstance[] set)
         {
@@ -489,8 +1541,47 @@ namespace ChromaBlast
             }
 
             generationMetricBoard = board;
+            generationSetupPayoffCache.Clear();
             generationEmptyCellsReady = false;
             generationEmptyCells = 0;
+        }
+
+        // stair5 remains in the catalog and in the normal Blitz pool. Classic only
+        // considers it once the established run-pressure curve is active, and then
+        // only if the current board gives it more than one genuine placement.
+        private static bool CanConsiderStair5InRandomSet(float runPressure01)
+        {
+            return GameSession.SelectedMode != GameMode.Classic || runPressure01 >= 0.22f;
+        }
+
+        private void ReplaceIneligibleClassicStair5(
+            BoardManager board,
+            PieceInstance[] set,
+            System.Random random,
+            float difficulty01,
+            float runPressure01)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic || set == null)
+            {
+                return;
+            }
+
+            bool latePressureActive = runPressure01 >= 0.22f;
+            for (int i = 0; i < set.Length; i++)
+            {
+                PieceInstance piece = set[i];
+                if (piece == null || piece.shapeId != "stair5")
+                {
+                    continue;
+                }
+
+                if (latePressureActive && GetPlacementOptions(board, piece) >= 2)
+                {
+                    continue;
+                }
+
+                set[i] = PieceCatalog.RandomPiece(random, difficulty01, allowStair5: false);
+            }
         }
 
         private void EndGenerationMetricCache()
@@ -513,6 +1604,31 @@ namespace ChromaBlast
                 generationMetricCache.Add(shapeId, metrics);
             }
             return metrics;
+        }
+
+        private GenerationPlacementProfile GetGenerationPlacementProfile(BoardManager board, PieceInstance piece)
+        {
+            GenerationMetrics metrics = GetGenerationMetrics(board, piece);
+            if (metrics == null)
+            {
+                return board == null ? default : board.EvaluateGenerationPlacementProfile(piece);
+            }
+
+            if (!metrics.profileReady)
+            {
+                metrics.profile = board.EvaluateGenerationPlacementProfile(piece);
+                metrics.profileReady = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricEvaluations++;
+#endif
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            else
+            {
+                LastGenerationMetricCacheHits++;
+            }
+#endif
+            return metrics.profile;
         }
 
         private int GetEmptyCells(BoardManager board)
@@ -549,23 +1665,14 @@ namespace ChromaBlast
             GenerationMetrics metrics = GetGenerationMetrics(board, piece);
             if (metrics == null)
             {
-                return board == null ? 0 : board.CountPlacementOptions(piece);
+                return board == null ? 0 : board.EvaluateGenerationPlacementProfile(piece).placementOptions;
             }
 
             if (!metrics.placementOptionsReady)
             {
-                metrics.placementOptions = board.CountPlacementOptions(piece);
+                metrics.placementOptions = GetGenerationPlacementProfile(board, piece).placementOptions;
                 metrics.placementOptionsReady = true;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LastGenerationMetricEvaluations++;
-#endif
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            else
-            {
-                LastGenerationMetricCacheHits++;
-            }
-#endif
             return metrics.placementOptions;
         }
 
@@ -579,23 +1686,14 @@ namespace ChromaBlast
             GenerationMetrics metrics = GetGenerationMetrics(board, piece);
             if (metrics == null)
             {
-                return board == null ? 0 : board.CountClearOpportunities(piece);
+                return board == null ? 0 : board.EvaluateGenerationPlacementProfile(piece).clearOpportunities;
             }
 
             if (!metrics.clearOpportunitiesReady)
             {
-                metrics.clearOpportunities = board.CountClearOpportunities(piece);
+                metrics.clearOpportunities = GetGenerationPlacementProfile(board, piece).clearOpportunities;
                 metrics.clearOpportunitiesReady = true;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LastGenerationMetricEvaluations++;
-#endif
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            else
-            {
-                LastGenerationMetricCacheHits++;
-            }
-#endif
             return metrics.clearOpportunities;
         }
 
@@ -604,23 +1702,14 @@ namespace ChromaBlast
             GenerationMetrics metrics = GetGenerationMetrics(board, piece);
             if (metrics == null)
             {
-                return board == null ? 0 : board.ScoreBestSetupOpportunity(piece);
+                return board == null ? 0 : board.EvaluateGenerationPlacementProfile(piece).bestSetupScore;
             }
 
             if (!metrics.setupOpportunityReady)
             {
-                metrics.setupOpportunity = board.ScoreBestSetupOpportunity(piece);
+                metrics.setupOpportunity = GetGenerationPlacementProfile(board, piece).bestSetupScore;
                 metrics.setupOpportunityReady = true;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                LastGenerationMetricEvaluations++;
-#endif
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            else
-            {
-                LastGenerationMetricCacheHits++;
-            }
-#endif
             return metrics.setupOpportunity;
         }
 
@@ -638,37 +1727,84 @@ namespace ChromaBlast
             return count;
         }
 
-        private int ScoreSetForBoard(BoardManager board, PieceInstance[] set, int fitCount, float difficulty01, float assist01)
+        private int ScoreSetForBoard(
+            BoardManager board,
+            PieceInstance[] set,
+            int fitCount,
+            float difficulty01,
+            float assist01,
+            float runPressure01,
+            int consecutiveReliefBiasedTrays,
+            int classicTrayNumber)
         {
             int emptyCells = GetEmptyCells(board);
-            float tightBoard01 = Mathf.Clamp01((28f - emptyCells) / 20f);
+            int occupiedCells = GameConstants.BoardSize * GameConstants.BoardSize - emptyCells;
+            BoardOccupancyState occupancyState = GetOccupancyState(occupiedCells);
+            float occupancyPressure01 = GetOccupancyPressure(occupancyState);
             int placementOptions = 0;
             int clearOpportunities = 0;
             int setupOpportunities = 0;
+            int adjacencyContacts = 0;
+            int lineProgress = 0;
+            int cleanlinessScore = 0;
             int totalCells = 0;
             int largestPiece = 0;
             int mediumPieceCount = 0;
             int largePieceCount = 0;
+            int smallPieceCount = 0;
             int duplicatePenalty = 0;
+            int restrictivePieceCount = 0;
+            int severelyRestrictivePieceCount = 0;
+            int poorEarlyCClassCount = 0;
+
             for (int i = 0; i < set.Length; i++)
             {
-                if (set[i] != null)
+                if (set[i] == null)
                 {
-                    placementOptions += GetPlacementOptions(board, set[i]);
-                    clearOpportunities += GetClearOpportunities(board, set[i]);
-                    setupOpportunities += GetSetupOpportunity(board, set[i]);
-                    int cells = set[i].Data.cells.Length;
-                    totalCells += cells;
-                    largestPiece = Mathf.Max(largestPiece, cells);
-                    if (cells >= 4)
-                    {
-                        mediumPieceCount++;
-                    }
+                    continue;
+                }
 
-                    if (cells >= 5)
-                    {
-                        largePieceCount++;
-                    }
+                GenerationPlacementProfile profile = GetGenerationPlacementProfile(board, set[i]);
+                placementOptions += profile.placementOptions;
+                clearOpportunities += profile.clearOpportunities;
+                setupOpportunities += profile.bestSetupScore;
+                adjacencyContacts += profile.bestAdjacencyContacts;
+                lineProgress += profile.bestLineProgress;
+                cleanlinessScore += profile.bestCleanlinessScore;
+
+                if (profile.placementOptions <= 4)
+                {
+                    restrictivePieceCount++;
+                }
+
+                if (profile.placementOptions <= 2)
+                {
+                    severelyRestrictivePieceCount++;
+                }
+
+                if (IsCClassShape(set[i].shapeId)
+                    && profile.placementOptions <= 4
+                    && profile.clearOpportunities == 0
+                    && profile.bestSetupScore < 70)
+                {
+                    poorEarlyCClassCount++;
+                }
+
+                int cells = set[i].Data.cells.Length;
+                totalCells += cells;
+                largestPiece = Mathf.Max(largestPiece, cells);
+                if (cells == 3 || cells == 4)
+                {
+                    mediumPieceCount++;
+                }
+                else if (cells <= 2)
+                {
+                    smallPieceCount++;
+                }
+
+                if (cells >= 5)
+                {
+                    largePieceCount++;
                 }
             }
 
@@ -683,32 +1819,125 @@ namespace ChromaBlast
                 }
             }
 
+            SetupPayoffAnalysis setupPayoffAnalysis = AnalyzeSetupPayoff(board, set);
+            int legacySetupPayoffOpportunities = setupPayoffAnalysis.legacyScore;
+            bool usePureSetupScoring = occupancyState == BoardOccupancyState.Open;
+            int setupPayoffOpportunities = usePureSetupScoring
+                ? setupPayoffAnalysis.pureScore
+                : legacySetupPayoffOpportunities;
+            // Phase 7H keeps the broad current setup heuristic for non-OPEN survival
+            // states. OPEN scoring instead rewards the proven non-clearing A -> B
+            // relationship, so an already-clearing piece cannot collect the full
+            // clever-setup reward as well.
+            int setupOpportunitiesForScore = usePureSetupScoring
+                ? setupPayoffAnalysis.pureScore
+                : setupOpportunities;
             float openBoard01 = Mathf.Clamp01((emptyCells - 18f) / 28f);
-            float targetCells = Mathf.Lerp(12.6f, 16.4f, difficulty01) - tightBoard01 * 2.1f;
+            float targetCells = Mathf.Lerp(12.6f, 16.2f, difficulty01)
+                - occupancyPressure01 * 1.4f
+                + runPressure01 * 1.1f;
             int targetScore = Mathf.RoundToInt(920f - Mathf.Abs(totalCells - targetCells) * 76f);
-            int mobilityWeight = Mathf.RoundToInt(Mathf.Lerp(52f, 30f, difficulty01) + tightBoard01 * 38f);
+            int mobilityWeight = Mathf.RoundToInt(Mathf.Lerp(52f, 30f, difficulty01) + occupancyPressure01 * 38f);
             int earlyLargePenalty = difficulty01 < 0.16f && largestPiece >= 6 ? 120 : 0;
-            int tightLargePenalty = tightBoard01 > 0.62f && largestPiece >= 6 ? Mathf.RoundToInt(tightBoard01 * 340f) : 0;
+            int tightLargePenalty = occupancyState == BoardOccupancyState.Critical && largestPiece >= 6
+                ? 250
+                : 0;
             int allFitBonus = fitCount == GameConstants.TraySize ? 1100 : 0;
             int multiFitBonus = fitCount >= 2 ? 900 : 0;
-            int clearBonus = clearOpportunities * Mathf.RoundToInt(Mathf.Lerp(700f, 420f, difficulty01));
-            int setupBonus = setupOpportunities * Mathf.RoundToInt(Mathf.Lerp(42f, 30f, difficulty01));
-            int satisfyingBonus = Mathf.RoundToInt(openBoard01 * (mediumPieceCount * 560f + largePieceCount * 680f));
-            int miniPiecePenalty = CalculateMiniPiecePenalty(set, emptyCells, assist01);
-            int shapeMixBonus = CalculateShapeMixBonus(set, emptyCells, openBoard01);
-            int comebackBonus = Mathf.RoundToInt(assist01 * (clearOpportunities * 1550f + setupOpportunities * 58f + fitCount * 460f));
-            int comebackNoProgressPenalty = assist01 > 0.25f && clearOpportunities == 0 && setupOpportunities < 85
-                ? Mathf.RoundToInt(assist01 * 1400f)
+            int clearWeight = GetImmediateClearWeight(occupancyState, difficulty01);
+            int setupWeight = GetSetupWeight(occupancyState);
+            int adjacencyWeight = GetAdjacencyWeight(occupancyState);
+            int lineProgressWeight = GetLineProgressWeight(occupancyState);
+            int cleanlinessWeight = GetCleanlinessWeight(occupancyState);
+            int clearBonus = clearOpportunities * clearWeight;
+            float pureSetupScale = GetLatePureSetupScale(classicTrayNumber, occupancyState);
+            int setupBonus = Mathf.RoundToInt(setupOpportunitiesForScore * setupWeight
+                * (usePureSetupScoring ? pureSetupScale : 1f));
+            int adjacencyBonus = adjacencyContacts * adjacencyWeight;
+            int lineProgressBonus = lineProgress * lineProgressWeight;
+            int setupPayoffBonus = Mathf.RoundToInt(setupPayoffOpportunities
+                * GetSetupPayoffWeight(occupancyState)
+                * (usePureSetupScoring ? pureSetupScale : 1f));
+            int openDiversityBonus = usePureSetupScoring
+                && setupPayoffAnalysis.pureScore > 0
+                && clearOpportunities == 0
+                ? GetOpenDiversityBonus(classicTrayNumber)
                 : 0;
-            int tightSurvivalBonus = Mathf.RoundToInt(tightBoard01 * (clearOpportunities * 780f + setupOpportunities * 18f + fitCount * 620f));
-            int tightNoProgressPenalty = tightBoard01 > 0.52f && clearOpportunities == 0 && setupOpportunities < 70
-                ? Mathf.RoundToInt(tightBoard01 * 950f)
+            float cleanBoardAssistScale = GetExtraCleanBoardAssistScale(classicTrayNumber);
+            int earlyBuildFlexBonus = Mathf.RoundToInt(
+                CalculateEarlyBuildFlexBonus(board, set, classicTrayNumber) * cleanBoardAssistScale);
+            int cleanlinessBonus = Mathf.RoundToInt(
+                cleanlinessScore * cleanlinessWeight * cleanBoardAssistScale);
+            int satisfyingBonus = Mathf.RoundToInt(openBoard01 * (
+                mediumPieceCount * 560f + largePieceCount * 680f) * cleanBoardAssistScale);
+            float nonEssentialAssist = assist01 * GetLateNonEssentialAssistScale(classicTrayNumber, occupancyState);
+            int miniPiecePenalty = CalculateMiniPiecePenalty(set, emptyCells, nonEssentialAssist);
+            int shapeMixBonus = Mathf.RoundToInt(
+                CalculateShapeMixBonus(set, emptyCells, openBoard01) * cleanBoardAssistScale);
+            int comebackBonus = Mathf.RoundToInt(nonEssentialAssist * (
+                clearOpportunities * 1550f
+                + setupOpportunities * 58f
+                + legacySetupPayoffOpportunities * 42f
+                + fitCount * 460f));
+            int comebackNoProgressPenalty = nonEssentialAssist > 0.25f
+                && clearOpportunities == 0
+                && setupOpportunities < 85
+                && legacySetupPayoffOpportunities == 0
+                ? Mathf.RoundToInt(nonEssentialAssist * 1400f)
                 : 0;
+            int tightSurvivalBonus = Mathf.RoundToInt(occupancyPressure01 * (
+                clearOpportunities * 780f
+                + setupOpportunities * 18f
+                + legacySetupPayoffOpportunities * 18f
+                + fitCount * 620f));
+            int tightNoProgressPenalty = occupancyPressure01 > 0.52f
+                && clearOpportunities == 0
+                && setupOpportunities < 70
+                && legacySetupPayoffOpportunities == 0
+                ? Mathf.RoundToInt(occupancyPressure01 * 950f)
+                : 0;
+
+            // Open boards should not receive a continuous stream of instant clears.
+            int openClearSaturationPenalty = occupancyState == BoardOccupancyState.Open
+                ? Mathf.Max(0, clearOpportunities - 1) * 320
+                : 0;
+            // Pressure changes the decisions required, not whether a legal move exists.
+            int pressureTinyPenalty = Mathf.RoundToInt(runPressure01 * smallPieceCount * 760f);
+            int pressureMediumBonus = Mathf.RoundToInt(runPressure01 * mediumPieceCount * 280f);
+            int pressurePerfectTrayPenalty = Mathf.RoundToInt(runPressure01 * Mathf.Max(0, clearOpportunities - 1) * 190f);
+            int reliefLoopPenalty = consecutiveReliefBiasedTrays >= 2
+                && occupancyState != BoardOccupancyState.Critical
+                ? Mathf.RoundToInt((clearOpportunities * 260f + legacySetupPayoffOpportunities * 12f) * 0.55f)
+                : 0;
+            // This is a bad-feel filter, not a perfect-tray solver. Early and
+            // mid Classic rejects trays where every option fights for the same
+            // tiny space, while leaving genuinely fitting T/S/Z shapes available.
+            int earlyMidRestrictionPenalty = 0;
+            if (GameSession.SelectedMode == GameMode.Classic && runPressure01 < 0.58f)
+            {
+                if (severelyRestrictivePieceCount >= 2)
+                {
+                    earlyMidRestrictionPenalty += 3800;
+                }
+
+                if (restrictivePieceCount >= GameConstants.TraySize)
+                {
+                    earlyMidRestrictionPenalty += 2600;
+                }
+
+                earlyMidRestrictionPenalty += poorEarlyCClassCount * 620;
+            }
 
             return fitCount * 12000
                 + placementOptions * mobilityWeight
                 + clearBonus
                 + setupBonus
+                + adjacencyBonus
+                + lineProgressBonus
+                + setupPayoffBonus
+                + openDiversityBonus
+                + earlyBuildFlexBonus
+                + cleanlinessBonus
                 + targetScore
                 + allFitBonus
                 + multiFitBonus
@@ -716,12 +1945,416 @@ namespace ChromaBlast
                 + shapeMixBonus
                 + comebackBonus
                 + tightSurvivalBonus
+                + pressureMediumBonus
                 - earlyLargePenalty
                 - tightLargePenalty
                 - miniPiecePenalty
                 - comebackNoProgressPenalty
                 - tightNoProgressPenalty
+                - openClearSaturationPenalty
+                - pressureTinyPenalty
+                - pressurePerfectTrayPenalty
+                - reliefLoopPenalty
+                - earlyMidRestrictionPenalty
                 - duplicatePenalty;
+        }
+
+        private static bool IsCClassShape(string shapeId)
+        {
+            return shapeId == "t4" || shapeId == "t4_v" || shapeId == "s4" || shapeId == "z4";
+        }
+
+        // Late Classic reduces optional relief without ever changing the legal
+        // fit guarantee or the existing Critical rescue path.
+        private static float GetLateNonEssentialAssistScale(
+            int classicTrayNumber,
+            BoardOccupancyState occupancyState)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic
+                || occupancyState == BoardOccupancyState.Critical)
+            {
+                return 1f;
+            }
+
+            if (classicTrayNumber <= 6) return 1f;
+            if (classicTrayNumber <= 8) return 0.60f;
+            return classicTrayNumber <= 11 ? 0.20f : 0f;
+        }
+
+        private static float GetLatePureSetupScale(
+            int classicTrayNumber,
+            BoardOccupancyState occupancyState)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic
+                || occupancyState == BoardOccupancyState.Critical)
+            {
+                return 1f;
+            }
+
+            if (classicTrayNumber <= 6) return 1f;
+            if (classicTrayNumber <= 8) return 0.60f;
+            return classicTrayNumber <= 11 ? 0.20f : 0f;
+        }
+
+        private static int GetOpenDiversityBonus(int classicTrayNumber)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic || classicTrayNumber <= 4)
+            {
+                return OpenPureSetupDiversityBonus;
+            }
+
+            if (classicTrayNumber <= 6) return 2000;
+            return classicTrayNumber <= 8 ? 750 : 0;
+        }
+
+        private static float GetExtraCleanBoardAssistScale(int classicTrayNumber)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic || classicTrayNumber <= 4)
+            {
+                return 1f;
+            }
+
+            if (classicTrayNumber <= 6) return 0.75f;
+            return classicTrayNumber <= 8 ? 0.30f : 0f;
+        }
+
+        private BoardOccupancyState GetOccupancyState(int occupiedCells)
+        {
+            if (occupiedCells >= 50)
+            {
+                return BoardOccupancyState.Critical;
+            }
+
+            if (occupiedCells >= 40)
+            {
+                return BoardOccupancyState.Pressured;
+            }
+
+            return occupiedCells >= 28
+                ? BoardOccupancyState.Balanced
+                : BoardOccupancyState.Open;
+        }
+
+        private float GetOccupancyPressure(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 0.32f;
+                case BoardOccupancyState.Pressured:
+                    return 0.68f;
+                case BoardOccupancyState.Critical:
+                    return 1f;
+                default:
+                    return 0f;
+            }
+        }
+
+        private int GetImmediateClearWeight(BoardOccupancyState state, float difficulty01)
+        {
+            int baseWeight = Mathf.RoundToInt(Mathf.Lerp(500f, 390f, difficulty01));
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return baseWeight + 90;
+                case BoardOccupancyState.Pressured:
+                    return baseWeight + 220;
+                case BoardOccupancyState.Critical:
+                    return baseWeight + 330;
+                default:
+                    return baseWeight - 50;
+            }
+        }
+
+        private int GetSetupWeight(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 36;
+                case BoardOccupancyState.Pressured:
+                    return 48;
+                case BoardOccupancyState.Critical:
+                    return 54;
+                default:
+                    return 24;
+            }
+        }
+
+        private int GetAdjacencyWeight(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 72;
+                case BoardOccupancyState.Pressured:
+                    return 102;
+                case BoardOccupancyState.Critical:
+                    return 116;
+                default:
+                    return 34;
+            }
+        }
+
+        private int GetLineProgressWeight(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 46;
+                case BoardOccupancyState.Pressured:
+                    return 62;
+                case BoardOccupancyState.Critical:
+                    return 70;
+                default:
+                    return 30;
+            }
+        }
+
+        private int GetCleanlinessWeight(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 3;
+                case BoardOccupancyState.Pressured:
+                    return 4;
+                case BoardOccupancyState.Critical:
+                    return 5;
+                default:
+                    return 2;
+            }
+        }
+
+        private int GetSetupPayoffWeight(BoardOccupancyState state)
+        {
+            switch (state)
+            {
+                case BoardOccupancyState.Balanced:
+                    return 10;
+                case BoardOccupancyState.Pressured:
+                    return 13;
+                case BoardOccupancyState.Critical:
+                    return 15;
+                default:
+                    return 7;
+            }
+        }
+
+        // When an early board has no carried FlowTarget, prefer an ordinary
+        // readable build-and-flex tray: A creates meaningful line progress, B
+        // can cash it in, and the remaining piece is not a dead end. This is a
+        // preference only; it never manufactures pieces or replaces fairness.
+        private int CalculateEarlyBuildFlexBonus(
+            BoardManager board,
+            PieceInstance[] set,
+            int classicTrayNumber)
+        {
+            if (GameSession.SelectedMode != GameMode.Classic
+                || classicTrayNumber < 1
+                || classicTrayNumber > 8
+                || flowTargetCount > 0
+                || board == null
+                || set == null)
+            {
+                return 0;
+            }
+
+            for (int setupIndex = 0; setupIndex < set.Length; setupIndex++)
+            {
+                PieceInstance setupPiece = set[setupIndex];
+                if (setupPiece == null)
+                {
+                    continue;
+                }
+
+                GenerationPlacementProfile setupProfile = GetGenerationPlacementProfile(board, setupPiece);
+                if (!setupProfile.hasSetupOrigin
+                    || setupProfile.clearOpportunities > 0
+                    || setupProfile.bestLineProgress < 4)
+                {
+                    continue;
+                }
+
+                for (int payoffIndex = 0; payoffIndex < set.Length; payoffIndex++)
+                {
+                    if (payoffIndex == setupIndex || set[payoffIndex] == null)
+                    {
+                        continue;
+                    }
+
+                    if (GetCachedSetupPayoffScore(board, setupPiece, set[payoffIndex]) <= 0)
+                    {
+                        continue;
+                    }
+
+                    for (int flexIndex = 0; flexIndex < set.Length; flexIndex++)
+                    {
+                        if (flexIndex != setupIndex
+                            && flexIndex != payoffIndex
+                            && set[flexIndex] != null
+                            && GetPlacementOptions(board, set[flexIndex]) >= 4)
+                        {
+                            return 2200;
+                        }
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        private int GetCachedSetupPayoffScore(
+            BoardManager board,
+            PieceInstance setupPiece,
+            PieceInstance payoffPiece)
+        {
+            SetupPayoffKey key = new SetupPayoffKey(setupPiece.shapeId, payoffPiece.shapeId);
+            if (generationSetupPayoffCache.TryGetValue(key, out int payoffScore))
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastGenerationMetricCacheHits++;
+#endif
+                return payoffScore;
+            }
+
+            GenerationPlacementProfile setupProfile = GetGenerationPlacementProfile(board, setupPiece);
+            payoffScore = !setupProfile.hasSetupOrigin
+                ? 0
+                : board.ScoreGenerationSetupPayoff(
+                    setupPiece,
+                    setupProfile.bestSetupOrigin,
+                    payoffPiece);
+            generationSetupPayoffCache.Add(key, payoffScore);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastGenerationMetricEvaluations++;
+#endif
+            return payoffScore;
+        }
+
+        private SetupPayoffAnalysis AnalyzeSetupPayoff(BoardManager board, PieceInstance[] set)
+        {
+            SetupPayoffAnalysis analysis = default;
+            if (board == null || set == null)
+            {
+                return analysis;
+            }
+
+            for (int first = 0; first < set.Length; first++)
+            {
+                PieceInstance setupPiece = set[first];
+                if (setupPiece == null)
+                {
+                    continue;
+                }
+
+                GenerationPlacementProfile setupProfile = GetGenerationPlacementProfile(board, setupPiece);
+                if (!setupProfile.hasSetupOrigin || setupProfile.bestLineProgress <= 0)
+                {
+                    continue;
+                }
+
+                for (int second = 0; second < set.Length; second++)
+                {
+                    if (first == second || set[second] == null)
+                    {
+                        continue;
+                    }
+
+                    int payoffScore = GetCachedSetupPayoffScore(board, setupPiece, set[second]);
+                    analysis.legacyScore = Mathf.Max(analysis.legacyScore, payoffScore);
+
+                    // A strict Pure Setup is the deliberately non-clearing A -> B
+                    // sequence approved for OPEN boards. Neither participating shape
+                    // may have an independent clear on the current board, while the
+                    // cached virtual pair simulation confirms B clears after A.
+                    GenerationPlacementProfile payoffProfile = GetGenerationPlacementProfile(board, set[second]);
+                    if (setupProfile.clearOpportunities == 0
+                        && payoffProfile.clearOpportunities == 0)
+                    {
+                        analysis.pureScore = Mathf.Max(analysis.pureScore, payoffScore);
+                    }
+                }
+            }
+
+            return analysis;
+        }
+
+        private void RecordSelectedGenerationMetrics(
+            BoardManager board,
+            PieceInstance[] selectedSet,
+            int fitCount,
+            float difficulty01,
+            float assist01,
+            float runPressure01,
+            int consecutiveReliefBiasedTrays,
+            int classicTrayNumber)
+        {
+            int selectedScore = ScoreSetForBoard(
+                board,
+                selectedSet,
+                fitCount,
+                difficulty01,
+                assist01,
+                runPressure01,
+                consecutiveReliefBiasedTrays,
+                classicTrayNumber);
+            int immediateClears = 0;
+            int setupScore = 0;
+            int adjacency = 0;
+            int lineProgress = 0;
+            int cleanliness = 0;
+            for (int i = 0; i < selectedSet.Length; i++)
+            {
+                if (selectedSet[i] == null)
+                {
+                    continue;
+                }
+
+                GenerationPlacementProfile profile = GetGenerationPlacementProfile(board, selectedSet[i]);
+                immediateClears += profile.clearOpportunities;
+                setupScore += profile.bestSetupScore;
+                adjacency += profile.bestAdjacencyContacts;
+                lineProgress += profile.bestLineProgress;
+                cleanliness += profile.bestCleanlinessScore;
+            }
+
+            SetupPayoffAnalysis setupPayoffAnalysis = AnalyzeSetupPayoff(board, selectedSet);
+            int legacySetupPayoff = setupPayoffAnalysis.legacyScore;
+            int pureSetup = setupPayoffAnalysis.pureScore;
+            int occupied = GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board);
+            BoardOccupancyState state = GetOccupancyState(occupied);
+            LastGenerationReliefBiased = (int)state >= (int)BoardOccupancyState.Pressured
+                && (immediateClears > 0 || legacySetupPayoff > 0 || lineProgress >= 10);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            LastGenerationTrayEaseScore = CalculateTrayEaseScore(
+                board,
+                selectedSet,
+                out _);
+            LastGenerationSelectedScore = selectedScore;
+            LastGenerationOccupiedCells = occupied;
+            LastGenerationOccupancyState = state;
+            LastGenerationRunPressure = runPressure01;
+            LastGenerationImmediateClearOpportunities = immediateClears;
+            LastGenerationSetupOpportunities = setupScore;
+            LastGenerationSetupPayoffOpportunities = legacySetupPayoff;
+            LastGenerationLegacySetupPayoffOpportunities = legacySetupPayoff;
+            LastGenerationPureSetupOpportunities = pureSetup;
+            LastGenerationPureSetupWithoutImmediateClearOpportunities = immediateClears == 0
+                ? pureSetup
+                : 0;
+            LastGenerationImmediateClearSetupOverlap = immediateClears > 0 && legacySetupPayoff > 0
+                ? 1
+                : 0;
+            LastGenerationOpenDiversityBonusApplied = state == BoardOccupancyState.Open
+                && pureSetup > 0
+                && immediateClears == 0
+                && GetOpenDiversityBonus(classicTrayNumber) > 0;
+            LastGenerationAdjacencyContacts = adjacency;
+            LastGenerationLineProgress = lineProgress;
+            LastGenerationCleanlinessScore = cleanliness;
+#endif
         }
 
         private void ImproveSetWithRescuePieces(BoardManager board, PieceInstance[] set, System.Random random, float difficulty01, float assist01)
@@ -862,14 +2495,17 @@ namespace ChromaBlast
                 return;
             }
 
-            int targetTotalCells = emptyCells >= 34 ? 15 : emptyCells >= 26 ? 13 : 11;
+            // Keep a little visual substance without turning this post-pass
+            // into a second large-piece generator. This only prevents a tray
+            // of three tiny pieces.
+            int targetTotalCells = emptyCells >= 34 ? 13 : emptyCells >= 26 ? 12 : 10;
             if (difficulty01 < 0.18f)
             {
                 targetTotalCells--;
             }
 
             int guard = 0;
-            while (TotalPieceCells(set) < targetTotalCells && guard < 2)
+            while (TotalPieceCells(set) < targetTotalCells && guard < 1)
             {
                 guard++;
                 int replaceIndex = FindSmallestNonClearingPieceIndex(board, set);
@@ -879,7 +2515,7 @@ namespace ChromaBlast
                 }
 
                 int currentCells = set[replaceIndex] == null ? 0 : set[replaceIndex].Data.cells.Length;
-                PieceInstance largerPiece = FindBestLargeFittingPiece(board, random);
+                PieceInstance largerPiece = FindBestFittingPieceInRange(board, random, 3, 5);
                 if (largerPiece == null || largerPiece.Data.cells.Length <= currentCells)
                 {
                     return;
@@ -903,58 +2539,42 @@ namespace ChromaBlast
             }
 
             int smallPieces = CountPiecesAtMost(set, 3);
-            int largePieces = CountPiecesAtLeast(set, 5);
-            int targetLargePieces = emptyCells >= 34 ? 2 : 1;
-            if (assist01 > 0.60f)
+            int mediumPieces = CountPiecesBetween(set, 3, 4);
+            if (smallPieces < 2 || mediumPieces > 0)
             {
-                targetLargePieces = 1;
+                return;
             }
 
-            int guard = 0;
-            while ((smallPieces >= 2 || largePieces < targetLargePieces) && guard < 2)
+            int replaceIndex = FindSmallestNonClearingPieceIndex(board, set);
+            if (replaceIndex < 0)
             {
-                guard++;
-                int replaceIndex = FindSmallestNonClearingPieceIndex(board, set);
-                if (replaceIndex < 0)
-                {
-                    replaceIndex = FindSmallestFittingPieceIndex(board, set);
-                }
+                replaceIndex = FindSmallestFittingPieceIndex(board, set);
+            }
 
-                if (replaceIndex < 0)
-                {
-                    return;
-                }
+            if (replaceIndex < 0)
+            {
+                return;
+            }
 
-                int currentCells = set[replaceIndex] == null ? 0 : set[replaceIndex].Data.cells.Length;
-                PieceInstance largerPiece = FindBestLargeFittingPiece(board, random);
-                if (largerPiece == null || largerPiece.Data.cells.Length <= currentCells)
-                {
-                    return;
-                }
-
-                if (difficulty01 < 0.18f && largerPiece.Data.cells.Length >= 6 && emptyCells < 38)
-                {
-                    return;
-                }
-
-                set[replaceIndex] = largerPiece;
-                smallPieces = CountPiecesAtMost(set, 3);
-                largePieces = CountPiecesAtLeast(set, 5);
+            PieceInstance connector = FindBestFittingPieceInRange(board, random, 3, 4);
+            if (connector != null)
+            {
+                set[replaceIndex] = connector;
             }
         }
 
         private int CalculateMiniPiecePenalty(PieceInstance[] set, int emptyCells, float assist01)
         {
-            int smallPieces = CountPiecesAtMost(set, 3);
+            int smallPieces = CountPiecesAtMost(set, 2);
             if (smallPieces <= 1 || emptyCells < 15 || assist01 > 0.70f)
             {
                 return 0;
             }
 
-            int penalty = smallPieces == 2 ? 850 : 1900;
+            int penalty = smallPieces == 2 ? 420 : 1080;
             if (emptyCells >= 30)
             {
-                penalty += 650;
+                penalty += 320;
             }
 
             return penalty;
@@ -1233,8 +2853,6 @@ namespace ChromaBlast
                 "square3",
                 "rect2x3",
                 "rect3x2",
-                "plus5",
-                "stair5",
                 "line4_h",
                 "line4_v",
                 "square2",
@@ -1290,6 +2908,47 @@ namespace ChromaBlast
             return best;
         }
 
+        private PieceInstance FindBestFittingPieceInRange(
+            BoardManager board,
+            System.Random random,
+            int minimumCells,
+            int maximumCells)
+        {
+            PieceInstance best = null;
+            int bestScore = int.MinValue;
+            for (int i = 0; i < PieceCatalog.All.Count; i++)
+            {
+                PieceData data = PieceCatalog.All[i];
+                int cells = data.cells.Length;
+                if (data.id == "plus5" || data.id == "stair5" || cells < minimumCells || cells > maximumCells)
+                {
+                    continue;
+                }
+
+                PieceInstance candidate = new PieceInstance(
+                    data.id,
+                    (ChromaColor)random.Next(GameConstants.ColorCount));
+                int options = GetPlacementOptions(board, candidate);
+                if (options <= 0)
+                {
+                    continue;
+                }
+
+                int score = options * 74
+                    + GetClearOpportunities(board, candidate) * 920
+                    + GetSetupOpportunity(board, candidate) * 38
+                    + random.Next(16);
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+
+            return best;
+        }
+
         private PieceInstance FindBestComebackPiece(BoardManager board, System.Random random, float assist01)
         {
             PieceInstance best = null;
@@ -1298,6 +2957,11 @@ namespace ChromaBlast
             for (int i = 0; i < PieceCatalog.All.Count; i++)
             {
                 PieceData data = PieceCatalog.All[i];
+                if (data.id == "plus5" || data.id == "stair5")
+                {
+                    continue;
+                }
+
                 PieceInstance candidate = new PieceInstance(data.id, (ChromaColor)random.Next(GameConstants.ColorCount));
                 int options = GetPlacementOptions(board, candidate);
                 if (options <= 0)
@@ -1352,6 +3016,11 @@ namespace ChromaBlast
             for (int i = 0; i < PieceCatalog.All.Count; i++)
             {
                 PieceData data = PieceCatalog.All[i];
+                if (data.id == "plus5" || data.id == "stair5")
+                {
+                    continue;
+                }
+
                 PieceInstance candidate = new PieceInstance(data.id, (ChromaColor)random.Next(GameConstants.ColorCount));
                 int clearOpportunities = GetClearOpportunities(board, candidate);
                 if (clearOpportunities <= 0)

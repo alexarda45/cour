@@ -360,6 +360,10 @@ MonoBehaviour:
   gameOverClip: {fileID: 8300000, guid: 20a814e24e0d4411ab80900f44486719, type: 3}
   comboSmallClip: {fileID: 8300000, guid: ba2e84ebf28a457f8f3d23f292b543a6, type: 3}
   comboBigClip: {fileID: 8300000, guid: 48a13b8bc2074f3da9c818bbbfeb6ea2, type: 3}
+  comboVoiceGood: {fileID: 8300000, guid: d89db21cf6614c5387fc55dddddee718, type: 3}
+  comboVoiceGreat: {fileID: 8300000, guid: 0825067601324c738c732f94592141c2, type: 3}
+  comboVoiceAmazing: {fileID: 8300000, guid: e81af4d37aea44d2805bb3498a9d58b2, type: 3}
+  comboVoicePerfect: {fileID: 8300000, guid: 7fc2b0a4799547d5b457d2d5a9090daf, type: 3}
   toggleClip: {fileID: 8300000, guid: fefd870889f048afaa9c1b049d334bbf, type: 3}
   dragGridTickClips:
   - {fileID: 8300000, guid: 2cc5be504cbe45e88e8bf04314f61fe0, type: 3}

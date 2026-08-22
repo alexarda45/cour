@@ -13,6 +13,14 @@ namespace ChromaBlast
         private const float FeedbackDuration = 2.0f;
         private const float PreviewTileSize = 106f;
         private const float PreviewTilePitch = 112f;
+        private static readonly Vector2 GardenArtworkSize = new Vector2(1080f, 1349f);
+        private static readonly string[] OceanArtworkNames =
+        {
+            "OceanRescuePanel",
+            "OceanRescueTitle",
+            "ContinueText",
+            "RescuePreviewPanel"
+        };
 
         [SerializeField] private GameObject root;
         [SerializeField] private Image dimBackground;
@@ -28,6 +36,20 @@ namespace ChromaBlast
         private Coroutine feedbackRoutine;
         private bool listenersAdded;
         private float dimTargetAlpha = 0.65f;
+        private Image themedArtworkImage;
+        private Image[] oceanArtworkImages;
+
+        private readonly struct RescueArtworkFit
+        {
+            public readonly Vector2 Size;
+            public readonly Vector2 Position;
+
+            public RescueArtworkFit(Vector2 size, Vector2 position)
+            {
+                Size = size;
+                Position = position;
+            }
+        }
 
         public bool IsVisible => root != null && root.activeSelf;
 
@@ -90,6 +112,7 @@ namespace ChromaBlast
 
             root.SetActive(true);
             root.transform.SetAsLastSibling();
+            ConfigureThemeArtwork();
             RenderPreview(rescueSet);
             SetButtonsInteractable(true);
             SetFeedbackVisible(false);
@@ -311,6 +334,126 @@ namespace ChromaBlast
                     tileImage.color = Color.white;
                     tileImage.raycastTarget = false;
                 }
+            }
+        }
+
+        private void ConfigureThemeArtwork()
+        {
+            if (popupRoot == null)
+            {
+                return;
+            }
+
+            CacheOceanArtworkImages();
+            ThemeAssetSet theme = ThemeCatalog.Current;
+            Sprite themedSprite = theme == null || theme.ThemeType == ThemeType.Ocean
+                ? null
+                : theme.RescuePanelSprite;
+            bool useThemedArtwork = themedSprite != null;
+
+            for (int i = 0; i < oceanArtworkImages.Length; i++)
+            {
+                if (oceanArtworkImages[i] != null)
+                {
+                    oceanArtworkImages[i].enabled = !useThemedArtwork;
+                }
+            }
+
+            if (!useThemedArtwork)
+            {
+                if (themedArtworkImage != null)
+                {
+                    themedArtworkImage.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            EnsureThemedArtworkImage();
+            RescueArtworkFit artworkFit = GetArtworkFit(theme.ThemeType);
+            RectTransform artworkRect = themedArtworkImage.rectTransform;
+            artworkRect.sizeDelta = artworkFit.Size;
+            artworkRect.anchoredPosition = artworkFit.Position;
+            themedArtworkImage.sprite = themedSprite;
+            themedArtworkImage.color = Color.white;
+            themedArtworkImage.preserveAspect = true;
+            themedArtworkImage.raycastTarget = false;
+            themedArtworkImage.gameObject.SetActive(true);
+            themedArtworkImage.transform.SetSiblingIndex(0);
+        }
+
+        private void CacheOceanArtworkImages()
+        {
+            if (oceanArtworkImages != null)
+            {
+                return;
+            }
+
+            oceanArtworkImages = new Image[OceanArtworkNames.Length];
+            for (int i = 0; i < OceanArtworkNames.Length; i++)
+            {
+                Transform artwork = popupRoot.Find(OceanArtworkNames[i]);
+                oceanArtworkImages[i] = artwork == null ? null : artwork.GetComponent<Image>();
+            }
+        }
+
+        private void EnsureThemedArtworkImage()
+        {
+            if (themedArtworkImage != null)
+            {
+                return;
+            }
+
+            Transform existing = popupRoot.Find("ThemedRescueArtwork");
+            if (existing != null)
+            {
+                themedArtworkImage = existing.GetComponent<Image>();
+            }
+
+            if (themedArtworkImage == null)
+            {
+                GameObject artworkObject = new GameObject(
+                    "ThemedRescueArtwork",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+                RectTransform artworkRect = artworkObject.GetComponent<RectTransform>();
+                artworkRect.SetParent(popupRoot, false);
+                artworkRect.anchorMin = new Vector2(0.5f, 0.5f);
+                artworkRect.anchorMax = new Vector2(0.5f, 0.5f);
+                artworkRect.pivot = new Vector2(0.5f, 0.5f);
+                artworkRect.anchoredPosition = Vector2.zero;
+                artworkRect.sizeDelta = GardenArtworkSize;
+                themedArtworkImage = artworkObject.GetComponent<Image>();
+                themedArtworkImage.type = Image.Type.Simple;
+            }
+
+            themedArtworkImage.raycastTarget = false;
+        }
+
+        private static RescueArtworkFit GetArtworkFit(ThemeType themeType)
+        {
+            switch (themeType)
+            {
+                case ThemeType.Neon: // Blossom
+                    return new RescueArtworkFit(
+                        new Vector2(1012f, 1264f),
+                        new Vector2(-21f, 40f));
+                case ThemeType.Gold: // Desert
+                    return new RescueArtworkFit(
+                        new Vector2(983f, 1228f),
+                        new Vector2(-17f, 49f));
+                case ThemeType.Candy:
+                    return new RescueArtworkFit(
+                        new Vector2(1024f, 1279f),
+                        new Vector2(-15f, 24f));
+                case ThemeType.Aqua: // Beach
+                    return new RescueArtworkFit(
+                        new Vector2(1004f, 1255f),
+                        new Vector2(-20f, 46f));
+                case ThemeType.Crystal: // Garden is the approved custom-art reference.
+                default:
+                    return new RescueArtworkFit(GardenArtworkSize, Vector2.zero);
             }
         }
 

@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Globalization;
 using TMPro;
@@ -9,7 +8,15 @@ namespace ChromaBlast
 {
     public class GameOverUI : MonoBehaviour
     {
-        private const float ButtonRevealDuration = 0.15f;
+        // Keep the loss feedback decisive: the player can restart within 0.46 seconds
+        // of confirmation (impact + panel entrance + button reveal).
+        private const float InitialImpactDuration = 0.12f;
+        private const float ScreenImpactDuration = 0.16f;
+        private const float BoardReactionDuration = 0.14f;
+        private const float PanelEntryDuration = 0.20f;
+        private const float ButtonRevealDuration = 0.14f;
+        private const float ScreenImpactAlpha = 0.18f;
+        private const float BoardCompressionScale = 0.985f;
         // The theme capsule files share the original 1536x1024 padded canvas.
         // Game Over uses a wide cropped capsule RectTransform, so use the same
         // visible-art bounds (alpha >= 8) without stretching the source artwork.
@@ -54,6 +61,12 @@ namespace ChromaBlast
         private Sprite defaultBestScoreCrownSprite;
         private Sprite gameOverThemeCapsuleSprite;
         private Sprite gameOverThemeCapsuleSource;
+        private Image impactOverlayImage;
+        private RectTransform panelRect;
+        private RectTransform boardReactionRect;
+        private Vector3 boardReactionBaseScale = Vector3.one;
+        private bool boardReactionBaseScaleCached;
+        private CameraShake cameraShake;
 
         private void Awake()
         {
@@ -88,6 +101,7 @@ namespace ChromaBlast
         public void Initialize(GameManager owner)
         {
             gameManager = owner;
+            CachePresentationTargets();
             WireRestartButtonOnce();
         }
 
@@ -116,6 +130,7 @@ namespace ChromaBlast
 
             DisableLegacyVisuals();
             ApplyCurrentThemeVisuals();
+            CachePresentationTargets();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
             WireRestartButtonOnce();
@@ -134,7 +149,7 @@ namespace ChromaBlast
             {
                 scoreValueText.rectTransform.anchoredPosition =
                     showNewBest ? newBestScorePosition : normalScorePosition;
-                scoreValueText.text = "0";
+                SetScore(finalScore);
             }
 
             if (bestValueText != null)
@@ -155,13 +170,7 @@ namespace ChromaBlast
             }
 
             PrepareEntranceState();
-            if (finalScore <= 0)
-            {
-                SetScore(0);
-                RestoreFinalVisualState();
-                return;
-            }
-
+            BeginImpact();
             entranceRoutine = StartCoroutine(AnimateEntrance(finalScore));
         }
 
@@ -183,47 +192,45 @@ namespace ChromaBlast
 
         private IEnumerator AnimateEntrance(int finalScore)
         {
-            float scoreDuration = GetScoreDuration(finalScore);
             float elapsed = 0f;
 
-            yield return null;
-
-            while (elapsed < scoreDuration)
+            while (elapsed < InitialImpactDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-
-                float scoreT = Mathf.Clamp01(elapsed / scoreDuration);
-                float scoreEase = EaseOutCubic(scoreT);
-                int displayedScore =
-                    (int)Math.Round(finalScore * (double)scoreEase);
-                if (scoreT < 1f)
-                {
-                    displayedScore = Mathf.Min(displayedScore, finalScore - 1);
-                }
-
-                SetScore(displayedScore);
-
-                float scoreScale = 1f + Mathf.Sin(scoreT * Mathf.PI) * 0.025f;
-                SetScale(
-                    scoreValueText == null ? null : scoreValueText.rectTransform,
-                    scoreScale);
-
-                if (scoreT >= 1f)
-                {
-                    break;
-                }
-
+                UpdateImpact(elapsed);
                 yield return null;
             }
 
             SetScore(finalScore);
 
-            float buttonElapsed = 0f;
-            while (buttonElapsed < ButtonRevealDuration)
+            elapsed = 0f;
+            while (elapsed < PanelEntryDuration)
             {
-                buttonElapsed += Time.unscaledDeltaTime;
-                float buttonProgress =
-                    Mathf.Clamp01(buttonElapsed / ButtonRevealDuration);
+                elapsed += Time.unscaledDeltaTime;
+                float panelT = Mathf.Clamp01(elapsed / PanelEntryDuration);
+                float panelEase = EaseOutCubic(panelT);
+                SetPanelVisualAlpha(panelEase);
+                SetPanelScale(EvaluatePanelScale(panelT));
+
+                SetScale(
+                    scoreValueText == null ? null : scoreValueText.rectTransform,
+                    1f + Mathf.Sin(panelT * Mathf.PI) * 0.045f);
+
+                UpdateImpact(InitialImpactDuration + elapsed);
+
+                yield return null;
+            }
+
+            SetPanelVisualAlpha(1f);
+            SetPanelScale(1f);
+            RestoreBoardReactionScale();
+            SetImpactOverlayAlpha(0f);
+
+            elapsed = 0f;
+            while (elapsed < ButtonRevealDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float buttonProgress = Mathf.Clamp01(elapsed / ButtonRevealDuration);
                 float buttonT = EaseOutCubic(buttonProgress);
                 SetCanvasGroupAlpha(restartButtonGroup, buttonT);
 
@@ -235,10 +242,6 @@ namespace ChromaBlast
                         Vector3.one * Mathf.Lerp(0.92f, 1f, buttonT);
                 }
 
-                SetScale(
-                    scoreValueText == null ? null : scoreValueText.rectTransform,
-                    1f + Mathf.Sin(buttonProgress * Mathf.PI) * 0.055f);
-
                 yield return null;
             }
 
@@ -249,25 +252,9 @@ namespace ChromaBlast
 
         private void PrepareEntranceState()
         {
-            SetGraphicAlpha(backgroundImage, 1f);
-            SetGraphicAlpha(titleText, 1f);
-            SetScale(titleText == null ? null : titleText.rectTransform, 1f);
-
-            if (newBestAccent != null)
-            {
-                SetGraphicAlpha(newBestAccent, 1f);
-                SetScale(newBestAccent.rectTransform, 1f);
-            }
-
-            SetGraphicAlpha(scoreValueText, 1f);
+            SetPanelVisualAlpha(0f);
+            SetPanelScale(0.95f);
             SetScale(scoreValueText == null ? null : scoreValueText.rectTransform, 1f);
-            SetGraphicAlpha(bestLabelText, 1f);
-            SetCanvasGroupAlpha(bestScoreCapsuleGroup, 1f);
-            SetScale(
-                bestScoreCapsuleGroup == null
-                    ? null
-                    : bestScoreCapsuleGroup.transform as RectTransform,
-                1f);
             SetCanvasGroupAlpha(restartButtonGroup, 0f);
 
             if (restartButtonGroup != null)
@@ -287,25 +274,12 @@ namespace ChromaBlast
 
         private void RestoreFinalVisualState()
         {
-            SetGraphicAlpha(backgroundImage, 1f);
-            SetGraphicAlpha(titleText, 1f);
-            SetScale(titleText == null ? null : titleText.rectTransform, 1f);
+            SetImpactOverlayAlpha(0f);
+            RestoreBoardReactionScale();
+            SetPanelVisualAlpha(1f);
+            SetPanelScale(1f);
             SetGraphicAlpha(scoreValueText, 1f);
             SetScale(scoreValueText == null ? null : scoreValueText.rectTransform, 1f);
-            SetGraphicAlpha(bestLabelText, 1f);
-            SetCanvasGroupAlpha(bestScoreCapsuleGroup, 1f);
-            SetScale(
-                bestScoreCapsuleGroup == null
-                    ? null
-                    : bestScoreCapsuleGroup.transform as RectTransform,
-                1f);
-
-            if (newBestAccent != null)
-            {
-                SetGraphicAlpha(newBestAccent, 1f);
-                SetScale(newBestAccent.rectTransform, 1f);
-            }
-
             SetCanvasGroupAlpha(restartButtonGroup, 1f);
             if (restartButtonGroup != null)
             {
@@ -385,6 +359,76 @@ namespace ChromaBlast
                 themedBestScoreCrownImage.preserveAspect = true;
                 themedBestScoreCrownImage.sprite = defaultBestScoreCrownSprite;
             }
+
+            ApplyGameOverAccentColors(theme);
+        }
+
+        private void ApplyGameOverAccentColors(ThemeAssetSet theme)
+        {
+            Color accent = GetBrightGameOverAccent(theme);
+
+            SetSolidTextColor(titleText, Color.white);
+            SetSolidTextColor(scoreValueText, Color.white);
+            SetSolidTextColor(bestValueText, Color.white);
+            SetSolidTextColor(bestLabelText, accent);
+
+            ApplyTextMaterialAccent(titleText, accent);
+            ApplyTextMaterialAccent(scoreValueText, accent);
+            ApplyTextMaterialAccent(bestValueText, accent);
+            ApplyTextMaterialAccent(bestLabelText, accent);
+        }
+
+        private static Color GetBrightGameOverAccent(ThemeAssetSet theme)
+        {
+            Color source = theme == null
+                ? new Color(0.20f, 0.90f, 1f, 1f)
+                : theme.CapsuleTintColor;
+            Color.RGBToHSV(source, out float hue, out float saturation, out _);
+            Color bright = Color.HSVToRGB(hue, Mathf.Max(0.55f, saturation), 1f);
+            bright.a = 1f;
+            return bright;
+        }
+
+        private static void SetSolidTextColor(TMP_Text text, Color color)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            color.a = 1f;
+            text.enableVertexGradient = false;
+            text.color = color;
+            text.faceColor = Color.white;
+        }
+
+        private static void ApplyTextMaterialAccent(TMP_Text text, Color accent)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            Material material = text.fontMaterial;
+            if (material == null)
+            {
+                return;
+            }
+
+            accent.a = 1f;
+            if (material.HasProperty(ShaderUtilities.ID_OutlineColor))
+            {
+                material.SetColor(ShaderUtilities.ID_OutlineColor, accent);
+            }
+
+            if (material.HasProperty(ShaderUtilities.ID_GlowColor))
+            {
+                Color glow = accent;
+                glow.a = material.GetColor(ShaderUtilities.ID_GlowColor).a;
+                material.SetColor(ShaderUtilities.ID_GlowColor, glow);
+            }
+
+            text.UpdateMeshPadding();
         }
 
         private Sprite GetGameOverCapsuleSprite(Sprite source)
@@ -491,15 +535,101 @@ namespace ChromaBlast
             fitter.aspectRatio = theme.GameOverBackground.rect.width / theme.GameOverBackground.rect.height;
         }
 
-        private static float GetScoreDuration(int finalScore)
+        private void CachePresentationTargets()
         {
-            int digits = finalScore <= 0
-                ? 1
-                : Mathf.FloorToInt(Mathf.Log10(finalScore)) + 1;
-            return Mathf.Lerp(
-                0.62f,
-                0.95f,
-                Mathf.InverseLerp(1f, 6f, Mathf.Clamp(digits, 1, 6)));
+            if (root != null)
+            {
+                impactOverlayImage ??= root.GetComponent<Image>();
+
+                if (panelRect == null)
+                {
+                    panelRect = root.transform.Find("GameOverPanel") as RectTransform;
+                }
+            }
+
+            if (boardReactionRect == null && gameManager != null && gameManager.Board != null)
+            {
+                boardReactionRect = gameManager.Board.BoardRoot;
+                if (boardReactionRect != null)
+                {
+                    boardReactionBaseScale = boardReactionRect.localScale;
+                    boardReactionBaseScaleCached = true;
+                }
+            }
+
+            cameraShake ??= FindFirstObjectByType<CameraShake>();
+        }
+
+        private void BeginImpact()
+        {
+            CachePresentationTargets();
+            SetImpactOverlayAlpha(ScreenImpactAlpha);
+            cameraShake?.Shake(0.095f, 0.12f);
+        }
+
+        private void UpdateImpact(float elapsed)
+        {
+            float screenT = Mathf.Clamp01(elapsed / ScreenImpactDuration);
+            SetImpactOverlayAlpha(ScreenImpactAlpha * (1f - screenT));
+
+            if (boardReactionRect == null || !boardReactionBaseScaleCached)
+            {
+                return;
+            }
+
+            float boardT = Mathf.Clamp01(elapsed / BoardReactionDuration);
+            float compression = Mathf.Lerp(
+                1f,
+                BoardCompressionScale,
+                Mathf.Sin(boardT * Mathf.PI));
+            boardReactionRect.localScale = boardReactionBaseScale * compression;
+        }
+
+        private void RestoreBoardReactionScale()
+        {
+            if (boardReactionRect != null && boardReactionBaseScaleCached)
+            {
+                boardReactionRect.localScale = boardReactionBaseScale;
+            }
+        }
+
+        private void SetPanelVisualAlpha(float alpha)
+        {
+            SetGraphicAlpha(backgroundImage, alpha);
+            SetGraphicAlpha(titleText, alpha);
+            SetGraphicAlpha(newBestAccent, alpha);
+            SetGraphicAlpha(scoreValueText, alpha);
+            SetGraphicAlpha(bestLabelText, alpha);
+            SetCanvasGroupAlpha(bestScoreCapsuleGroup, alpha);
+        }
+
+        private void SetPanelScale(float scale)
+        {
+            if (panelRect != null)
+            {
+                panelRect.localScale = Vector3.one * scale;
+            }
+        }
+
+        private void SetImpactOverlayAlpha(float alpha)
+        {
+            if (impactOverlayImage == null)
+            {
+                return;
+            }
+
+            impactOverlayImage.color = new Color(0.035f, 0.05f, 0.085f, Mathf.Clamp01(alpha));
+        }
+
+        private static float EvaluatePanelScale(float value)
+        {
+            const float peakTime = 0.72f;
+            if (value <= peakTime)
+            {
+                return Mathf.Lerp(0.95f, 1.02f, EaseOutCubic(value / peakTime));
+            }
+
+            return Mathf.Lerp(1.02f, 1f, EaseOutCubic((value - peakTime) / (1f - peakTime)));
         }
 
         private static float EaseOutCubic(float value)

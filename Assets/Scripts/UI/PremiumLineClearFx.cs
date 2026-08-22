@@ -17,8 +17,8 @@ namespace ChromaBlast
         private const int BoardSize = 8;
         private const int BeamPoolSize = 12;
         private const int ParticlePoolSize = 32;
-        private const float BeamExpandDuration = 0.115f;
-        private const float BeamFadeDuration = 0.17f;
+        private const float BeamExpandDuration = 0.055f;
+        private const float BeamFadeDuration = 0.080f;
 
         private sealed class BeamItem
         {
@@ -351,7 +351,7 @@ namespace ChromaBlast
                     ? new Vector2(UnityEngine.Random.Range(-18f, 18f), UnityEngine.Random.Range(-58f, 58f))
                     : new Vector2(UnityEngine.Random.Range(-58f, 58f), UnityEngine.Random.Range(-18f, 18f));
                 float size = UnityEngine.Random.Range(5f, MobilePerformance.LowEndMode ? 8f : 11f);
-                PlayParticle(start, outward, size, accentColor, UnityEngine.Random.Range(0.24f, 0.38f), strength);
+                PlayParticle(start, outward, size, accentColor, UnityEngine.Random.Range(0.14f, 0.20f), strength);
             }
         }
 
@@ -364,7 +364,7 @@ namespace ChromaBlast
                 Vector2 direction = Quaternion.Euler(0f, 0f, angle) * Vector2.right;
                 float distance = UnityEngine.Random.Range(42f, MobilePerformance.LowEndMode ? 72f : 105f);
                 float size = i == 0 ? 20f : UnityEngine.Random.Range(6f, 13f);
-                PlayParticle(position, direction * distance, size, accentColor, UnityEngine.Random.Range(0.26f, 0.44f), 1f);
+                PlayParticle(position, direction * distance, size, accentColor, UnityEngine.Random.Range(0.16f, 0.24f), 1f);
             }
         }
 

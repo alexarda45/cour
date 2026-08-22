@@ -3,6 +3,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Unity.Profiling;
 using UnityEngine.UI;
 
 namespace ChromaBlast
@@ -18,10 +19,9 @@ namespace ChromaBlast
         private const float TrayPieceVisualFill = 0.98f;
         private const float PickupPeakScale = 1.075f;
         private const float DragVisualScale = 1.03f;
-        private const float PickupRiseDuration = 0.065f;
-        private const float PickupSettleDuration = 0.025f;
-        private const float DragVisualResponseSeconds = 0.035f;
-        private const float MaxVisualDragLagPixels = 24f;
+        private const float PickupRiseDuration = 0.025f;
+        private const float PickupSettleDuration = 0.009f;
+        private const float BoardHoverMovementGain = 1.60f;
         private const float InvalidHoverTintStrength = 0.16f;
         private const float PickupShadowAlphaMultiplier = 1.16f;
         private static readonly Color InvalidHoverTint = new Color(1f, 0.34f, 0.38f, 1f);
@@ -51,8 +51,22 @@ namespace ChromaBlast
         private bool pickupShadowEmphasisActive;
         private bool dragGridOriginInitialized;
         private Vector2Int lastDragGridOrigin;
-        private Vector2 visualDragTarget;
-        private bool visualDragTargetInitialized;
+        private bool dragMappingInitialized;
+        private bool boardHoverMappingActive;
+        private Vector2 dragMappingPointerAnchor;
+        private Vector2 dragMappingPieceAnchor;
+        private bool hasCurrentSnappedBoardOrigin;
+        private Vector2Int currentSnappedBoardOrigin;
+        private bool currentSnappedBoardOriginValid;
+        private Vector2 currentAcceleratedHoverScreenPosition;
+        private static readonly ProfilerMarker PointerDownMarker = new ProfilerMarker("ChromaBlast.Input.PointerDown");
+        private static readonly ProfilerMarker DragUpdateMarker = new ProfilerMarker("ChromaBlast.Input.DragUpdate");
+        private static readonly ProfilerMarker PointerUpPlacementMarker = new ProfilerMarker("ChromaBlast.Input.PointerUpToTryPlaceComplete");
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static double LastDragUpdateMilliseconds { get; private set; }
+        public static double LastPointerUpPlacementMilliseconds { get; private set; }
+#endif
 
         public PieceInstance Instance { get; private set; }
         public TraySlot SourceSlot { get; private set; }
@@ -82,7 +96,10 @@ namespace ChromaBlast
             StopPickupScale();
             ResetHeldVisualState();
             dragGridOriginInitialized = false;
-            visualDragTargetInitialized = false;
+            dragMappingInitialized = false;
+            boardHoverMappingActive = false;
+            hasCurrentSnappedBoardOrigin = false;
+            currentSnappedBoardOriginValid = false;
         }
 
         public void Initialize(
@@ -105,6 +122,9 @@ namespace ChromaBlast
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            PointerDownMarker.Begin();
+            try
+            {
             // Reinforce the per-piece zero-threshold setting at press time in case
             // an input module refreshes PointerEventData between initialization and drag.
             eventData.useDragThreshold = false;
@@ -130,6 +150,11 @@ namespace ChromaBlast
                 StopPickupScale();
                 pickupScaleRoutine = StartCoroutine(PickupScaleRoutine());
             }
+            }
+            finally
+            {
+                PointerDownMarker.End();
+            }
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -140,25 +165,6 @@ namespace ChromaBlast
                 RectTransform.localScale = Vector3.one;
                 ResetHeldVisualState();
             }
-        }
-
-        private void LateUpdate()
-        {
-            if (!dragging || !visualDragTargetInitialized || RectTransform == null)
-            {
-                return;
-            }
-
-            float response = Mathf.Max(0.001f, DragVisualResponseSeconds);
-            float blend = 1f - Mathf.Exp(-Time.unscaledDeltaTime / response);
-            Vector2 smoothed = Vector2.Lerp(RectTransform.anchoredPosition, visualDragTarget, blend);
-            Vector2 remaining = visualDragTarget - smoothed;
-            if (remaining.sqrMagnitude > MaxVisualDragLagPixels * MaxVisualDragLagPixels)
-            {
-                smoothed = visualDragTarget - remaining.normalized * MaxVisualDragLagPixels;
-            }
-
-            RectTransform.anchoredPosition = smoothed;
         }
 
         public void OnInitializePotentialDrag(PointerEventData eventData)
@@ -191,6 +197,10 @@ namespace ChromaBlast
             lastPreviewLineCount = -1;
             lastPreviewPureLineCount = -1;
             dragGridOriginInitialized = false;
+            dragMappingInitialized = false;
+            boardHoverMappingActive = false;
+            hasCurrentSnappedBoardOrigin = false;
+            currentSnappedBoardOriginValid = false;
             originalParent = (RectTransform)transform.parent;
             originalAnchoredPosition = RectTransform.anchoredPosition;
 
@@ -215,42 +225,83 @@ namespace ChromaBlast
             {
                 RectTransform.localScale = Vector3.one * DragVisualScale;
             }
-            visualDragTargetInitialized = false;
-            MoveToPointer(eventData, true);
-            UpdatePreview(eventData, false);
-            UpdateDragVisibility(eventData);
+            Vector2 hoverScreenPosition = MoveToPointer(eventData, true, out bool pointerOverBoard);
+            UpdateBoardHover(eventData, hoverScreenPosition, pointerOverBoard, false);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long timingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            DragUpdateMarker.Begin();
+            try
+            {
             if (!dragging)
             {
                 return;
             }
 
-            MoveToPointer(eventData);
-            UpdatePreview(eventData, true);
-            UpdateDragVisibility(eventData);
+            Vector2 hoverScreenPosition = MoveToPointer(eventData, false, out bool pointerOverBoard);
+            UpdateBoardHover(eventData, hoverScreenPosition, pointerOverBoard, true);
+            }
+            finally
+            {
+                DragUpdateMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastDragUpdateMilliseconds = ElapsedMilliseconds(timingStart);
+#endif
+            }
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long timingStart = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            PointerUpPlacementMarker.Begin();
+            try
+            {
             if (!dragging)
             {
                 return;
             }
 
+            Vector2Int previewOrigin = currentSnappedBoardOrigin;
+            bool hasPreviewOrigin = hasCurrentSnappedBoardOrigin;
+            bool previewWasValid = currentSnappedBoardOriginValid;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Vector2 commitAcceleratedPosition = currentAcceleratedHoverScreenPosition;
+            Vector2 commitVisualPosition = RectTransformUtility.WorldToScreenPoint(
+                eventData.pressEventCamera,
+                RectTransform.position);
+            Vector2Int commitOrigin = hasPreviewOrigin
+                ? previewOrigin
+                : new Vector2Int(int.MinValue, int.MinValue);
+            Debug.Log(
+                $"[PieceView Placement] rawPointer={eventData.position} "
+                + $"acceleratedPosition={commitAcceleratedPosition} "
+                + $"visualPosition={commitVisualPosition} liftOffset={dragLiftPixels:F1} "
+                + $"BoardHoverMovementGain={BoardHoverMovementGain:F2} "
+                + $"previewOrigin={previewOrigin} commitOrigin={commitOrigin} "
+                + $"shapeId={Instance?.shapeId ?? "null"}");
+            Debug.Assert(!hasPreviewOrigin || previewOrigin == commitOrigin,
+                $"Preview/commit origin mismatch for {Instance?.shapeId}: preview={previewOrigin}, commit={commitOrigin}");
+#endif
+
             dragging = false;
             dragGridOriginInitialized = false;
-            visualDragTargetInitialized = false;
+            dragMappingInitialized = false;
+            boardHoverMappingActive = false;
+            hasCurrentSnappedBoardOrigin = false;
+            currentSnappedBoardOriginValid = false;
             gameManager.Board.ClearPreview();
             lastPreviewLineCount = -1;
             lastPreviewPureLineCount = -1;
             canvasGroup.blocksRaycasts = true;
             canvasGroup.alpha = 1f;
 
-            Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
-            if (!gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera))
+            if (!hasPreviewOrigin || !previewWasValid)
             {
                 AudioManager.Instance?.PlayInvalid();
                 Haptics.Invalid();
@@ -261,14 +312,21 @@ namespace ChromaBlast
                 return;
             }
 
-            Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, liftedPosition, eventData.pressEventCamera);
-            bool placed = gameManager.TryPlacePiece(this, origin);
+            bool placed = gameManager.TryPlacePiece(this, previewOrigin);
             if (!placed)
             {
                 StopPickupScale();
                 ResetHeldVisualState();
                 ReturnToSlot();
                 PlayInvalidDropFlash();
+            }
+            }
+            finally
+            {
+                PointerUpPlacementMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LastPointerUpPlacementMilliseconds = ElapsedMilliseconds(timingStart);
+#endif
             }
         }
 
@@ -323,7 +381,8 @@ namespace ChromaBlast
             StopPickupScale();
             ResetHeldVisualState();
             dragGridOriginInitialized = false;
-            visualDragTargetInitialized = false;
+            hasCurrentSnappedBoardOrigin = false;
+            currentSnappedBoardOriginValid = false;
             transform.DOKill();
             transform.SetParent(originalParent != null ? originalParent : SourceSlot.PieceContainer, true);
             ApplyBlockLayout(currentCellSize, currentCellSize * TrayPieceVisualFill);
@@ -345,30 +404,72 @@ namespace ChromaBlast
             Destroy(gameObject);
         }
 
-        private void MoveToPointer(PointerEventData eventData, bool immediate = false)
+        private Vector2 MoveToPointer(
+            PointerEventData eventData,
+            bool immediate,
+            out bool pointerOverBoard)
         {
             Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
+            pointerOverBoard = gameManager != null
+                && gameManager.Board != null
+                && gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera);
             if (dragLayer == null)
             {
                 RectTransform.position = liftedPosition;
-                return;
+                dragMappingInitialized = false;
+                boardHoverMappingActive = false;
+                return liftedPosition;
             }
 
             RectTransformUtility.ScreenPointToLocalPointInRectangle(dragLayer, liftedPosition, eventData.pressEventCamera, out Vector2 localPoint);
-            visualDragTarget = localPoint;
-            if (immediate || !visualDragTargetInitialized)
+            if (immediate || !dragMappingInitialized || boardHoverMappingActive != pointerOverBoard)
             {
-                RectTransform.anchoredPosition = visualDragTarget;
-                visualDragTargetInitialized = true;
+                dragMappingPointerAnchor = localPoint;
+                dragMappingPieceAnchor = immediate ? localPoint : RectTransform.anchoredPosition;
+                dragMappingInitialized = true;
+                boardHoverMappingActive = pointerOverBoard;
             }
+
+            float movementGain = boardHoverMappingActive ? BoardHoverMovementGain : 1f;
+            RectTransform.anchoredPosition = dragMappingPieceAnchor
+                + (localPoint - dragMappingPointerAnchor) * movementGain;
+            return RectTransformUtility.WorldToScreenPoint(
+                eventData.pressEventCamera,
+                RectTransform.position);
         }
 
-        private void UpdatePreview(PointerEventData eventData, bool allowDragGridTick)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static double ElapsedMilliseconds(long startTimestamp)
         {
-            Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
-            Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, liftedPosition, eventData.pressEventCamera);
-            bool overBoard = gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera);
-            if (overBoard)
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp)
+                * 1000.0
+                / System.Diagnostics.Stopwatch.Frequency;
+        }
+#endif
+
+        private void UpdateBoardHover(
+            PointerEventData eventData,
+            Vector2 hoverScreenPosition,
+            bool pointerOverBoard,
+            bool allowDragGridTick)
+        {
+            if (gameManager == null || gameManager.Board == null)
+            {
+                return;
+            }
+
+            Vector2Int origin = pointerOverBoard
+                ? gameManager.Board.GetSnappedOriginFromScreenPoint(
+                    Instance,
+                    hoverScreenPosition,
+                    eventData.pressEventCamera)
+                : new Vector2Int(int.MinValue, int.MinValue);
+            bool canPlace = pointerOverBoard && Instance != null && gameManager.Board.CanPlace(Instance, origin);
+            currentAcceleratedHoverScreenPosition = hoverScreenPosition;
+            hasCurrentSnappedBoardOrigin = pointerOverBoard;
+            currentSnappedBoardOrigin = origin;
+            currentSnappedBoardOriginValid = canPlace;
+            if (pointerOverBoard)
             {
                 if (!dragGridOriginInitialized)
                 {
@@ -395,8 +496,10 @@ namespace ChromaBlast
                 gameManager.Board.ClearPreview();
             }
 
-            int pureLines;
-            int lineCount = gameManager.Board.GetPlacementClearPreview(Instance, origin, out pureLines);
+            int pureLines = 0;
+            int lineCount = canPlace
+                ? gameManager.Board.GetPlacementClearPreview(Instance, origin, out pureLines)
+                : 0;
             if (lineCount > 0 && (lineCount != lastPreviewLineCount || pureLines != lastPreviewPureLineCount))
             {
                 gameManager.ShowPlacementPreview(lineCount, pureLines);
@@ -404,26 +507,9 @@ namespace ChromaBlast
 
             lastPreviewLineCount = lineCount;
             lastPreviewPureLineCount = pureLines;
-        }
-
-        private void UpdateDragVisibility(PointerEventData eventData)
-        {
-            if (gameManager == null || gameManager.Board == null)
-            {
-                return;
-            }
-
-            Vector2 liftedPosition = GetLiftedScreenPosition(eventData);
-            bool overBoard = gameManager.Board.ContainsScreenPoint(liftedPosition, eventData.pressEventCamera);
-            bool canPlace = false;
-            if (overBoard && Instance != null)
-            {
-                Vector2Int origin = gameManager.Board.GetSnappedOriginFromScreenPoint(Instance, liftedPosition, eventData.pressEventCamera);
-                canPlace = gameManager.Board.CanPlace(Instance, origin);
-            }
 
             canvasGroup.alpha = 1f;
-            SetDragGlow(overBoard, canPlace);
+            SetDragGlow(pointerOverBoard, canPlace);
         }
 
         private Vector2 GetLiftedScreenPosition(PointerEventData eventData)

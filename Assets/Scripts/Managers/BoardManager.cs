@@ -1,18 +1,61 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace ChromaBlast
 {
+    // Read-only candidate-generation data. This is intentionally separate from
+    // placement and clear resolution so tray selection never mutates the board.
+    public struct GenerationPlacementProfile
+    {
+        public int placementOptions;
+        public int clearOpportunities;
+        public int bestSetupScore;
+        public int bestAdjacencyContacts;
+        public int bestLineProgress;
+        public int bestCleanlinessScore;
+        public bool hasSetupOrigin;
+        public Vector2Int bestSetupOrigin;
+    }
+
+    // Bounded, read-only tray-generation result. This is intentionally based on
+    // a tiny virtual board only; it never writes to the live gameplay board.
+    public struct GenerationFlowProjection
+    {
+        public bool hasSequence;
+        public int finalOccupiedCells;
+        public int clearedLines;
+        public int largestEmptyRegion;
+        public int largestOpenRectangle;
+        public int emptyRegionCount;
+        public int isolatedHoles;
+        public int narrowCorridorCells;
+        public int futurePlacementOptions;
+        public int cleanlinessScore;
+    }
+
     public class BoardManager : MonoBehaviour
     {
+        private static readonly ProfilerMarker ResolveClearCalculationMarker =
+            new ProfilerMarker("ChromaBlast.Board.ResolveClearCalculation");
+        private static readonly ProfilerMarker ClearVisualDispatchMarker =
+            new ProfilerMarker("ChromaBlast.Board.ClearVisualDispatch");
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static double DebugLastResolveClearCalculationMilliseconds { get; private set; }
+        public static double DebugLastClearVisualDispatchMilliseconds { get; private set; }
+#endif
         private const float FinalBoardGridPaddingX = 16f;
         private const float FinalBoardGridPaddingY = 9.5f;
         private const int MaxMagneticSnapRadius = 1;
         private const int PopParticlePrewarmPerColor = 8;
         private const int PopParticleMaximumPerColor = 16;
         private const float PooledParticleReturnDelay = 0.60f;
+        private const int BoardBlockPrewarmCount = 32;
+        private const int BoardBlockMaximumCount = GameConstants.BoardSize * GameConstants.BoardSize * 2;
+        private const int BoardBlockPrewarmPerFrame = 4;
 
         private sealed class PooledClearParticle
         {
@@ -51,14 +94,56 @@ namespace ChromaBlast
         private readonly HashSet<Vector2Int> completionGlowCoordinates = new HashSet<Vector2Int>();
         private readonly List<LineGlowVisual> lineGlowPool = new List<LineGlowVisual>();
         private readonly List<IntersectionFlareVisual> intersectionFlarePool = new List<IntersectionFlareVisual>();
+        private readonly List<BlockView> boardBlockPool = new List<BlockView>(BoardBlockMaximumCount);
+        private readonly HashSet<BlockView> activeBoardBlocks = new HashSet<BlockView>();
         private readonly List<PooledClearParticle>[] clearParticlePools = new List<PooledClearParticle>[GameConstants.ColorCount];
         private readonly List<PooledClearParticle> activeClearParticles = new List<PooledClearParticle>(GameConstants.ColorCount * PopParticleMaximumPerColor);
         private readonly List<ScheduledParticleSpawn> scheduledPopParticleSpawns = new List<ScheduledParticleSpawn>(GameConstants.BoardSize * GameConstants.BoardSize);
+        // Reused only while evaluating a tray candidate. Keeping these buffers on
+        // the board avoids per-placement arrays during the 56-candidate search.
+        private readonly int[] generationRowFill = new int[GameConstants.BoardSize];
+        private readonly int[] generationColumnFill = new int[GameConstants.BoardSize];
+        private readonly int[] generationRowAdd = new int[GameConstants.BoardSize];
+        private readonly int[] generationColumnAdd = new int[GameConstants.BoardSize];
+        // Phase 9 Relax Flow uses only the top three plausible positions at each
+        // depth and evaluates at most six piece orders. These fixed buffers keep
+        // the deeper read-only projection allocation-free on the generation path.
+        private const int GenerationFlowPlacementShortlist = 3;
+        private readonly bool[,] generationFlowBoards = new bool[GameConstants.TraySize + 1, GameConstants.BoardSize * GameConstants.BoardSize];
+        private readonly int[,] generationFlowOriginX = new int[GameConstants.TraySize, GenerationFlowPlacementShortlist];
+        private readonly int[,] generationFlowOriginY = new int[GameConstants.TraySize, GenerationFlowPlacementShortlist];
+        private readonly int[,] generationFlowOriginScores = new int[GameConstants.TraySize, GenerationFlowPlacementShortlist];
+        // A separate tiny shortlist is used for a FlowTarget-bound A -> B check.
+        // It reuses the existing virtual setup/payoff simulation and never writes
+        // to the live board or allocates during tray generation.
+        private readonly int[] generationFlowTargetOriginX = new int[GenerationFlowPlacementShortlist];
+        private readonly int[] generationFlowTargetOriginY = new int[GenerationFlowPlacementShortlist];
+        private readonly int[] generationFlowTargetOriginScores = new int[GenerationFlowPlacementShortlist];
+        private readonly bool[] generationFlowCompletedRows = new bool[GameConstants.BoardSize];
+        private readonly bool[] generationFlowCompletedColumns = new bool[GameConstants.BoardSize];
+        private readonly bool[] generationFlowVisited = new bool[GameConstants.BoardSize * GameConstants.BoardSize];
+        private readonly int[] generationFlowQueue = new int[GameConstants.BoardSize * GameConstants.BoardSize];
+        private readonly int[] generationFlowHistogram = new int[GameConstants.BoardSize];
+        private static readonly int[,] GenerationFlowOrders =
+        {
+            { 0, 1, 2 },
+            { 0, 2, 1 },
+            { 1, 0, 2 },
+            { 1, 2, 0 },
+            { 2, 0, 1 },
+            { 2, 1, 0 }
+        };
+        private static readonly string[] GenerationFlowFutureShapeIds =
+        {
+            "single", "line2_h", "line2_v", "line3_h", "line3_v", "square2", "corner3", "corner3_m"
+        };
 
         private RectTransform lineClearEffectLayer;
         private RectTransform completionGlowLayer;
+        private RectTransform boardBlockPoolRoot;
         private Transform clearParticlePoolRoot;
         private Coroutine completionPreviewPulseRoutine;
+        private Coroutine boardBlockPoolPrewarmRoutine;
         private Coroutine particlePoolPrewarmRoutine;
         private int activeCompletionGlows;
         private int lineClearEffectGeneration;
@@ -82,6 +167,13 @@ namespace ChromaBlast
         public int LastPopParticlePoolExpansions { get; private set; }
         public int LastPopParticleInstantiations { get; private set; }
         public int ActivePooledParticleCount => activeClearParticles.Count;
+        public int BoardBlockPoolPrewarmedCount { get; private set; }
+        public int BoardBlockPoolRuntimeExpansions { get; private set; }
+        public int BoardBlockPoolRuntimeInstantiations { get; private set; }
+        public int BoardBlockPoolRuntimeDestroys => 0;
+        public int BoardBlockPoolTotalCount => boardBlockPool.Count;
+        public int BoardBlockPoolActiveCount => activeBoardBlocks.Count;
+        public int BoardBlockPoolInactiveCount => boardBlockPool.Count - activeBoardBlocks.Count;
 #endif
 
         private void Awake()
@@ -94,6 +186,7 @@ namespace ChromaBlast
 
         private void Start()
         {
+            boardBlockPoolPrewarmRoutine = StartCoroutine(PrewarmBoardBlockPool());
             if (MobilePerformance.UseFullJuice())
             {
                 particlePoolPrewarmRoutine = StartCoroutine(PrewarmClearParticlePool());
@@ -108,6 +201,12 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+            if (boardBlockPoolPrewarmRoutine != null)
+            {
+                StopCoroutine(boardBlockPoolPrewarmRoutine);
+                boardBlockPoolPrewarmRoutine = null;
+            }
+
             if (particlePoolPrewarmRoutine != null)
             {
                 StopCoroutine(particlePoolPrewarmRoutine);
@@ -118,6 +217,12 @@ namespace ChromaBlast
             {
                 Destroy(clearParticlePoolRoot.gameObject);
                 clearParticlePoolRoot = null;
+            }
+
+            if (boardBlockPoolRoot != null)
+            {
+                Destroy(boardBlockPoolRoot.gameObject);
+                boardBlockPoolRoot = null;
             }
         }
 
@@ -189,7 +294,7 @@ namespace ChromaBlast
                     }
                     else
                     {
-                        Destroy(blocks[x, y].gameObject);
+                        ReturnBoardBlock(blocks[x, y]);
                     }
 
                     blocks[x, y] = null;
@@ -369,6 +474,819 @@ namespace ChromaBlast
             }
 
             return opportunities;
+        }
+
+        public GenerationPlacementProfile EvaluateGenerationPlacementProfile(PieceInstance piece)
+        {
+            GenerationPlacementProfile profile = default;
+            if (piece == null)
+            {
+                return profile;
+            }
+
+            PopulateGenerationLineFill();
+            PieceData data = piece.Data;
+            int bestSetupSelectionScore = int.MinValue;
+
+            for (int y = 0; y <= GameConstants.BoardSize - data.height; y++)
+            {
+                for (int x = 0; x <= GameConstants.BoardSize - data.width; x++)
+                {
+                    Vector2Int origin = new Vector2Int(x, y);
+                    if (!CanPlace(piece, origin))
+                    {
+                        continue;
+                    }
+
+                    profile.placementOptions++;
+                    System.Array.Clear(generationRowAdd, 0, generationRowAdd.Length);
+                    System.Array.Clear(generationColumnAdd, 0, generationColumnAdd.Length);
+
+                    int adjacencyContacts = 0;
+                    Vector2Int[] shapeCells = data.cells;
+                    for (int cellIndex = 0; cellIndex < shapeCells.Length; cellIndex++)
+                    {
+                        int cellX = origin.x + shapeCells[cellIndex].x;
+                        int cellY = origin.y + shapeCells[cellIndex].y;
+                        generationRowAdd[cellY]++;
+                        generationColumnAdd[cellX]++;
+                        adjacencyContacts += CountExistingOrthogonalContacts(cellX, cellY);
+                    }
+
+                    int completedLines = 0;
+                    int lineProgress = 0;
+                    int setupScore = 0;
+                    for (int line = 0; line < GameConstants.BoardSize; line++)
+                    {
+                        if (generationRowAdd[line] > 0)
+                        {
+                            int afterFill = generationRowFill[line] + generationRowAdd[line];
+                            completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                            lineProgress += ScoreGenerationLineProgress(generationRowFill[line], afterFill);
+                            setupScore += ScoreLineFill(afterFill);
+                        }
+
+                        if (generationColumnAdd[line] > 0)
+                        {
+                            int afterFill = generationColumnFill[line] + generationColumnAdd[line];
+                            completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                            lineProgress += ScoreGenerationLineProgress(generationColumnFill[line], afterFill);
+                            setupScore += ScoreLineFill(afterFill);
+                        }
+                    }
+
+                    int isolatedHoles = CountGenerationIsolatedHolesAfterPlacement(piece, origin);
+                    int cleanliness = adjacencyContacts * 12 - isolatedHoles * 90;
+                    int setupSelectionScore = completedLines == 0
+                        ? lineProgress * 18 + setupScore * 4 + adjacencyContacts * 3 - isolatedHoles * 40
+                        : int.MinValue / 2;
+
+                    profile.clearOpportunities += completedLines;
+                    profile.bestAdjacencyContacts = Mathf.Max(profile.bestAdjacencyContacts, adjacencyContacts);
+                    profile.bestLineProgress = Mathf.Max(profile.bestLineProgress, lineProgress);
+                    profile.bestCleanlinessScore = Mathf.Max(profile.bestCleanlinessScore, cleanliness);
+                    profile.bestSetupScore = Mathf.Max(profile.bestSetupScore, setupScore);
+
+                    if (setupSelectionScore > bestSetupSelectionScore)
+                    {
+                        bestSetupSelectionScore = setupSelectionScore;
+                        profile.hasSetupOrigin = true;
+                        profile.bestSetupOrigin = origin;
+                    }
+                }
+            }
+
+            return profile;
+        }
+
+        // Returns the live-board fill of one line without exposing board blocks
+        // to tray selection. It is used only when a completed tray captures its
+        // short-lived Phase 9 continuation targets.
+        public int GetGenerationLineFill(bool row, int lineIndex)
+        {
+            if (lineIndex < 0 || lineIndex >= GameConstants.BoardSize)
+            {
+                return 0;
+            }
+
+            int filled = 0;
+            for (int i = 0; i < GameConstants.BoardSize; i++)
+            {
+                if (row ? blocks[i, lineIndex] != null : blocks[lineIndex, i] != null)
+                {
+                    filled++;
+                }
+            }
+
+            return filled;
+        }
+
+        // A soft FlowTarget compatibility probe. It asks how much a legal move
+        // can contribute to one actual row or column; it does not solve or force
+        // a placement for the player.
+        public int GetBestGenerationFlowTargetAdvance(
+            PieceInstance piece,
+            bool row,
+            int lineIndex,
+            out bool completesTarget)
+        {
+            completesTarget = false;
+            if (piece == null || lineIndex < 0 || lineIndex >= GameConstants.BoardSize)
+            {
+                return 0;
+            }
+
+            int existingFill = GetGenerationLineFill(row, lineIndex);
+            int bestAdvance = 0;
+            PieceData data = piece.Data;
+            for (int y = 0; y <= GameConstants.BoardSize - data.height; y++)
+            {
+                for (int x = 0; x <= GameConstants.BoardSize - data.width; x++)
+                {
+                    Vector2Int origin = new Vector2Int(x, y);
+                    if (!CanPlace(piece, origin))
+                    {
+                        continue;
+                    }
+
+                    int advance = 0;
+                    for (int cell = 0; cell < data.cells.Length; cell++)
+                    {
+                        Vector2Int offset = data.cells[cell];
+                        if ((row && origin.y + offset.y == lineIndex)
+                            || (!row && origin.x + offset.x == lineIndex))
+                        {
+                            advance++;
+                        }
+                    }
+
+                    if (advance <= 0)
+                    {
+                        continue;
+                    }
+
+                    bool completes = existingFill + advance >= GameConstants.BoardSize;
+                    if (advance > bestAdvance || (advance == bestAdvance && completes && !completesTarget))
+                    {
+                        bestAdvance = advance;
+                        completesTarget = completes;
+                    }
+                }
+            }
+
+            return bestAdvance;
+        }
+
+        // Confirms a real, bounded BUILD -> PAYOFF relationship tied to an
+        // actual FlowTarget. The first shape is restricted to the target line;
+        // the existing virtual setup/payoff probe then verifies that the second
+        // shape can clear after that exact setup. This is selection-only and
+        // never changes live placement, clear, score, or board state.
+        public int ScoreGenerationFlowTargetPayoff(
+            PieceInstance continuationPiece,
+            PieceInstance payoffPiece,
+            bool row,
+            int lineIndex,
+            out int continuationAdvance,
+            out bool continuationCompletesTarget)
+        {
+            continuationAdvance = 0;
+            continuationCompletesTarget = false;
+            if (continuationPiece == null || payoffPiece == null
+                || lineIndex < 0 || lineIndex >= GameConstants.BoardSize)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < GenerationFlowPlacementShortlist; i++)
+            {
+                generationFlowTargetOriginScores[i] = int.MinValue;
+            }
+
+            int targetPlacementCount = 0;
+            int existingFill = GetGenerationLineFill(row, lineIndex);
+            PieceData continuationData = continuationPiece.Data;
+            for (int y = 0; y <= GameConstants.BoardSize - continuationData.height; y++)
+            {
+                for (int x = 0; x <= GameConstants.BoardSize - continuationData.width; x++)
+                {
+                    Vector2Int origin = new Vector2Int(x, y);
+                    if (!CanPlace(continuationPiece, origin))
+                    {
+                        continue;
+                    }
+
+                    int advance = CountGenerationFlowTargetCells(
+                        continuationData,
+                        x,
+                        y,
+                        row,
+                        lineIndex);
+                    if (advance <= 0)
+                    {
+                        continue;
+                    }
+
+                    // Target contribution is decisive; the setup score only
+                    // breaks ties between equally readable continuations.
+                    int score = advance * 10000 + ScorePlacementSetup(continuationPiece, origin);
+                    int insertAt = targetPlacementCount;
+                    if (insertAt >= GenerationFlowPlacementShortlist)
+                    {
+                        insertAt = GenerationFlowPlacementShortlist - 1;
+                    }
+
+                    while (insertAt > 0 && score > generationFlowTargetOriginScores[insertAt - 1])
+                    {
+                        if (insertAt < GenerationFlowPlacementShortlist)
+                        {
+                            generationFlowTargetOriginScores[insertAt] = generationFlowTargetOriginScores[insertAt - 1];
+                            generationFlowTargetOriginX[insertAt] = generationFlowTargetOriginX[insertAt - 1];
+                            generationFlowTargetOriginY[insertAt] = generationFlowTargetOriginY[insertAt - 1];
+                        }
+
+                        insertAt--;
+                    }
+
+                    if (insertAt < GenerationFlowPlacementShortlist
+                        && (targetPlacementCount < GenerationFlowPlacementShortlist
+                            || score > generationFlowTargetOriginScores[insertAt]))
+                    {
+                        generationFlowTargetOriginScores[insertAt] = score;
+                        generationFlowTargetOriginX[insertAt] = x;
+                        generationFlowTargetOriginY[insertAt] = y;
+                        if (targetPlacementCount < GenerationFlowPlacementShortlist)
+                        {
+                            targetPlacementCount++;
+                        }
+                    }
+                }
+            }
+
+            int bestPayoffScore = 0;
+            for (int i = 0; i < targetPlacementCount; i++)
+            {
+                Vector2Int origin = new Vector2Int(
+                    generationFlowTargetOriginX[i],
+                    generationFlowTargetOriginY[i]);
+                int payoffScore = ScoreGenerationSetupPayoff(
+                    continuationPiece,
+                    origin,
+                    payoffPiece);
+                if (payoffScore <= bestPayoffScore)
+                {
+                    continue;
+                }
+
+                bestPayoffScore = payoffScore;
+                continuationAdvance = CountGenerationFlowTargetCells(
+                    continuationData,
+                    origin.x,
+                    origin.y,
+                    row,
+                    lineIndex);
+                continuationCompletesTarget = existingFill + continuationAdvance >= GameConstants.BoardSize;
+            }
+
+            return bestPayoffScore;
+        }
+
+        private static int CountGenerationFlowTargetCells(
+            PieceData data,
+            int originX,
+            int originY,
+            bool row,
+            int lineIndex)
+        {
+            int count = 0;
+            for (int i = 0; i < data.cells.Length; i++)
+            {
+                Vector2Int cell = data.cells[i];
+                if ((row && originY + cell.y == lineIndex)
+                    || (!row && originX + cell.x == lineIndex))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        // Read-only development telemetry for transient tray-to-tray flow
+        // targets. This observes the board just before ResolveClears removes a
+        // completed line; it never changes board state or gameplay rules.
+        public bool IsGenerationFlowTargetComplete(bool row, int lineIndex)
+        {
+            if (lineIndex < 0 || lineIndex >= GameConstants.BoardSize)
+            {
+                return false;
+            }
+
+            return row ? IsRowFull(lineIndex) : IsColumnFull(lineIndex);
+        }
+
+        // Evaluates only a compact set of plausible A/B/C placements. This is a
+        // final-board quality estimate for tray selection, never an exhaustive
+        // solver and never a mutation of the live board.
+        public GenerationFlowProjection EvaluateGenerationFlowProjection(PieceInstance[] set)
+        {
+            GenerationFlowProjection best = default;
+            if (set == null || set.Length < GameConstants.TraySize
+                || set[0] == null || set[1] == null || set[2] == null)
+            {
+                return best;
+            }
+
+            CopyLiveBoardToGenerationFlowBoard(0);
+            for (int order = 0; order < GenerationFlowOrders.GetLength(0); order++)
+            {
+                EvaluateGenerationFlowOrder(
+                    set,
+                    order,
+                    0,
+                    0,
+                    ref best);
+            }
+
+            return best;
+        }
+
+        private void EvaluateGenerationFlowOrder(
+            PieceInstance[] set,
+            int orderIndex,
+            int depth,
+            int clearedLines,
+            ref GenerationFlowProjection best)
+        {
+            if (depth >= GameConstants.TraySize)
+            {
+                GenerationFlowProjection result = EvaluateGenerationFlowBoard(depth, clearedLines);
+                if (!best.hasSequence || result.cleanlinessScore > best.cleanlinessScore)
+                {
+                    best = result;
+                }
+
+                return;
+            }
+
+            PieceInstance piece = set[GenerationFlowOrders[orderIndex, depth]];
+            int placementCount = CollectGenerationFlowPlacements(depth, piece);
+            for (int placement = 0; placement < placementCount; placement++)
+            {
+                CopyGenerationFlowBoard(depth, depth + 1);
+                int clearedByMove = PlaceOnGenerationFlowBoard(
+                    depth + 1,
+                    piece,
+                    generationFlowOriginX[depth, placement],
+                    generationFlowOriginY[depth, placement]);
+                EvaluateGenerationFlowOrder(
+                    set,
+                    orderIndex,
+                    depth + 1,
+                    clearedLines + clearedByMove,
+                    ref best);
+            }
+        }
+
+        private int CollectGenerationFlowPlacements(int depth, PieceInstance piece)
+        {
+            for (int i = 0; i < GenerationFlowPlacementShortlist; i++)
+            {
+                generationFlowOriginScores[depth, i] = int.MinValue;
+            }
+
+            int count = 0;
+            PieceData data = piece.Data;
+            for (int y = 0; y <= GameConstants.BoardSize - data.height; y++)
+            {
+                for (int x = 0; x <= GameConstants.BoardSize - data.width; x++)
+                {
+                    if (!CanPlaceOnGenerationFlowBoard(depth, data, x, y))
+                    {
+                        continue;
+                    }
+
+                    int score = ScoreGenerationFlowPlacement(depth, data, x, y);
+                    int insertAt = count;
+                    if (insertAt >= GenerationFlowPlacementShortlist)
+                    {
+                        insertAt = GenerationFlowPlacementShortlist - 1;
+                    }
+
+                    while (insertAt > 0 && score > generationFlowOriginScores[depth, insertAt - 1])
+                    {
+                        if (insertAt < GenerationFlowPlacementShortlist)
+                        {
+                            generationFlowOriginScores[depth, insertAt] = generationFlowOriginScores[depth, insertAt - 1];
+                            generationFlowOriginX[depth, insertAt] = generationFlowOriginX[depth, insertAt - 1];
+                            generationFlowOriginY[depth, insertAt] = generationFlowOriginY[depth, insertAt - 1];
+                        }
+
+                        insertAt--;
+                    }
+
+                    if (insertAt < GenerationFlowPlacementShortlist
+                        && (count < GenerationFlowPlacementShortlist || score > generationFlowOriginScores[depth, insertAt]))
+                    {
+                        generationFlowOriginScores[depth, insertAt] = score;
+                        generationFlowOriginX[depth, insertAt] = x;
+                        generationFlowOriginY[depth, insertAt] = y;
+                        if (count < GenerationFlowPlacementShortlist)
+                        {
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private int ScoreGenerationFlowPlacement(int boardDepth, PieceData data, int originX, int originY)
+        {
+            PopulateGenerationFlowLineFill(boardDepth);
+            System.Array.Clear(generationRowAdd, 0, generationRowAdd.Length);
+            System.Array.Clear(generationColumnAdd, 0, generationColumnAdd.Length);
+
+            int contacts = 0;
+            for (int cell = 0; cell < data.cells.Length; cell++)
+            {
+                int x = originX + data.cells[cell].x;
+                int y = originY + data.cells[cell].y;
+                generationRowAdd[y]++;
+                generationColumnAdd[x]++;
+                contacts += CountGenerationFlowOrthogonalContacts(boardDepth, x, y);
+            }
+
+            int completedLines = 0;
+            int progress = 0;
+            for (int line = 0; line < GameConstants.BoardSize; line++)
+            {
+                if (generationRowAdd[line] > 0)
+                {
+                    int afterFill = generationRowFill[line] + generationRowAdd[line];
+                    completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                    progress += ScoreGenerationLineProgress(generationRowFill[line], afterFill);
+                }
+
+                if (generationColumnAdd[line] > 0)
+                {
+                    int afterFill = generationColumnFill[line] + generationColumnAdd[line];
+                    completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                    progress += ScoreGenerationLineProgress(generationColumnFill[line], afterFill);
+                }
+            }
+
+            return completedLines * 4500 + progress * 28 + contacts * 24;
+        }
+
+        private void CopyLiveBoardToGenerationFlowBoard(int destinationDepth)
+        {
+            for (int y = 0; y < GameConstants.BoardSize; y++)
+            {
+                for (int x = 0; x < GameConstants.BoardSize; x++)
+                {
+                    generationFlowBoards[destinationDepth, GenerationFlowIndex(x, y)] = blocks[x, y] != null;
+                }
+            }
+        }
+
+        private void CopyGenerationFlowBoard(int sourceDepth, int destinationDepth)
+        {
+            for (int index = 0; index < GameConstants.BoardSize * GameConstants.BoardSize; index++)
+            {
+                generationFlowBoards[destinationDepth, index] = generationFlowBoards[sourceDepth, index];
+            }
+        }
+
+        private bool CanPlaceOnGenerationFlowBoard(int boardDepth, PieceData data, int originX, int originY)
+        {
+            for (int cell = 0; cell < data.cells.Length; cell++)
+            {
+                int x = originX + data.cells[cell].x;
+                int y = originY + data.cells[cell].y;
+                if (x < 0 || y < 0 || x >= GameConstants.BoardSize || y >= GameConstants.BoardSize
+                    || generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private int PlaceOnGenerationFlowBoard(int boardDepth, PieceInstance piece, int originX, int originY)
+        {
+            PieceData data = piece.Data;
+            for (int cell = 0; cell < data.cells.Length; cell++)
+            {
+                int x = originX + data.cells[cell].x;
+                int y = originY + data.cells[cell].y;
+                generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)] = true;
+            }
+
+            System.Array.Clear(generationFlowCompletedRows, 0, generationFlowCompletedRows.Length);
+            System.Array.Clear(generationFlowCompletedColumns, 0, generationFlowCompletedColumns.Length);
+            int clearedLines = 0;
+            for (int line = 0; line < GameConstants.BoardSize; line++)
+            {
+                bool rowComplete = true;
+                bool columnComplete = true;
+                for (int cell = 0; cell < GameConstants.BoardSize; cell++)
+                {
+                    rowComplete &= generationFlowBoards[boardDepth, GenerationFlowIndex(cell, line)];
+                    columnComplete &= generationFlowBoards[boardDepth, GenerationFlowIndex(line, cell)];
+                }
+
+                generationFlowCompletedRows[line] = rowComplete;
+                generationFlowCompletedColumns[line] = columnComplete;
+                clearedLines += rowComplete ? 1 : 0;
+                clearedLines += columnComplete ? 1 : 0;
+            }
+
+            if (clearedLines > 0)
+            {
+                for (int y = 0; y < GameConstants.BoardSize; y++)
+                {
+                    for (int x = 0; x < GameConstants.BoardSize; x++)
+                    {
+                        if (generationFlowCompletedRows[y] || generationFlowCompletedColumns[x])
+                        {
+                            generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)] = false;
+                        }
+                    }
+                }
+            }
+
+            return clearedLines;
+        }
+
+        private GenerationFlowProjection EvaluateGenerationFlowBoard(int boardDepth, int clearedLines)
+        {
+            GenerationFlowProjection result = default;
+            result.hasSequence = true;
+            result.clearedLines = clearedLines;
+            System.Array.Clear(generationFlowVisited, 0, generationFlowVisited.Length);
+
+            int occupied = 0;
+            int largestRegion = 0;
+            int regionCount = 0;
+            int isolatedHoles = 0;
+            int corridorCells = 0;
+            for (int index = 0; index < GameConstants.BoardSize * GameConstants.BoardSize; index++)
+            {
+                if (generationFlowBoards[boardDepth, index])
+                {
+                    occupied++;
+                    continue;
+                }
+
+                int x = index % GameConstants.BoardSize;
+                int y = index / GameConstants.BoardSize;
+                int emptyNeighbours = CountGenerationFlowEmptyNeighbours(boardDepth, x, y);
+                if (x > 0 && x < GameConstants.BoardSize - 1
+                    && y > 0 && y < GameConstants.BoardSize - 1
+                    && emptyNeighbours == 0)
+                {
+                    isolatedHoles++;
+                }
+                else if (emptyNeighbours <= 2)
+                {
+                    corridorCells++;
+                }
+
+                if (!generationFlowVisited[index])
+                {
+                    regionCount++;
+                    int regionSize = CountGenerationFlowEmptyRegion(boardDepth, index);
+                    largestRegion = Mathf.Max(largestRegion, regionSize);
+                }
+            }
+
+            int largestRectangle = CountGenerationFlowLargestOpenRectangle(boardDepth);
+            int futureOptions = CountGenerationFlowFutureOptions(boardDepth);
+            result.finalOccupiedCells = occupied;
+            result.largestEmptyRegion = largestRegion;
+            result.largestOpenRectangle = largestRectangle;
+            result.emptyRegionCount = regionCount;
+            result.isolatedHoles = isolatedHoles;
+            result.narrowCorridorCells = corridorCells;
+            result.futurePlacementOptions = futureOptions;
+            result.cleanlinessScore = -occupied * 95
+                + largestRegion * 72
+                + largestRectangle * 45
+                + futureOptions * 230
+                + clearedLines * 720
+                - regionCount * 360
+                - isolatedHoles * 500
+                - corridorCells * 80;
+            return result;
+        }
+
+        private void PopulateGenerationFlowLineFill(int boardDepth)
+        {
+            System.Array.Clear(generationRowFill, 0, generationRowFill.Length);
+            System.Array.Clear(generationColumnFill, 0, generationColumnFill.Length);
+            for (int y = 0; y < GameConstants.BoardSize; y++)
+            {
+                for (int x = 0; x < GameConstants.BoardSize; x++)
+                {
+                    if (!generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)])
+                    {
+                        continue;
+                    }
+
+                    generationRowFill[y]++;
+                    generationColumnFill[x]++;
+                }
+            }
+        }
+
+        private int CountGenerationFlowOrthogonalContacts(int boardDepth, int x, int y)
+        {
+            int contacts = 0;
+            contacts += IsGenerationFlowOccupied(boardDepth, x - 1, y) ? 1 : 0;
+            contacts += IsGenerationFlowOccupied(boardDepth, x + 1, y) ? 1 : 0;
+            contacts += IsGenerationFlowOccupied(boardDepth, x, y - 1) ? 1 : 0;
+            contacts += IsGenerationFlowOccupied(boardDepth, x, y + 1) ? 1 : 0;
+            return contacts;
+        }
+
+        private int CountGenerationFlowEmptyNeighbours(int boardDepth, int x, int y)
+        {
+            int empty = 0;
+            empty += IsGenerationFlowInsideAndEmpty(boardDepth, x - 1, y) ? 1 : 0;
+            empty += IsGenerationFlowInsideAndEmpty(boardDepth, x + 1, y) ? 1 : 0;
+            empty += IsGenerationFlowInsideAndEmpty(boardDepth, x, y - 1) ? 1 : 0;
+            empty += IsGenerationFlowInsideAndEmpty(boardDepth, x, y + 1) ? 1 : 0;
+            return empty;
+        }
+
+        private int CountGenerationFlowEmptyRegion(int boardDepth, int startIndex)
+        {
+            int head = 0;
+            int tail = 0;
+            int size = 0;
+            generationFlowVisited[startIndex] = true;
+            generationFlowQueue[tail++] = startIndex;
+            while (head < tail)
+            {
+                int index = generationFlowQueue[head++];
+                size++;
+                int x = index % GameConstants.BoardSize;
+                int y = index / GameConstants.BoardSize;
+                TryQueueGenerationFlowEmptyNeighbour(boardDepth, x - 1, y, ref tail);
+                TryQueueGenerationFlowEmptyNeighbour(boardDepth, x + 1, y, ref tail);
+                TryQueueGenerationFlowEmptyNeighbour(boardDepth, x, y - 1, ref tail);
+                TryQueueGenerationFlowEmptyNeighbour(boardDepth, x, y + 1, ref tail);
+            }
+
+            return size;
+        }
+
+        private void TryQueueGenerationFlowEmptyNeighbour(int boardDepth, int x, int y, ref int tail)
+        {
+            if (!IsGenerationFlowInsideAndEmpty(boardDepth, x, y))
+            {
+                return;
+            }
+
+            int index = GenerationFlowIndex(x, y);
+            if (generationFlowVisited[index])
+            {
+                return;
+            }
+
+            generationFlowVisited[index] = true;
+            generationFlowQueue[tail++] = index;
+        }
+
+        private int CountGenerationFlowLargestOpenRectangle(int boardDepth)
+        {
+            System.Array.Clear(generationFlowHistogram, 0, generationFlowHistogram.Length);
+            int bestArea = 0;
+            for (int y = 0; y < GameConstants.BoardSize; y++)
+            {
+                for (int x = 0; x < GameConstants.BoardSize; x++)
+                {
+                    generationFlowHistogram[x] = generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)]
+                        ? 0
+                        : generationFlowHistogram[x] + 1;
+                }
+
+                for (int right = 0; right < GameConstants.BoardSize; right++)
+                {
+                    int minHeight = int.MaxValue;
+                    for (int left = right; left >= 0; left--)
+                    {
+                        minHeight = Mathf.Min(minHeight, generationFlowHistogram[left]);
+                        bestArea = Mathf.Max(bestArea, minHeight * (right - left + 1));
+                    }
+                }
+            }
+
+            return bestArea;
+        }
+
+        private int CountGenerationFlowFutureOptions(int boardDepth)
+        {
+            int options = 0;
+            for (int i = 0; i < GenerationFlowFutureShapeIds.Length; i++)
+            {
+                PieceData data = PieceCatalog.Get(GenerationFlowFutureShapeIds[i]);
+                bool fits = false;
+                for (int y = 0; y <= GameConstants.BoardSize - data.height && !fits; y++)
+                {
+                    for (int x = 0; x <= GameConstants.BoardSize - data.width; x++)
+                    {
+                        if (CanPlaceOnGenerationFlowBoard(boardDepth, data, x, y))
+                        {
+                            fits = true;
+                            break;
+                        }
+                    }
+                }
+
+                options += fits ? 1 : 0;
+            }
+
+            return options;
+        }
+
+        private bool IsGenerationFlowOccupied(int boardDepth, int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < GameConstants.BoardSize && y < GameConstants.BoardSize
+                && generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)];
+        }
+
+        private bool IsGenerationFlowInsideAndEmpty(int boardDepth, int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < GameConstants.BoardSize && y < GameConstants.BoardSize
+                && !generationFlowBoards[boardDepth, GenerationFlowIndex(x, y)];
+        }
+
+        private static int GenerationFlowIndex(int x, int y)
+        {
+            return y * GameConstants.BoardSize + x;
+        }
+
+        // Scores the best follow-up after the first piece's most useful non-clear
+        // placement. It models an opportunity, not a forced solution.
+        public int ScoreGenerationSetupPayoff(
+            PieceInstance setupPiece,
+            Vector2Int setupOrigin,
+            PieceInstance payoffPiece)
+        {
+            if (setupPiece == null || payoffPiece == null || !CanPlace(setupPiece, setupOrigin))
+            {
+                return 0;
+            }
+
+            PopulateGenerationLineFill();
+            PieceData payoffData = payoffPiece.Data;
+            int bestScore = 0;
+            for (int y = 0; y <= GameConstants.BoardSize - payoffData.height; y++)
+            {
+                for (int x = 0; x <= GameConstants.BoardSize - payoffData.width; x++)
+                {
+                    Vector2Int payoffOrigin = new Vector2Int(x, y);
+                    if (!CanPlaceAfterVirtualPlacement(setupPiece, setupOrigin, payoffPiece, payoffOrigin))
+                    {
+                        continue;
+                    }
+
+                    System.Array.Clear(generationRowAdd, 0, generationRowAdd.Length);
+                    System.Array.Clear(generationColumnAdd, 0, generationColumnAdd.Length);
+                    AddPieceToGenerationLineFill(setupPiece, setupOrigin);
+                    AddPieceToGenerationLineFill(payoffPiece, payoffOrigin);
+
+                    int completedLines = 0;
+                    int lineProgress = 0;
+                    for (int line = 0; line < GameConstants.BoardSize; line++)
+                    {
+                        if (generationRowAdd[line] > 0)
+                        {
+                            int afterFill = generationRowFill[line] + generationRowAdd[line];
+                            completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                            lineProgress += ScoreGenerationLineProgress(generationRowFill[line], afterFill);
+                        }
+
+                        if (generationColumnAdd[line] > 0)
+                        {
+                            int afterFill = generationColumnFill[line] + generationColumnAdd[line];
+                            completedLines += afterFill >= GameConstants.BoardSize ? 1 : 0;
+                            lineProgress += ScoreGenerationLineProgress(generationColumnFill[line], afterFill);
+                        }
+                    }
+
+                    if (completedLines > 0)
+                    {
+                        bestScore = Mathf.Max(bestScore, completedLines * 180 + lineProgress * 3);
+                    }
+                }
+            }
+
+            return bestScore;
         }
 
         public int ScoreBestSetupOpportunity(PieceInstance piece)
@@ -839,6 +1757,129 @@ namespace ChromaBlast
             completionPreviewPulseRoutine = null;
         }
 
+        private IEnumerator PrewarmBoardBlockPool()
+        {
+            while (boardBlockPool.Count < BoardBlockPrewarmCount)
+            {
+                int blocksThisFrame = Mathf.Min(
+                    BoardBlockPrewarmPerFrame,
+                    BoardBlockPrewarmCount - boardBlockPool.Count);
+                for (int i = 0; i < blocksThisFrame; i++)
+                {
+                    CreatePooledBoardBlock(true);
+                }
+
+                yield return null;
+            }
+
+            boardBlockPoolPrewarmRoutine = null;
+        }
+
+        private BlockView CreateBoardBlock(int x, int y, ChromaColor color, string blockName)
+        {
+            BlockView block = AcquireBoardBlock();
+            if (block == null)
+            {
+                Debug.LogError("Board block pool reached its bounded capacity unexpectedly.");
+                return null;
+            }
+
+            block.name = blockName;
+            ConfigureBoardRect((RectTransform)block.transform, x, y);
+            block.Initialize(color, false);
+            block.SetClearCompletionCallback(ReturnBoardBlock);
+            return block;
+        }
+
+        private BlockView AcquireBoardBlock()
+        {
+            for (int i = 0; i < boardBlockPool.Count; i++)
+            {
+                BlockView block = boardBlockPool[i];
+                if (block == null || activeBoardBlocks.Contains(block))
+                {
+                    continue;
+                }
+
+                activeBoardBlocks.Add(block);
+                block.PrepareForPool();
+                block.transform.SetParent(blockLayer, false);
+                block.gameObject.SetActive(true);
+                return block;
+            }
+
+            if (boardBlockPool.Count >= BoardBlockMaximumCount)
+            {
+                return null;
+            }
+
+            return CreatePooledBoardBlock(false);
+        }
+
+        private BlockView CreatePooledBoardBlock(bool prewarming)
+        {
+            if (blockPrefab == null || boardBlockPool.Count >= BoardBlockMaximumCount)
+            {
+                return null;
+            }
+
+            EnsureBoardBlockPoolRoot();
+            BlockView block = Instantiate(blockPrefab, boardBlockPoolRoot);
+            block.name = $"PooledBoardBlock_{boardBlockPool.Count}";
+            block.PrepareForPool();
+            block.gameObject.SetActive(false);
+            boardBlockPool.Add(block);
+            activeBoardBlocks.Remove(block);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (prewarming)
+            {
+                BoardBlockPoolPrewarmedCount++;
+            }
+            else
+            {
+                BoardBlockPoolRuntimeExpansions++;
+                BoardBlockPoolRuntimeInstantiations++;
+            }
+#endif
+
+            if (prewarming)
+            {
+                return null;
+            }
+
+            activeBoardBlocks.Add(block);
+            block.transform.SetParent(blockLayer, false);
+            block.gameObject.SetActive(true);
+            return block;
+        }
+
+        private void ReturnBoardBlock(BlockView block)
+        {
+            if (block == null || !activeBoardBlocks.Remove(block))
+            {
+                return;
+            }
+
+            block.PrepareForPool();
+            EnsureBoardBlockPoolRoot();
+            block.transform.SetParent(boardBlockPoolRoot, false);
+            block.name = $"PooledBoardBlock_{boardBlockPool.IndexOf(block)}";
+            block.gameObject.SetActive(false);
+        }
+
+        private void EnsureBoardBlockPoolRoot()
+        {
+            if (boardBlockPoolRoot != null)
+            {
+                return;
+            }
+
+            GameObject root = new GameObject("BoardBlockPool", typeof(RectTransform));
+            boardBlockPoolRoot = root.GetComponent<RectTransform>();
+            boardBlockPoolRoot.SetParent(transform, false);
+        }
+
         public void PlacePiece(PieceInstance piece, Vector2Int origin)
         {
             Vector2Int[] shapeCells = piece.Data.cells;
@@ -847,11 +1888,12 @@ namespace ChromaBlast
                 int x = origin.x + shapeCells[i].x;
                 int y = origin.y + shapeCells[i].y;
                 float placementDelay = CalculatePlacementDelay(i, shapeCells[i], piece.Data.width, piece.Data.height);
-                BlockView block = Instantiate(blockPrefab, blockLayer);
-                block.gameObject.SetActive(true);
-                block.name = $"Block_{x}_{y}_{piece.color}";
-                ConfigureBoardRect((RectTransform)block.transform, x, y);
-                block.Initialize(piece.color, false);
+                BlockView block = CreateBoardBlock(x, y, piece.color, $"Block_{x}_{y}_{piece.color}");
+                if (block == null)
+                {
+                    continue;
+                }
+
                 cells[x, y]?.PlayFlash(ChromaPalette.GetColor(piece.color), placementDelay * 0.45f, 0.11f);
                 block.PlayPlaced(placementDelay);
                 PlayPlacementImpact(x, y, piece.color, placementDelay * 0.65f);
@@ -871,7 +1913,7 @@ namespace ChromaBlast
             float centerX = Mathf.Max(0f, (pieceWidth - 1) * 0.5f);
             float centerY = Mathf.Max(0f, (pieceHeight - 1) * 0.5f);
             float distanceFromCenter = Mathf.Abs(localCell.x - centerX) + Mathf.Abs(localCell.y - centerY);
-            return Mathf.Min(0.055f, orderIndex * 0.011f + distanceFromCenter * 0.004f);
+            return Mathf.Min(0.025f, orderIndex * 0.0045f + distanceFromCenter * 0.0018f);
         }
 
         public ClearResult ResolveClears()
@@ -881,6 +1923,10 @@ namespace ChromaBlast
 
         public ClearResult ResolveClears(ChromaColor completionColor)
         {
+            ResolveClearCalculationMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long resolveCalculationStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
             ClearResult result = new ClearResult();
             LastClearScreenPosition = boardRoot == null
                 ? Vector2.zero
@@ -909,13 +1955,15 @@ namespace ChromaBlast
             result.linesCleared = rows.Count + columns.Count;
             if (result.linesCleared == 0)
             {
+                ResolveClearCalculationMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                DebugLastResolveClearCalculationMilliseconds = ElapsedMilliseconds(resolveCalculationStarted);
+#endif
                 return result;
             }
 
             Color pieceColor = ChromaPalette.GetColor(completionColor);
             Color anticipationColor = Color.Lerp(pieceColor, Color.white, 0.34f);
-            FlashCompletedLines(rows, columns, anticipationColor);
-            PlayCompletedLineGlow(rows, columns, pieceColor, result.pureLines);
 
             HashSet<Vector2Int> toClear = new HashSet<Vector2Int>();
             for (int i = 0; i < rows.Count; i++)
@@ -937,6 +1985,17 @@ namespace ChromaBlast
             }
 
             UpdateLastClearScreenPosition(toClear);
+            ResolveClearCalculationMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugLastResolveClearCalculationMilliseconds = ElapsedMilliseconds(resolveCalculationStarted);
+#endif
+
+            ClearVisualDispatchMarker.Begin();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long visualDispatchStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+            FlashCompletedLines(rows, columns, anticipationColor);
+            PlayCompletedLineGlow(rows, columns, pieceColor, result.pureLines);
 
             foreach (Vector2Int cell in toClear)
             {
@@ -947,7 +2006,7 @@ namespace ChromaBlast
                 }
 
                 float clearDelay = CalculateLineClearDelay(cell, rows, columns);
-                cells[cell.x, cell.y]?.PlayFlash(anticipationColor, clearDelay, 0.12f);
+                cells[cell.x, cell.y]?.PlayFlash(anticipationColor, clearDelay, 0.052f);
                 result.AddClearedCell(block.Color);
                 float clearStrength = Mathf.Clamp01(
                     Mathf.Max(0, result.linesCleared - 1) * 0.5f
@@ -958,8 +2017,21 @@ namespace ChromaBlast
 
             ShakeForLineClear(result);
             UpdateOpportunityHints();
+            ClearVisualDispatchMarker.End();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugLastClearVisualDispatchMilliseconds = ElapsedMilliseconds(visualDispatchStarted);
+#endif
             return result;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static double ElapsedMilliseconds(long started)
+        {
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - started)
+                * 1000.0
+                / System.Diagnostics.Stopwatch.Frequency;
+        }
+#endif
 
         private float CalculateLineClearDelay(Vector2Int cell, List<int> rows, List<int> columns)
         {
@@ -968,10 +2040,10 @@ namespace ChromaBlast
                 return 0f;
             }
 
-            const float sweepLead = 0.050f;
-            const float cellStep = 0.013f;
-            const float lineStep = 0.004f;
-            const float jitter = 0.002f;
+            const float sweepLead = 0.009f;
+            const float cellStep = 0.003f;
+            const float lineStep = 0.001f;
+            const float jitter = 0.001f;
             float center = (GameConstants.BoardSize - 1) * 0.5f;
             float delay = float.MaxValue;
 
@@ -1007,7 +2079,7 @@ namespace ChromaBlast
                 0.045f,
                 0.11f);
             bool strong = result.linesCleared >= 2 || result.pureLines > 0;
-            float duration = strong ? 0.10f : 0.08f;
+            float duration = strong ? 0.055f : 0.040f;
             cameraShake?.Shake(strength, duration);
         }
 
@@ -1165,11 +2237,12 @@ namespace ChromaBlast
                 return false;
             }
 
-            BlockView block = Instantiate(blockPrefab, blockLayer);
-            block.gameObject.SetActive(true);
-            block.name = $"DailyBlock_{x}_{y}_{color}";
-            ConfigureBoardRect((RectTransform)block.transform, x, y);
-            block.Initialize(color, false);
+            BlockView block = CreateBoardBlock(x, y, color, $"DailyBlock_{x}_{y}_{color}");
+            if (block == null)
+            {
+                return false;
+            }
+
             blocks[x, y] = block;
             return true;
         }
@@ -1208,12 +2281,7 @@ namespace ChromaBlast
                     }
 
                     ChromaColor color = (ChromaColor)snapshot.colors[index];
-                    BlockView block = Instantiate(blockPrefab, blockLayer);
-                    block.gameObject.SetActive(true);
-                    block.name = $"RestoredBlock_{x}_{y}_{color}";
-                    ConfigureBoardRect((RectTransform)block.transform, x, y);
-                    block.Initialize(color, false);
-                    blocks[x, y] = block;
+                    blocks[x, y] = CreateBoardBlock(x, y, color, $"RestoredBlock_{x}_{y}_{color}");
                 }
             }
 
@@ -1436,6 +2504,134 @@ namespace ChromaBlast
             }
 
             return false;
+        }
+
+        private void PopulateGenerationLineFill()
+        {
+            System.Array.Clear(generationRowFill, 0, generationRowFill.Length);
+            System.Array.Clear(generationColumnFill, 0, generationColumnFill.Length);
+            for (int y = 0; y < GameConstants.BoardSize; y++)
+            {
+                for (int x = 0; x < GameConstants.BoardSize; x++)
+                {
+                    if (blocks[x, y] == null)
+                    {
+                        continue;
+                    }
+
+                    generationRowFill[y]++;
+                    generationColumnFill[x]++;
+                }
+            }
+        }
+
+        private void AddPieceToGenerationLineFill(PieceInstance piece, Vector2Int origin)
+        {
+            Vector2Int[] shapeCells = piece.Data.cells;
+            for (int i = 0; i < shapeCells.Length; i++)
+            {
+                generationRowAdd[origin.y + shapeCells[i].y]++;
+                generationColumnAdd[origin.x + shapeCells[i].x]++;
+            }
+        }
+
+        private bool CanPlaceAfterVirtualPlacement(
+            PieceInstance placedPiece,
+            Vector2Int placedOrigin,
+            PieceInstance candidatePiece,
+            Vector2Int candidateOrigin)
+        {
+            Vector2Int[] candidateCells = candidatePiece.Data.cells;
+            for (int i = 0; i < candidateCells.Length; i++)
+            {
+                int x = candidateOrigin.x + candidateCells[i].x;
+                int y = candidateOrigin.y + candidateCells[i].y;
+                if (!IsInside(x, y)
+                    || blocks[x, y] != null
+                    || PieceOccupiesCell(placedPiece, placedOrigin, x, y))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool CanPlaceAfterTwoVirtualPlacements(
+            PieceInstance firstPiece,
+            Vector2Int firstOrigin,
+            PieceInstance secondPiece,
+            Vector2Int secondOrigin,
+            PieceInstance candidatePiece,
+            Vector2Int candidateOrigin)
+        {
+            Vector2Int[] candidateCells = candidatePiece.Data.cells;
+            for (int i = 0; i < candidateCells.Length; i++)
+            {
+                int x = candidateOrigin.x + candidateCells[i].x;
+                int y = candidateOrigin.y + candidateCells[i].y;
+                if (!IsInside(x, y)
+                    || blocks[x, y] != null
+                    || PieceOccupiesCell(firstPiece, firstOrigin, x, y)
+                    || PieceOccupiesCell(secondPiece, secondOrigin, x, y))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private int CountExistingOrthogonalContacts(int x, int y)
+        {
+            int contacts = 0;
+            contacts += HasExistingBlockAt(x - 1, y) ? 1 : 0;
+            contacts += HasExistingBlockAt(x + 1, y) ? 1 : 0;
+            contacts += HasExistingBlockAt(x, y - 1) ? 1 : 0;
+            contacts += HasExistingBlockAt(x, y + 1) ? 1 : 0;
+            return contacts;
+        }
+
+        private bool HasExistingBlockAt(int x, int y)
+        {
+            return IsInside(x, y) && blocks[x, y] != null;
+        }
+
+        private int CountGenerationIsolatedHolesAfterPlacement(PieceInstance piece, Vector2Int origin)
+        {
+            int isolatedHoles = 0;
+            for (int y = 1; y < GameConstants.BoardSize - 1; y++)
+            {
+                for (int x = 1; x < GameConstants.BoardSize - 1; x++)
+                {
+                    if (blocks[x, y] != null || PieceOccupiesCell(piece, origin, x, y))
+                    {
+                        continue;
+                    }
+
+                    if (IsOccupiedAfterGenerationPlacement(piece, origin, x - 1, y)
+                        && IsOccupiedAfterGenerationPlacement(piece, origin, x + 1, y)
+                        && IsOccupiedAfterGenerationPlacement(piece, origin, x, y - 1)
+                        && IsOccupiedAfterGenerationPlacement(piece, origin, x, y + 1))
+                    {
+                        isolatedHoles++;
+                    }
+                }
+            }
+
+            return isolatedHoles;
+        }
+
+        private bool IsOccupiedAfterGenerationPlacement(PieceInstance piece, Vector2Int origin, int x, int y)
+        {
+            return blocks[x, y] != null || PieceOccupiesCell(piece, origin, x, y);
+        }
+
+        private int ScoreGenerationLineProgress(int beforeFill, int afterFill)
+        {
+            int beforeProgress = Mathf.Max(0, beforeFill - 4);
+            int afterProgress = Mathf.Max(0, afterFill - 4);
+            return Mathf.Max(0, afterProgress * afterProgress - beforeProgress * beforeProgress);
         }
 
         private int ScoreNearLinesAfterPlacement(PieceInstance piece, Vector2Int origin)
@@ -1706,7 +2902,7 @@ namespace ChromaBlast
             Color outerColor = sourceColor;
             Color coreColor = Color.Lerp(sourceColor, Color.white, 0.68f);
             Color beamColor = Color.Lerp(sourceColor, Color.white, 0.86f);
-            const float duration = 0.15f;
+            const float duration = 0.075f;
             float elapsed = 0f;
             while (elapsed < duration
                 && visual.root != null
@@ -1862,7 +3058,7 @@ namespace ChromaBlast
 
             Color outerColor = Color.Lerp(sourceColor, Color.white, 0.42f);
             Color coreColor = Color.Lerp(sourceColor, Color.white, 0.90f);
-            const float duration = 0.12f;
+            const float duration = 0.070f;
             float elapsed = 0f;
             while (elapsed < duration
                 && flare.root != null

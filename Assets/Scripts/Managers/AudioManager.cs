@@ -13,6 +13,7 @@ namespace ChromaBlast
         [SerializeField] private AudioSource musicSource;
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioSource clearSfxSource;
+        [SerializeField] private AudioSource comboVoiceSource;
         [SerializeField] private AudioListener audioListener;
 
         [Header("Clips")]
@@ -28,6 +29,10 @@ namespace ChromaBlast
         [SerializeField] private AudioClip gameOverClip;
         [SerializeField] private AudioClip comboSmallClip;
         [SerializeField] private AudioClip comboBigClip;
+        [SerializeField] private AudioClip comboVoiceGood;
+        [SerializeField] private AudioClip comboVoiceGreat;
+        [SerializeField] private AudioClip comboVoiceAmazing;
+        [SerializeField] private AudioClip comboVoicePerfect;
         [SerializeField] private AudioClip toggleClip;
         [SerializeField] private AudioClip[] dragGridTickClips;
 
@@ -178,6 +183,49 @@ namespace ChromaBlast
             PlayOneShot(comboBigClip, 0.72f);
         }
 
+        public void StopComboVoice()
+        {
+            comboVoiceSource?.Stop();
+        }
+
+        // Called by JuicePopupLayer with its already-resolved presentation tier.
+        // A dedicated source ensures the latest combo voice replaces any older voice
+        // without affecting gameplay SFX, clear arpeggios, or music.
+        public void PlayComboVoice(int comboTier)
+        {
+            if (comboVoiceSource == null)
+            {
+                return;
+            }
+
+            if (Muted)
+            {
+                comboVoiceSource.Stop();
+                return;
+            }
+
+            // Newest visual feedback wins even if a clip assignment is incomplete.
+            // Never allow a previous tier to continue under a new popup.
+            comboVoiceSource.Stop();
+
+            AudioClip voiceClip = comboTier switch
+            {
+                1 => comboVoiceGood,
+                2 => comboVoiceGreat,
+                3 => comboVoiceAmazing,
+                4 => comboVoicePerfect,
+                _ => null
+            };
+
+            if (voiceClip == null)
+            {
+                return;
+            }
+
+            comboVoiceSource.clip = voiceClip;
+            comboVoiceSource.Play();
+        }
+
         public void PlayToggle()
         {
             PlayOneShot(toggleClip, 0.32f);
@@ -257,7 +305,7 @@ namespace ChromaBlast
                 }
 
                 PlayOneShot(clearSfxSource, clip, 0.54f);
-                yield return new WaitForSeconds(0.028f);
+                yield return new WaitForSeconds(0.020f);
             }
 
             if (clearSfxSource != null)
@@ -312,16 +360,40 @@ namespace ChromaBlast
                 }
             }
 
+            if (comboVoiceSource == null)
+            {
+                Transform comboVoiceTransform = transform.Find("ComboVoiceSource");
+                if (comboVoiceTransform == null)
+                {
+                    GameObject comboVoiceObject = new GameObject("ComboVoiceSource");
+                    comboVoiceObject.transform.SetParent(transform, false);
+                    comboVoiceSource = comboVoiceObject.AddComponent<AudioSource>();
+                }
+                else
+                {
+                    comboVoiceSource = comboVoiceTransform.GetComponent<AudioSource>();
+                    if (comboVoiceSource == null)
+                    {
+                        comboVoiceSource = comboVoiceTransform.gameObject.AddComponent<AudioSource>();
+                    }
+                }
+            }
+
             musicSource.playOnAwake = false;
             sfxSource.playOnAwake = false;
             clearSfxSource.playOnAwake = false;
+            comboVoiceSource.playOnAwake = false;
             musicSource.spatialBlend = 0f;
             sfxSource.spatialBlend = 0f;
             clearSfxSource.spatialBlend = 0f;
+            comboVoiceSource.spatialBlend = 0f;
             musicSource.volume = 0.16f;
             sfxSource.volume = 0.82f;
             clearSfxSource.volume = 0.82f;
+            comboVoiceSource.volume = 0.70f;
             clearSfxSource.pitch = 1f;
+            comboVoiceSource.pitch = 1f;
+            comboVoiceSource.loop = false;
         }
 
         private void EnsureAudioListener()
@@ -525,6 +597,15 @@ namespace ChromaBlast
             if (clearSfxSource != null)
             {
                 clearSfxSource.mute = Muted;
+            }
+
+            if (comboVoiceSource != null)
+            {
+                comboVoiceSource.mute = Muted;
+                if (Muted)
+                {
+                    comboVoiceSource.Stop();
+                }
             }
         }
     }

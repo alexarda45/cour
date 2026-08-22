@@ -96,7 +96,7 @@ namespace ChromaBlast
                 scoreColor,
                 scoreSize,
                 scorePosition,
-                0.46f + presentationTier * 0.04f,
+                0.24f + presentationTier * 0.02f,
                 58f + presentationTier * 8f,
                 0.76f,
                 1.12f + presentationTier * 0.03f,
@@ -165,6 +165,8 @@ namespace ChromaBlast
             {
                 AudioManager.Instance?.PlayComboSmall();
             }
+
+            AudioManager.Instance?.PlayComboVoice((int)tier);
 
             ConfigureComboTier(
                 tier,
@@ -362,36 +364,36 @@ namespace ChromaBlast
             switch (tier)
             {
                 case ComboTier.Perfect:
-                    duration = 0.65f;
-                    entranceDuration = 0.09f;
-                    settleDuration = 0.025f;
+                    duration = 0.37f;
+                    entranceDuration = 0.045f;
+                    settleDuration = 0.012f;
                     peakScale = 1.21f;
                     floatDistance = 30f;
                     maxGlowAlpha = 1f;
                     rotationRange = 6f;
                     break;
                 case ComboTier.Amazing:
-                    duration = 0.60f;
-                    entranceDuration = 0.09f;
-                    settleDuration = 0.025f;
+                    duration = 0.34f;
+                    entranceDuration = 0.045f;
+                    settleDuration = 0.012f;
                     peakScale = 1.18f;
                     floatDistance = 26f;
                     maxGlowAlpha = 0.90f;
                     rotationRange = 5f;
                     break;
                 case ComboTier.Great:
-                    duration = 0.55f;
-                    entranceDuration = 0.09f;
-                    settleDuration = 0.025f;
+                    duration = 0.31f;
+                    entranceDuration = 0.045f;
+                    settleDuration = 0.012f;
                     peakScale = 1.15f;
                     floatDistance = 22f;
                     maxGlowAlpha = 0.78f;
                     rotationRange = 4f;
                     break;
                 default:
-                    duration = 0.50f;
-                    entranceDuration = 0.09f;
-                    settleDuration = 0.025f;
+                    duration = 0.28f;
+                    entranceDuration = 0.045f;
+                    settleDuration = 0.012f;
                     peakScale = 1.11f;
                     floatDistance = 18f;
                     maxGlowAlpha = 0.66f;
@@ -400,7 +402,7 @@ namespace ChromaBlast
             }
 
             float settleEnd = entranceDuration + settleDuration;
-            const float exitDuration = 0.10f;
+            const float exitDuration = 0.050f;
             float exitStart = duration - exitDuration;
             float startRotation = Random.Range(-rotationRange, rotationRange);
             Color baseGlowColor = glowOutline.effectColor;
@@ -531,14 +533,14 @@ namespace ChromaBlast
             if (!fullJuice)
             {
                 duration = numericScorePopup
-                    ? Mathf.Clamp(duration, 0.42f, 0.55f)
+                    ? Mathf.Clamp(duration, 0.32f, 0.36f)
                     : Mathf.Clamp(duration, 0.80f, 1f);
                 travel *= 0.82f;
                 peakScale = Mathf.Min(peakScale, emphasized ? 1.20f : 1.12f);
             }
 
             duration = numericScorePopup
-                ? Mathf.Clamp(duration, 0.42f, 0.55f)
+                ? Mathf.Clamp(duration, 0.32f, 0.36f)
                 : Mathf.Clamp(duration, 0.80f, 1.20f);
 
             GameObject textObject = new GameObject(
@@ -707,6 +709,11 @@ namespace ChromaBlast
                 Destroy(activeComboPopup.gameObject);
                 activeComboPopup = null;
             }
+        }
+
+        public void ClearActiveComboPresentation()
+        {
+            CancelActiveComboPopup();
         }
 
         private void CancelActiveScorePopup()

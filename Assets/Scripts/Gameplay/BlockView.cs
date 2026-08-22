@@ -40,6 +40,7 @@ namespace ChromaBlast
         private Color completionPreviewOriginalColor;
         private bool completionSpritePreviewActive;
         private bool initialized;
+        private System.Action<BlockView> clearCompletionCallback;
 
         private void Awake()
         {
@@ -80,6 +81,52 @@ namespace ChromaBlast
         private void OnDisable()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+        }
+
+        // BoardManager assigns this only to its live board-block pool. Other
+        // BlockView users retain the original destroy-on-clear behavior.
+        public void SetClearCompletionCallback(System.Action<BlockView> callback)
+        {
+            clearCompletionCallback = callback;
+        }
+
+        // This is an explicit reuse boundary for pooled board blocks. Do not
+        // rely on OnEnable to repair presentation state left by an interrupted
+        // placement/clear routine.
+        public void PrepareForPool()
+        {
+            if (visualRoutine != null)
+            {
+                StopCoroutine(visualRoutine);
+                visualRoutine = null;
+            }
+
+            transform.DOKill();
+            clearCompletionCallback = null;
+            EndCompletionSpritePreview();
+
+            transform.localScale = Vector3.one;
+            transform.localRotation = Quaternion.identity;
+            transform.localPosition = Vector3.zero;
+            if (RectTransform != null)
+            {
+                RectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                RectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                RectTransform.pivot = new Vector2(0.5f, 0.5f);
+                RectTransform.anchoredPosition = Vector2.zero;
+                RectTransform.sizeDelta = Vector2.zero;
+            }
+
+            ResetImageForPool(image);
+            ResetImageForPool(shadowImage);
+            ResetImageForPool(glowImage);
+            ResetImageForPool(tileImage);
+            ResetImageForPool(highlightImage);
+            ResetImageForPool(innerImage);
+            ResetImageForPool(shineImage);
+
+            Color = default;
+            initialized = false;
         }
 
         public void Initialize(ChromaColor color, bool animate = true)
@@ -372,6 +419,18 @@ namespace ChromaBlast
             }
         }
 
+        private static void ResetImageForPool(Image target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            target.sprite = null;
+            target.color = UnityEngine.Color.white;
+            target.enabled = false;
+        }
+
         public void PlayPlaced(float delay = 0f)
         {
             if (!MobilePerformance.UseFullJuice())
@@ -396,7 +455,7 @@ namespace ChromaBlast
             transform.localScale = restingScale;
 
             float elapsed = 0f;
-            const float duration = 0.10f;
+            const float duration = 0.050f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
@@ -445,7 +504,7 @@ namespace ChromaBlast
 
             Vector3 startScale = transform.localScale;
             float elapsed = 0f;
-            const float duration = 0.115f;
+            const float duration = 0.052f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
@@ -458,7 +517,7 @@ namespace ChromaBlast
 
             if (this != null)
             {
-                Destroy(gameObject);
+                CompleteClear();
             }
         }
 
@@ -489,7 +548,7 @@ namespace ChromaBlast
             transform.localScale = restingScale;
 
             float elapsed = 0f;
-            const float duration = 0.10f;
+            const float duration = 0.050f;
             while (elapsed < duration && this != null)
             {
                 elapsed += Time.deltaTime;
@@ -546,10 +605,10 @@ namespace ChromaBlast
             UnityEngine.Color shineColor = shineImage == null ? UnityEngine.Color.white : shineImage.color;
 
             float peakScale = Mathf.Lerp(1.15f, 1.19f, clearStrength);
-            yield return ScaleRoutine(Vector3.one, Vector3.one * peakScale, 0.025f);
+            yield return ScaleRoutine(Vector3.one, Vector3.one * peakScale, 0.010f);
 
             float elapsed = 0f;
-            const float duration = 0.09f;
+            const float duration = 0.042f;
             Vector3 startScale = Vector3.one * peakScale;
             Vector3 endScale = Vector3.zero;
             while (elapsed < duration && this != null)
@@ -570,8 +629,22 @@ namespace ChromaBlast
 
             if (this != null)
             {
-                Destroy(gameObject);
+                CompleteClear();
             }
+        }
+
+        private void CompleteClear()
+        {
+            visualRoutine = null;
+            System.Action<BlockView> callback = clearCompletionCallback;
+            clearCompletionCallback = null;
+            if (callback != null)
+            {
+                callback(this);
+                return;
+            }
+
+            Destroy(gameObject);
         }
 
         private static float EvaluatePlacementScale(float normalizedTime)
