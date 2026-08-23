@@ -234,7 +234,7 @@ public static class ChromaBlastProjectBuilder
     {
         PlayerSettings.Android.bundleVersionCode = VersionCode;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
-        PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+        PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel36;
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.stripEngineCode = true;

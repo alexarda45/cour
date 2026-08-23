@@ -677,8 +677,8 @@ namespace ChromaBlast
             }
 
             Color color = new Color(1f, 0.82f, 0.35f, 1f);
-            popupLayer?.Show($"SCORE {milestoneScore}\n+{coins} COINS", color, 44, new Vector2(0f, 220f));
-            ShowFeedback($"BONUS +{coins} COINS", color, 0.72f);
+            // Preserve the earned reward and its short non-textual accent without
+            // placing SCORE/COINS utility labels over the gameplay board.
             Flash(color, 0.16f, 0.22f);
         }
 
@@ -826,11 +826,24 @@ namespace ChromaBlast
 
             if (pauseRoot != null)
             {
-                EnsureOceanPauseMenu();
-                pauseRoot.SetActive(visible);
+                if (!visible)
+                {
+                    EnsureOceanPauseMenu();
+                    pauseRoot.SetActive(false);
+                }
+                else
+                {
+                    // Nested layout groups and TMP auto-size cannot resolve their
+                    // final geometry while PauseOverlay is inactive. Activating it
+                    // and completing the entire synchronous preparation before the
+                    // frame is rendered makes first and later opens use one path.
+                    pauseRoot.SetActive(true);
+                    pauseRoot.transform.SetAsLastSibling();
+                    PreparePauseSettingsForDisplay();
+                }
+
                 if (visible)
                 {
-                    pauseRoot.transform.SetAsLastSibling();
                     AnimatePausePanelIn();
                 }
             }
@@ -1452,6 +1465,7 @@ namespace ChromaBlast
             highScoreText.gameObject.SetActive(true);
             highScoreText.raycastTarget = false;
             EnsureTextShadow(highScoreText, new Color(0f, 0.025f, 0.09f, 0.82f), new Vector2(0f, -2f));
+            CenterBestScoreContentGroup();
 
             glowRect.SetAsFirstSibling();
             shadowRect.SetSiblingIndex(1);
@@ -1843,6 +1857,7 @@ namespace ChromaBlast
             ConfigureBeachVisuals();
 
             EnsureSettingsRaycastPath();
+            FinalizeSettingsCloseInteraction();
             UpdateSettingsToggleVisuals(false);
             DisableLanguageSelectionUi();
             RefreshPauseLabels();
@@ -1912,6 +1927,43 @@ namespace ChromaBlast
                 panelOutline.enabled = false;
             }
             DisableSelectableDecor(pausePanelRoot.gameObject);
+        }
+
+        private void PreparePauseSettingsForDisplay()
+        {
+            // PauseOverlay is active before this method runs. Build the hierarchy
+            // once, then resolve its nested layout and TMP geometry before Unity's
+            // render pass can expose an intermediate first-open state.
+            EnsureOceanPauseMenu();
+            RefreshPauseLabels();
+            ForceSettingsLayoutNow();
+        }
+
+        private void ForceSettingsLayoutNow()
+        {
+            Canvas.ForceUpdateCanvases();
+
+            if (settingsRowsContainer != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(settingsRowsContainer);
+            }
+
+            if (pausePanelRoot != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(pausePanelRoot);
+
+                TMP_Text[] settingsTexts = pausePanelRoot.GetComponentsInChildren<TMP_Text>(true);
+                for (int i = 0; i < settingsTexts.Length; i++)
+                {
+                    TMP_Text settingsText = settingsTexts[i];
+                    if (settingsText != null && settingsText.gameObject.activeInHierarchy)
+                    {
+                        settingsText.ForceMeshUpdate(true, true);
+                    }
+                }
+            }
+
+            Canvas.ForceUpdateCanvases();
         }
 
         private void ApplySettingsTheme(ThemeAssetSet ignoredTheme)
@@ -2420,24 +2472,35 @@ namespace ChromaBlast
             bool desert = IsDesertSettingsActive();
             bool blossom = IsBlossomSettingsActive();
             bool beach = IsBeachSettingsActive();
+            bool usesBakedCloseArtwork = ocean || garden || candy;
             RectTransform closeRect = GetOrCreateChildRect(pausePanelRoot, "CloseButton");
             closeRect.anchorMin = new Vector2(1f, 1f);
             closeRect.anchorMax = new Vector2(1f, 1f);
             closeRect.pivot = new Vector2(1f, 1f);
-            // The Candy close glyph is baked into the 1024x1536 panel at approximately
-            // (838, 140). Keep this transparent Button centered over that artwork after
-            // the panel is fitted to 900x1350; no second close sprite is rendered.
-            closeRect.anchoredPosition = ocean ? new Vector2(-34f, -34f) : candy ? new Vector2(-105f, -64f) : garden ? new Vector2(-48f, -50f) : blossom ? new Vector2(-24f, -26f) : beach ? new Vector2(-28f, -28f) : desert ? new Vector2(-38f, -32f) : new Vector2(-28f, -28f);
-            closeRect.sizeDelta = ocean ? new Vector2(92f, 92f) : candy ? new Vector2(118f, 118f) : garden ? new Vector2(86f, 86f) : blossom ? new Vector2(92f, 115f) : beach ? new Vector2(88f, 88f) : desert ? new Vector2(86f, 86f) : new Vector2(68f, 68f);
+            // Baked artwork uses a real transparent mobile hit target centered on
+            // the glyph's normalized source position. In particular, Garden's X is
+            // substantially lower than Ocean's even though both sit top-right.
+            closeRect.anchoredPosition = ocean ? new Vector2(-30f, -30f) : candy ? new Vector2(-114f, -73f) : garden ? new Vector2(-28f, -130f) : blossom ? new Vector2(-24f, -26f) : beach ? new Vector2(-28f, -28f) : desert ? new Vector2(-38f, -32f) : new Vector2(-28f, -28f);
+            closeRect.sizeDelta = usesBakedCloseArtwork
+                ? new Vector2(100f, 100f)
+                : blossom ? new Vector2(92f, 115f) : beach ? new Vector2(88f, 88f) : desert ? new Vector2(86f, 86f) : new Vector2(68f, 68f);
             closeRect.localScale = Vector3.one;
 
             Image image = GetOrAddImage(closeRect.gameObject);
-            // Candy and Ocean panels already contain their final X artwork. The
+            // Ocean, Garden and Candy panels already contain their final X artwork. The
             // retained Image is fully transparent and serves only as the Button's
             // raycastable hitbox; no second close graphic is drawn over either panel.
-            bool usesBakedCloseArtwork = ocean || candy;
-            image.sprite = blossom ? LoadBlossomSettingsSprite("03_blossom_close_x") : beach ? LoadBeachSettingsSprite("03_beach_close_x") : garden ? LoadGardenSettingsSprite("garden_x") : usesBakedCloseArtwork ? null : LoadSettingsSprite(SettingsClosePath);
-            image.color = usesBakedCloseArtwork ? new Color(1f, 1f, 1f, 0f) : Color.white;
+            image.sprite = usesBakedCloseArtwork
+                ? null
+                : blossom
+                    ? LoadBlossomSettingsSprite("03_blossom_close_x")
+                    : beach
+                        ? LoadBeachSettingsSprite("03_beach_close_x")
+                        : LoadSettingsSprite(SettingsClosePath);
+            // Alpha zero allows CanvasRenderer.cullTransparentMesh to remove the
+            // Graphic from GraphicRaycaster results. One alpha step is visually
+            // transparent but keeps the baked-X hitbox raycastable.
+            image.color = usesBakedCloseArtwork ? new Color(1f, 1f, 1f, 0.01f) : Color.white;
             image.type = Image.Type.Simple;
             image.preserveAspect = blossom || beach || garden || !usesBakedCloseArtwork;
             image.raycastTarget = true;
@@ -2476,10 +2539,59 @@ namespace ChromaBlast
 
             resumeButton = GetOrAddButton(closeRect.gameObject, image);
             ConfigureButtonNoTransition(resumeButton);
+            resumeButton.enabled = true;
+            resumeButton.targetGraphic = image;
             resumeButton.onClick.RemoveAllListeners();
-            resumeButton.onClick.AddListener(() => gameManager.ResumeGame());
+            resumeButton.onClick.AddListener(ClosePauseSettings);
             closeRect.gameObject.SetActive(true);
             closeRect.SetAsLastSibling();
+        }
+
+        private void FinalizeSettingsCloseInteraction()
+        {
+            if (pauseRoot == null || pausePanelRoot == null || resumeButton == null)
+            {
+                return;
+            }
+
+            CanvasGroup rootGroup = pauseRoot.GetComponent<CanvasGroup>();
+            if (rootGroup == null)
+            {
+                rootGroup = pauseRoot.AddComponent<CanvasGroup>();
+            }
+
+            rootGroup.alpha = 1f;
+            rootGroup.interactable = true;
+            rootGroup.blocksRaycasts = true;
+
+            CanvasGroup panelGroup = pausePanelRoot.GetComponent<CanvasGroup>();
+            if (panelGroup == null)
+            {
+                panelGroup = pausePanelRoot.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            panelGroup.alpha = 1f;
+            panelGroup.interactable = true;
+            panelGroup.blocksRaycasts = true;
+
+            Image hitImage = resumeButton.targetGraphic as Image;
+            if (hitImage != null)
+            {
+                hitImage.enabled = true;
+                hitImage.raycastTarget = true;
+            }
+
+            resumeButton.enabled = true;
+            resumeButton.interactable = true;
+            resumeButton.onClick.RemoveAllListeners();
+            resumeButton.onClick.AddListener(ClosePauseSettings);
+            resumeButton.gameObject.SetActive(true);
+            resumeButton.transform.SetAsLastSibling();
+        }
+
+        private void ClosePauseSettings()
+        {
+            gameManager?.ResumeGame();
         }
 
         private void DisableLegacyPauseRows()
@@ -3049,7 +3161,7 @@ namespace ChromaBlast
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
             labelText.enableAutoSizing = separatedArtwork && !blossom && !beach;
             labelText.textWrappingMode = garden || desert || blossom || beach ? TextWrappingModes.NoWrap : TextWrappingModes.Normal;
-            labelText.fontSize = blossom || beach ? 32f : labelText.fontSize;
+            labelText.fontSize = blossom || beach ? 32f : garden ? 28f : 31f;
             labelText.fontSizeMin = garden ? 17f : blossom || beach ? 32f : 22f;
             labelText.fontSizeMax = garden ? 28f : blossom || beach ? 32f : 31f;
             labelText.fontStyle = FontStyles.Bold;
@@ -5697,6 +5809,46 @@ namespace ChromaBlast
             highScoreText.enabled = true;
             highScoreText.color = Color.white;
             highScoreText.text = displayedBestScore.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            CenterBestScoreContentGroup();
+        }
+
+        private void CenterBestScoreContentGroup()
+        {
+            if (bestScoreHudRoot == null || highScoreText == null)
+            {
+                return;
+            }
+
+            RectTransform crownRect = bestScoreHudRoot.Find("CrownIcon") as RectTransform;
+            RectTransform crownGlowRect = bestScoreHudRoot.Find("CrownGlow") as RectTransform;
+            RectTransform valueRect = highScoreText.transform as RectTransform;
+            if (crownRect == null || valueRect == null)
+            {
+                return;
+            }
+
+            const float crownVisualWidth = 68f;
+            const float contentGap = 8f;
+            const float contentVerticalOffset = 8f;
+            float numberWidth = Mathf.Clamp(
+                highScoreText.GetPreferredValues(highScoreText.text, 232f, 120f).x,
+                54f,
+                232f);
+            float contentWidth = crownVisualWidth + contentGap + numberWidth;
+            float contentStart = (bestScoreHudRoot.rect.width - contentWidth) * 0.5f;
+            float crownCenterX = contentStart + crownVisualWidth * 0.5f;
+
+            crownRect.anchoredPosition = new Vector2(crownCenterX, -6.82f + contentVerticalOffset);
+            if (crownGlowRect != null)
+            {
+                crownGlowRect.anchoredPosition = new Vector2(crownCenterX, -6.82f + contentVerticalOffset);
+            }
+
+            valueRect.anchorMin = new Vector2(0f, 0.5f);
+            valueRect.anchorMax = valueRect.anchorMin;
+            valueRect.pivot = new Vector2(0f, 0.5f);
+            valueRect.anchoredPosition = new Vector2(contentStart + crownVisualWidth + contentGap, contentVerticalOffset);
+            valueRect.sizeDelta = new Vector2(numberWidth, bestScoreHudRoot.rect.height - 6f);
         }
 
         private string ModeName(GameMode mode)

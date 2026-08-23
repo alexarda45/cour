@@ -1373,6 +1373,9 @@ namespace ChromaBlast
                 // visible-art bounds. Keep one shared RectTransform for all six cards;
                 // Ocean must never receive a larger runtime compensation.
                 SetRect(cardArtwork.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                // preserveAspect keeps the approved height. Apply the requested
+                // width-only increase to the artwork after aspect fitting.
+                cardArtwork.rectTransform.localScale = new Vector3(1.2744f, 1f, 1f);
 
                 cardArtwork.type = Image.Type.Simple;
                 cardArtwork.preserveAspect = true;
@@ -1452,9 +1455,15 @@ namespace ChromaBlast
             // Use the full safe region between the fixed coin bar and Apply button.
             // All six slots remain identical, with equal outer margins and uniform
             // gaps in the two-column / three-row grid.
-            float xCenter = column == 0 ? 0.31f : 0.69f;
+            // The approved height remains 21% of the panel. Width is 18% larger
+            // than the previous effective 39.96% (37% slot * 1.08 artwork scale).
+            // Keep the approved artwork scale and height, but bring both columns
+            // symmetrically inside the supplied panel frame. The slot width follows
+            // the visible height-limited square artwork so adjacent hitboxes do not
+            // overlap in the center gap.
+            float xCenter = column == 0 ? 0.299f : 0.701f;
             float yCenter = row == 0 ? 0.655f : row == 1 ? 0.44f : 0.225f;
-            const float halfWidth = 0.185f;
+            const float halfWidth = 0.2007f;
             const float halfHeight = 0.105f;
             anchorMin = new Vector2(xCenter - halfWidth, yCenter - halfHeight);
             anchorMax = new Vector2(xCenter + halfWidth, yCenter + halfHeight);
