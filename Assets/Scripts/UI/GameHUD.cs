@@ -138,6 +138,7 @@ namespace ChromaBlast
         private Coroutine blitzUrgencyRoutine;
         private Image oceanBackgroundImage;
         private Image blitzTimerCapsuleImage;
+        private RectTransform blitzTimerCapsuleRect;
         private TMP_Text scoreShadowText;
         private bool blossomScoreWasActive;
         private bool blossomScoreShadowWasActive;
@@ -292,6 +293,12 @@ namespace ChromaBlast
         private void OnDestroy()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+
+            if (scoreCountRoutine != null)
+            {
+                StopCoroutine(scoreCountRoutine);
+                scoreCountRoutine = null;
+            }
 
             if (blitzUrgencyRoutine != null)
             {
@@ -614,15 +621,15 @@ namespace ChromaBlast
 
         public void ShowTimeBonus(float seconds)
         {
-            int rounded = Mathf.RoundToInt(seconds);
-            if (rounded <= 0)
+            if (seconds <= 0f)
             {
                 return;
             }
 
+            string amount = seconds.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
             Color color = new Color(0.65f, 1f, 0.26f, 1f);
-            popupLayer?.Show($"+{rounded}s", color, 46, new Vector2(0f, 90f));
-            ShowFeedback($"+{rounded}s TIME", color, 0.42f);
+            popupLayer?.Show($"+{amount}s", color, 46, new Vector2(0f, 90f));
+            ShowFeedback($"+{amount}s TIME", color, 0.42f);
         }
 
         public void ShowInvalidMove()
@@ -639,7 +646,6 @@ namespace ChromaBlast
         {
             Color popColor = ChromaPalette.GetColor(color);
             popupLayer?.Show($"USE POP\n{GetEnglishColorName(color)}", popColor, 42, new Vector2(0f, 165f));
-            ShowFeedback("POP CAN SAVE YOU", popColor, 0.9f);
         }
 
         public void SetMission(string mission, bool completed)
@@ -1477,6 +1483,22 @@ namespace ChromaBlast
             crownRect.SetSiblingIndex(7);
             valueRect.SetAsLastSibling();
             ApplyBestScoreTheme(ThemeCatalog.Current);
+            ApplyResponsiveTopHudLayout();
+        }
+
+        private void ApplyResponsiveTopHudLayout()
+        {
+            RectTransform timerRect = timerText == null ? null : timerText.transform as RectTransform;
+            if (timerRect == null || blitzTimerCapsuleRect == null)
+            {
+                return;
+            }
+
+            // Keep the timer visually centered in the safe gameplay area. The capsule
+            // is intentionally narrow enough (250 px at the 1080 px reference) to
+            // retain a ~31 px gap from the unchanged Best Score footprint.
+            timerRect.anchoredPosition = new Vector2(0f, timerRect.anchoredPosition.y);
+            blitzTimerCapsuleRect.anchoredPosition = new Vector2(0f, blitzTimerCapsuleRect.anchoredPosition.y);
         }
 
         private void ApplyBestScoreTheme(ThemeAssetSet theme)
@@ -4782,7 +4804,7 @@ namespace ChromaBlast
 
             pausePanelRoot.DOKill();
             pausePanelRoot.localScale = Vector3.one * 0.965f;
-            pausePanelRoot.DOScale(1f, 0.14f).SetEase(Ease.OutBack);
+            pausePanelRoot.DOScale(1f, 0.12f).SetEase(Ease.OutQuad);
         }
 
         private static string GetEnglishColorName(ChromaColor color)
@@ -4853,7 +4875,6 @@ namespace ChromaBlast
             bool functionalHint = message == "DOESN'T FIT"
                 || message == "NO SPACE"
                 || message == "POP HAS NO TILES"
-                || message == "POP CAN SAVE YOU"
                 || message == "TRY HERE";
             if (!functionalHint)
             {
@@ -5205,11 +5226,12 @@ namespace ChromaBlast
                 if (parentRect != null)
                 {
                     RectTransform capsuleRect = GetOrCreateChildRect(parentRect, "BlitzTimerCapsule");
+                    blitzTimerCapsuleRect = capsuleRect;
                     capsuleRect.anchorMin = timerRect.anchorMin;
                     capsuleRect.anchorMax = timerRect.anchorMax;
                     capsuleRect.pivot = timerRect.pivot;
                     capsuleRect.anchoredPosition = timerRect.anchoredPosition;
-                    capsuleRect.sizeDelta = new Vector2(287f, 190f);
+                    capsuleRect.sizeDelta = new Vector2(250f, 190f);
                     capsuleRect.localScale = Vector3.one;
 
                     blitzTimerCapsuleImage = GetOrAddImage(capsuleRect.gameObject);
@@ -5237,6 +5259,7 @@ namespace ChromaBlast
                 }
             }
 
+            ApplyResponsiveTopHudLayout();
             ApplyBlitzTimerPalette(int.MaxValue);
         }
 
@@ -5688,12 +5711,23 @@ namespace ChromaBlast
                 suppressNextScoreAutoPunch = false;
             }
 
-            if (score <= displayedScore)
+            if (score < displayedScore || score < targetScore)
             {
+                if (scoreCountRoutine != null)
+                {
+                    StopCoroutine(scoreCountRoutine);
+                    scoreCountRoutine = null;
+                }
+
                 displayedScore = score;
                 targetScore = score;
                 SetDisplayedScoreText(displayedScore);
                 UpdateDisplayedBestScore(displayedScore);
+                return;
+            }
+
+            if (score == displayedScore && score == targetScore)
+            {
                 return;
             }
 
@@ -5745,15 +5779,29 @@ namespace ChromaBlast
             int absoluteDelta = Mathf.Abs(delta);
             if (absoluteDelta <= 100)
             {
-                return Mathf.Lerp(0.035f, 0.045f, absoluteDelta / 100f);
+                return Mathf.Lerp(0.08f, 0.10f, absoluteDelta / 100f);
             }
 
             if (absoluteDelta <= 500)
             {
-                return Mathf.Lerp(0.050f, 0.065f, (absoluteDelta - 100f) / 400f);
+                return Mathf.Lerp(0.10f, 0.14f, (absoluteDelta - 100f) / 400f);
             }
 
-            return Mathf.Lerp(0.065f, 0.10f, Mathf.Clamp01((absoluteDelta - 500f) / 2500f));
+            return Mathf.Lerp(0.14f, 0.18f, Mathf.Clamp01((absoluteDelta - 500f) / 2500f));
+        }
+
+        public void CompleteScoreCountUp(int authoritativeScore)
+        {
+            if (scoreCountRoutine != null)
+            {
+                StopCoroutine(scoreCountRoutine);
+                scoreCountRoutine = null;
+            }
+
+            displayedScore = Mathf.Max(0, authoritativeScore);
+            targetScore = displayedScore;
+            SetDisplayedScoreText(displayedScore);
+            UpdateDisplayedBestScore(displayedScore);
         }
 
         private void SetDisplayedScoreText(int value)

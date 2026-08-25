@@ -57,6 +57,16 @@ namespace ChromaBlast.EditorTools
             public int score;
         }
 
+        private struct SimAssistDifficultyProfile
+        {
+            public int easeScore;
+            public int totalPlacementOptions;
+            public int minimumPlacementOptions;
+            public int immediateClears;
+            public int setup;
+            public int cleanliness;
+        }
+
         private static readonly int[,] SimFlowOrders =
         {
             { 0, 1, 2 }, { 0, 2, 1 }, { 1, 0, 2 },
@@ -391,15 +401,14 @@ namespace ChromaBlast.EditorTools
             int selectedPhase7HScoreBeforePostSelection = int.MinValue;
             bool selectedMatchedFlowTarget = false;
             bool selectedByStrongContinuationGate = false;
-            PieceInstance[][] relaxFlowCandidates =
+            PieceInstance[][] relaxFlowCandidates = new PieceInstance[32][];
+            for (int i = 0; i < relaxFlowCandidates.Length; i++)
             {
-                new PieceInstance[GameConstants.TraySize],
-                new PieceInstance[GameConstants.TraySize],
-                new PieceInstance[GameConstants.TraySize],
-                new PieceInstance[GameConstants.TraySize]
-            };
-            int[] relaxFlowCandidateScores = { int.MinValue, int.MinValue, int.MinValue, int.MinValue };
-            int[] relaxFlowCandidateFitCounts = new int[4];
+                relaxFlowCandidates[i] = new PieceInstance[GameConstants.TraySize];
+            }
+            int[] relaxFlowCandidateScores = new int[relaxFlowCandidates.Length];
+            Array.Fill(relaxFlowCandidateScores, int.MinValue);
+            int[] relaxFlowCandidateFitCounts = new int[relaxFlowCandidates.Length];
             int relaxFlowCandidateCount = 0;
             bool selectedByLateChallengeBand = false;
             bool useLateChallengeBand = classicTrayNumber >= 9
@@ -484,7 +493,7 @@ namespace ChromaBlast.EditorTools
                 }
                 if (maximumContinuationGate)
                 {
-                    CalculateSimFlowContinuityScore(
+                    int continuityScore = CalculateSimFlowContinuityScore(
                         context,
                         candidateSet,
                         flowTargets,
@@ -493,6 +502,31 @@ namespace ChromaBlast.EditorTools
                         classicTrayNumber,
                         out bool hasStrongContinuation);
                     if (hasStrongContinuation)
+                    {
+                        CalculateSimTrayEaseScore(
+                            context,
+                            candidateSet,
+                            out int totalPlacementOptions);
+                        if (fitCount >= 2 && totalPlacementOptions >= 5)
+                        {
+                            ConsiderSimRelaxFlowCandidate(
+                                candidateSet,
+                                score + continuityScore,
+                                fitCount,
+                                relaxFlowCandidates,
+                                relaxFlowCandidateScores,
+                                relaxFlowCandidateFitCounts,
+                                ref relaxFlowCandidateCount);
+                        }
+                    }
+                }
+                else if (useRelaxFlow)
+                {
+                    CalculateSimTrayEaseScore(
+                        context,
+                        candidateSet,
+                        out int totalPlacementOptions);
+                    if (fitCount >= 2 && totalPlacementOptions >= 5)
                     {
                         ConsiderSimRelaxFlowCandidate(
                             candidateSet,
@@ -503,17 +537,6 @@ namespace ChromaBlast.EditorTools
                             relaxFlowCandidateFitCounts,
                             ref relaxFlowCandidateCount);
                     }
-                }
-                else if (useRelaxFlow)
-                {
-                    ConsiderSimRelaxFlowCandidate(
-                        candidateSet,
-                        score,
-                        fitCount,
-                        relaxFlowCandidates,
-                        relaxFlowCandidateScores,
-                        relaxFlowCandidateFitCounts,
-                        ref relaxFlowCandidateCount);
                 }
                 int phase7HScore = score - candidateTerms.phase8CurationAfterGate;
                 if (phase7HScore > bestPhase7HScore)
@@ -558,16 +581,43 @@ namespace ChromaBlast.EditorTools
                 && maximumContinuationGate
                 && relaxFlowCandidateCount > 0)
             {
-                bestSet ??= new PieceInstance[GameConstants.TraySize];
-                Array.Copy(relaxFlowCandidates[0], bestSet, GameConstants.TraySize);
-                bestScore = relaxFlowCandidateScores[0];
-                bestFitCount = relaxFlowCandidateFitCounts[0];
-                metrics.generatedFlowMatchTrays++;
-                selectedMatchedFlowTarget = true;
-                selectedByStrongContinuationGate = true;
+                SimAssistDifficultyProfile baselineProfile = CalculateSimAssistDifficultyProfile(
+                    context,
+                    bestSet);
+                int selectedContinuationIndex = -1;
+                int continuationScanCount = classicTrayNumber <= 4
+                    ? relaxFlowCandidateCount
+                    : Math.Min(relaxFlowCandidateCount, 24);
+                for (int i = 0; i < continuationScanCount; i++)
+                {
+                    SimAssistDifficultyProfile candidateProfile = CalculateSimAssistDifficultyProfile(
+                        context,
+                        relaxFlowCandidates[i]);
+                    if (IsSimComparableAssistDifficulty(baselineProfile, candidateProfile))
+                    {
+                        selectedContinuationIndex = i;
+                        break;
+                    }
+                }
+
+                if (selectedContinuationIndex >= 0)
+                {
+                    bestSet ??= new PieceInstance[GameConstants.TraySize];
+                    Array.Copy(
+                        relaxFlowCandidates[selectedContinuationIndex],
+                        bestSet,
+                        GameConstants.TraySize);
+                    bestScore = relaxFlowCandidateScores[selectedContinuationIndex];
+                    bestFitCount = relaxFlowCandidateFitCounts[selectedContinuationIndex];
+                    metrics.generatedFlowMatchTrays++;
+                    selectedMatchedFlowTarget = true;
+                    selectedByStrongContinuationGate = true;
+                }
             }
-            else if (validCandidates == null
+
+            if (validCandidates == null
                 && maximumContinuationGate
+                && !selectedByStrongContinuationGate
                 && TryConstructSimReadableContinuation(
                     context,
                     bestSet,
@@ -577,23 +627,37 @@ namespace ChromaBlast.EditorTools
                     out PieceInstance[] constructedSet,
                     out int constructedFitCount))
             {
-                bestSet ??= new PieceInstance[GameConstants.TraySize];
-                Array.Copy(constructedSet, bestSet, GameConstants.TraySize);
-                bestFitCount = constructedFitCount;
-                bestScore = CalculateScoreTerms(
-                    context, bestSet, bestFitCount, difficulty01, loopAdjustedAssist,
-                    runPressure01, consecutiveReliefBiasedTrays, classicTrayNumber,
-                    flowTargetCount, configuration, phase8CurationMultiplier).Total;
-                selectedMatchedFlowTarget = true;
-                selectedByStrongContinuationGate = true;
-                metrics.generatedFlowMatchTrays++;
-                metrics.constructedContinuationTrays[GetContinuationStage(classicTrayNumber)]++;
+                SimAssistDifficultyProfile baselineProfile = CalculateSimAssistDifficultyProfile(
+                    context,
+                    bestSet);
+                SimAssistDifficultyProfile constructedProfile = CalculateSimAssistDifficultyProfile(
+                    context,
+                    constructedSet);
+                if (IsSimComparableAssistDifficulty(baselineProfile, constructedProfile))
+                {
+                    bestSet ??= new PieceInstance[GameConstants.TraySize];
+                    Array.Copy(constructedSet, bestSet, GameConstants.TraySize);
+                    bestFitCount = constructedFitCount;
+                    bestScore = CalculateScoreTerms(
+                        context, bestSet, bestFitCount, difficulty01, loopAdjustedAssist,
+                        runPressure01, consecutiveReliefBiasedTrays, classicTrayNumber,
+                        flowTargetCount, configuration, phase8CurationMultiplier).Total;
+                    selectedMatchedFlowTarget = true;
+                    selectedByStrongContinuationGate = true;
+                    metrics.generatedFlowMatchTrays++;
+                    metrics.constructedContinuationTrays[GetContinuationStage(classicTrayNumber)]++;
+                }
             }
-            else if (validCandidates == null && useRelaxFlow && relaxFlowCandidateCount > 0)
+
+            if (validCandidates == null
+                && !selectedByStrongContinuationGate
+                && useRelaxFlow
+                && relaxFlowCandidateCount > 0)
             {
                 PieceInstance[] relaxed = SelectSimRelaxFlowCandidate(
                     board,
                     context,
+                    bestSet,
                     classicTrayNumber,
                     flowTargets,
                     flowTargetCount,
@@ -900,7 +964,8 @@ namespace ChromaBlast.EditorTools
                 new PieceInstance(flexiblePiece.shapeId, flexiblePiece.color)
             };
             fitCount = CountFittingPieces(context, constructed);
-            return fitCount > 0;
+            CalculateSimTrayEaseScore(context, constructed, out int totalPlacementOptions);
+            return fitCount >= 2 && totalPlacementOptions >= 5;
         }
 
         private static void ConsiderSimRelaxFlowCandidate(
@@ -996,11 +1061,18 @@ namespace ChromaBlast.EditorTools
             PieceInstance[] candidate,
             out int totalPlacementOptions)
         {
-            totalPlacementOptions = 0;
+            SimAssistDifficultyProfile profile = CalculateSimAssistDifficultyProfile(context, candidate);
+            totalPlacementOptions = profile.totalPlacementOptions;
+            return profile.easeScore;
+        }
+
+        private static SimAssistDifficultyProfile CalculateSimAssistDifficultyProfile(
+            GenerationContext context,
+            PieceInstance[] candidate)
+        {
+            SimAssistDifficultyProfile result = default;
             int minimumPlacementOptions = int.MaxValue;
-            int immediateClears = 0;
             int setupValue = 0;
-            int cleanliness = 0;
             for (int i = 0; i < candidate.Length; i++)
             {
                 if (candidate[i] == null)
@@ -1010,11 +1082,11 @@ namespace ChromaBlast.EditorTools
                 }
 
                 PlacementProfile profile = context.GetProfile(candidate[i]);
-                totalPlacementOptions += profile.placementOptions;
+                result.totalPlacementOptions += profile.placementOptions;
                 minimumPlacementOptions = Math.Min(minimumPlacementOptions, profile.placementOptions);
-                immediateClears += profile.clearOpportunities;
+                result.immediateClears += profile.clearOpportunities;
                 setupValue += profile.bestSetupScore;
-                cleanliness += profile.bestCleanlinessScore;
+                result.cleanliness += profile.bestCleanlinessScore;
             }
 
             if (minimumPlacementOptions == int.MaxValue)
@@ -1022,11 +1094,31 @@ namespace ChromaBlast.EditorTools
                 minimumPlacementOptions = 0;
             }
 
-            return totalPlacementOptions * 120
+            result.minimumPlacementOptions = minimumPlacementOptions;
+            result.setup = setupValue;
+            result.easeScore = result.totalPlacementOptions * 120
                 + minimumPlacementOptions * 520
-                + immediateClears * 820
+                + result.immediateClears * 820
                 + setupValue * 4
-                + cleanliness * 2;
+                + result.cleanliness * 2;
+            return result;
+        }
+
+        private static bool IsSimComparableAssistDifficulty(
+            SimAssistDifficultyProfile baseline,
+            SimAssistDifficultyProfile candidate)
+        {
+            int easeTolerance = Math.Max(250, Mathf.RoundToInt(Mathf.Abs(baseline.easeScore) * 0.02f));
+            int placementTolerance = Math.Max(1, Mathf.CeilToInt(baseline.totalPlacementOptions * 0.02f));
+            int setupTolerance = Math.Max(60, Mathf.RoundToInt(Mathf.Abs(baseline.setup) * 0.02f));
+            int cleanlinessTolerance = Math.Max(60, Mathf.RoundToInt(Mathf.Abs(baseline.cleanliness) * 0.02f));
+            return candidate.easeScore >= baseline.easeScore - easeTolerance
+                && candidate.easeScore <= baseline.easeScore + easeTolerance
+                && candidate.totalPlacementOptions <= baseline.totalPlacementOptions + placementTolerance
+                && candidate.minimumPlacementOptions <= baseline.minimumPlacementOptions + 1
+                && candidate.immediateClears <= baseline.immediateClears
+                && candidate.setup <= baseline.setup + setupTolerance
+                && candidate.cleanliness <= baseline.cleanliness + cleanlinessTolerance;
         }
 
         private static PieceInstance[] SelectSimLateChallengeCandidate(
@@ -1081,29 +1173,30 @@ namespace ChromaBlast.EditorTools
         {
             if (classicTrayNumber <= 11)
             {
-                lower = 0.55f;
-                upper = 0.75f;
+                lower = 0.35f;
+                upper = 0.55f;
             }
             else if (classicTrayNumber <= 15)
             {
-                lower = 0.40f;
-                upper = 0.60f;
+                lower = 0.20f;
+                upper = 0.40f;
             }
             else if (classicTrayNumber <= 20)
             {
-                lower = 0.25f;
-                upper = 0.45f;
+                lower = 0.05f;
+                upper = 0.25f;
             }
             else
             {
-                lower = 0.15f;
-                upper = 0.35f;
+                lower = 0f;
+                upper = 0.15f;
             }
         }
 
         private static PieceInstance[] SelectSimRelaxFlowCandidate(
             HeadlessBoard board,
             GenerationContext context,
+            PieceInstance[] baselineSet,
             int classicTrayNumber,
             SimFlowTarget[] flowTargets,
             int flowTargetCount,
@@ -1123,10 +1216,22 @@ namespace ChromaBlast.EditorTools
             selectedFlowScore = 0;
             matchedFlowTarget = false;
             PieceInstance[] selected = null;
+            SimAssistDifficultyProfile baselineProfile = CalculateSimAssistDifficultyProfile(
+                context,
+                baselineSet);
             float projectionWeight = GetSimRelaxFlowProjectionWeight(classicTrayNumber);
             float continuityStrength = GetSimFlowContinuityStrength(classicTrayNumber);
-            for (int i = 0; i < count; i++)
+            int evaluationCount = Math.Min(count, 4);
+            for (int i = 0; i < evaluationCount; i++)
             {
+                SimAssistDifficultyProfile candidateProfile = CalculateSimAssistDifficultyProfile(
+                    context,
+                    candidates[i]);
+                if (!IsSimComparableAssistDifficulty(baselineProfile, candidateProfile))
+                {
+                    continue;
+                }
+
                 SimFlowProjection projection = EvaluateSimFlowProjection(board, candidates[i]);
                 int flowScore = CalculateSimFlowContinuityScore(
                     context,
@@ -1387,23 +1492,21 @@ namespace ChromaBlast.EditorTools
 
         private static float GetSimFlowContinuityStrength(int trayNumber)
         {
-            if (trayNumber <= 4) return 1.35f;
-            if (trayNumber <= 6) return 0.90f;
-            return trayNumber <= 8 ? 0.45f : 0f;
+            if (trayNumber <= 4) return 2.70f;
+            if (trayNumber <= 6) return 2.58f;
+            return trayNumber <= 8 ? 1.28f : 0f;
         }
 
         private static float GetSimFlowAssistBoost(int trayNumber)
         {
-            if (trayNumber <= 4) return 1.90f;
-            if (trayNumber <= 6) return 1.40f;
-            return trayNumber <= 8 ? 1.10f : 1f;
+            if (trayNumber <= 6) return 2.30f;
+            return trayNumber <= 8 ? 1.70f : 1f;
         }
 
         private static float GetSimRelaxFlowProjectionWeight(int trayNumber)
         {
-            if (trayNumber <= 4) return 1f;
-            if (trayNumber <= 6) return 0.75f;
-            return trayNumber <= 8 ? 0.40f : 0f;
+            if (trayNumber <= 6) return 1f;
+            return trayNumber <= 8 ? 0.95f : 0f;
         }
 
         // Mirrors PieceSpawner's only final shape-pool exception: stair5 is not
@@ -3787,26 +3890,18 @@ namespace ChromaBlast.EditorTools
         // or the existing Critical rescue behavior.
         private static float GetLateNonEssentialAssistScale(int classicTrayNumber, OccupancyState occupancyState)
         {
-            if (occupancyState == OccupancyState.Critical)
-            {
-                return 1f;
-            }
-
+            if (classicTrayNumber >= 9) return 0f;
+            if (occupancyState == OccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            if (classicTrayNumber <= 8) return 0.60f;
-            return classicTrayNumber <= 11 ? 0.20f : 0f;
+            return 0.60f;
         }
 
         private static float GetLatePureSetupScale(int classicTrayNumber, OccupancyState occupancyState)
         {
-            if (occupancyState == OccupancyState.Critical)
-            {
-                return 1f;
-            }
-
+            if (classicTrayNumber >= 9) return 0f;
+            if (occupancyState == OccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            if (classicTrayNumber <= 8) return 0.60f;
-            return classicTrayNumber <= 11 ? 0.20f : 0f;
+            return 0.60f;
         }
 
         private static int GetSimOpenDiversityBonus(int classicTrayNumber, int configuredBonus)
@@ -4120,7 +4215,7 @@ namespace ChromaBlast.EditorTools
         {
             StringBuilder report = new StringBuilder(4200);
             report.AppendLine("CHROMABLAST HEADLESS CLASSIC — FINAL WOW/FINITE FLOW SANITY");
-            report.AppendLine("One production-parity pass: maximum readable construction through tray 6, soft continuation on trays 7–8, and fair ease-percentile challenge selection from tray 9 onward.");
+            report.AppendLine("One production-parity pass: maximum readable construction through tray 6, strong-moderate continuation on trays 7–8, and fair ease-percentile challenge selection from tray 9 onward.");
             report.AppendLine($"Completed: {production.runCount} Classic simulations in {elapsed.TotalSeconds:F1}s (seeds {SeedStart}-{SeedStart + production.runCount - 1}).");
             report.AppendLine($"Unchanged: {GameConstants.BoardSize}x{GameConstants.BoardSize}, {GameConstants.GuaranteedSetAttempts} candidates/tray, direct immediate-clear scoring, OPEN saturation penalty, comeback clear weight 1550, pressure, POP fatigue, relief-loop prevention, guarantees, and player policy. No Phase 8 curation is active.");
             report.AppendLine();
@@ -4152,7 +4247,7 @@ namespace ChromaBlast.EditorTools
             report.AppendLine("LATE FAIR-CHALLENGE SELECTION");
             report.AppendLine($"- average TrayEaseScore 1–8 / 9–11 / 12–15 / 16–20 / 21+: {production.MeanTrayEaseScore(0):F1} / {production.MeanTrayEaseScore(1):F1} / {production.MeanTrayEaseScore(2):F1} / {production.MeanTrayEaseScore(3):F1} / {production.MeanTrayEaseScore(4):F1}");
             report.AppendLine($"- nearest-fair fallback / CRITICAL bypass (late trays): {production.ChallengeBandFallbackPercent:F2}% / {production.CriticalChallengeBypassPercent:F2}%");
-            report.AppendLine("- ease percentile bands: trays 9–11 = 55–75, 12–15 = 40–60, 16–20 = 25–45, 21+ = 15–35 (0 hardest, 100 easiest).");
+            report.AppendLine("- ease percentile bands: trays 9–11 = 35–55, 12–15 = 20–40, 16–20 = 5–25, 21+ = 0–15 (0 hardest, 100 easiest).");
             report.AppendLine();
             report.AppendLine("POP");
             report.AppendLine($"- average / median / P90 / maximum uses: {production.MeanPopUses:F2} / {production.MedianPopUses:F0} / {production.P90PopUses:F0} / {production.MaxPopUses}");

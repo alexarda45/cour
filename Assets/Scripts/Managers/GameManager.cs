@@ -140,6 +140,7 @@ namespace ChromaBlast
 
             gameOverUI.Initialize(this);
             tutorialOverlay?.Initialize(this);
+            DisableTutorialForRelease();
             pieceSpawner.Initialize(this);
             oceanRescueController?.Initialize(this, board, pieceSpawner);
             hud.Initialize(this);
@@ -336,6 +337,7 @@ namespace ChromaBlast
             roundMission = RoundMission.Create(mode, random);
             board.ClearBoard(false);
             scoreManager.ResetScore();
+            hud?.CompleteScoreCountUp(scoreManager.Score);
             UpdatePopRechargeRequirement();
             gameOverUI.Hide();
             hud.ShowPause(false);
@@ -514,13 +516,15 @@ namespace ChromaBlast
                     AnalyticsManager.Instance?.RecordBoardSweep(currentMode, boardSweepBonus, board.CountEmptyCells());
                 }
 
-                AddBlitzTime(clearResult.linesCleared * GameConstants.BlitzClearTimeBonus);
+                // Award Blitz time once from the same clear/chain tier shown by the
+                // combo presentation. Line count and pure status must not stack as
+                // separate time sources for the same completed clear.
+                AddBlitzTime(ResolveBlitzClearTimeBonus(clearResult, scoreManager.Chain));
 
                 if (clearResult.pureLines > 0)
                 {
                     TryUnlockAchievement(AchievementId.FirstPure);
                     AudioManager.Instance?.PlayPure();
-                    AddBlitzTime(clearResult.pureLines * GameConstants.BlitzPureTimeBonus);
                 }
 
                 if (clearResult.linesCleared >= 3)
@@ -921,22 +925,13 @@ namespace ChromaBlast
         public void ResetTutorialFromPause()
         {
             AudioManager.Instance?.PlayClick();
-            SaveManager.Instance?.ResetTutorial();
-            tutorialOverlay?.Initialize(this);
-            tutorialOverlay?.Show();
+            DisableTutorialForRelease();
         }
 
         public void ShowHowToPlayFromPause()
         {
             AudioManager.Instance?.PlayClick();
-            if (tutorialOverlay == null)
-            {
-                Debug.LogWarning("How To Play popup is not available in this scene.");
-                return;
-            }
-
-            tutorialOverlay.Initialize(this);
-            tutorialOverlay.Show();
+            DisableTutorialForRelease();
         }
 
         private bool TryRestoreClassicRun()
@@ -1032,6 +1027,7 @@ namespace ChromaBlast
 
             oceanRescueController?.HideForGameOver();
             int finalScore = scoreManager.Score;
+            hud?.CompleteScoreCountUp(finalScore);
             active = false;
             paused = false;
             board.ClearPreview();
@@ -1268,9 +1264,47 @@ namespace ChromaBlast
         {
             if (currentMode == GameMode.Blitz && amount > 0f)
             {
-                blitzTimeRemaining += amount;
-                hud?.ShowTimeBonus(amount);
+                float cappedEventBonus = Mathf.Min(amount, GameConstants.BlitzMaximumEventTimeBonus);
+                float previousTime = blitzTimeRemaining;
+                blitzTimeRemaining = Mathf.Min(
+                    GameConstants.BlitzMaximumSeconds,
+                    blitzTimeRemaining + cappedEventBonus);
+                float appliedBonus = blitzTimeRemaining - previousTime;
+                if (appliedBonus > 0f)
+                {
+                    hud?.ShowTimeBonus(appliedBonus);
+                }
             }
+        }
+
+        private static float ResolveBlitzClearTimeBonus(ClearResult result, int chain)
+        {
+            int linesCleared = result == null ? 0 : result.linesCleared;
+            int pureLines = result == null ? 0 : result.pureLines;
+            if (linesCleared <= 0)
+            {
+                return 0f;
+            }
+
+            // These are the existing combo-label thresholds from JuicePopupLayer.
+            if (chain >= 6 || (pureLines > 0 && linesCleared >= 2))
+            {
+                return GameConstants.BlitzPerfectTimeBonus;
+            }
+
+            if (chain >= 4 || linesCleared >= 4)
+            {
+                return GameConstants.BlitzAmazingTimeBonus;
+            }
+
+            if (chain >= 3 || linesCleared >= 3)
+            {
+                return GameConstants.BlitzGreatTimeBonus;
+            }
+
+            return chain >= 2 || linesCleared >= 2
+                ? GameConstants.BlitzGoodTimeBonus
+                : 0f;
         }
 
         private ChromaColor FindLowestChromaColor()
@@ -1708,17 +1742,14 @@ namespace ChromaBlast
 
         private void ShowTutorialIfNeeded()
         {
-            if (tutorialOverlay == null)
-            {
-                return;
-            }
+            // The legacy overlay remains serialized for scene/save compatibility,
+            // but release flow has no tutorial or first-run onboarding path.
+            DisableTutorialForRelease();
+        }
 
-            if (SaveManager.Instance == null || SaveManager.Instance.Data.tutorialSeen)
-            {
-                return;
-            }
-
-            tutorialOverlay.Show();
+        private void DisableTutorialForRelease()
+        {
+            tutorialOverlay?.Hide();
         }
 
         private static T FindSceneObject<T>() where T : Component

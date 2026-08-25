@@ -476,17 +476,17 @@ namespace ChromaBlast
             group.alpha = 0f;
             group.interactable = false;
             group.blocksRaycasts = false;
-            themesPanel.localScale = Vector3.one * 0.92f;
+            themesPanel.localScale = Vector3.one * 0.94f;
 
-            const float duration = 0.28f;
+            const float duration = 0.12f;
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                float eased = EaseOutBack(t);
-                group.alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t * 1.35f));
-                themesPanel.localScale = Vector3.one * Mathf.LerpUnclamped(0.92f, 1f, eased);
+                float eased = EaseOutCubic(t);
+                group.alpha = eased;
+                themesPanel.localScale = Vector3.one * Mathf.Lerp(0.94f, 1f, eased);
                 yield return null;
             }
 
@@ -510,16 +510,17 @@ namespace ChromaBlast
             float startAlpha = group.alpha;
             Vector3 startScale = themesPanel == null ? Vector3.one : themesPanel.localScale;
 
-            const float duration = 0.16f;
+            const float duration = 0.09f;
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                group.alpha = Mathf.Lerp(startAlpha, 0f, t * t);
+                float eased = EaseOutCubic(t);
+                group.alpha = Mathf.Lerp(startAlpha, 0f, eased);
                 if (themesPanel != null)
                 {
-                    themesPanel.localScale = Vector3.Lerp(startScale, Vector3.one * 0.96f, t);
+                    themesPanel.localScale = Vector3.Lerp(startScale, Vector3.one * 0.97f, eased);
                 }
 
                 yield return null;
@@ -546,11 +547,10 @@ namespace ChromaBlast
             themesTransitionRoutine = null;
         }
 
-        private static float EaseOutBack(float value)
+        private static float EaseOutCubic(float value)
         {
-            const float overshoot = 1.45f;
-            float shifted = value - 1f;
-            return 1f + (overshoot + 1f) * shifted * shifted * shifted + overshoot * shifted * shifted;
+            float inverse = 1f - Mathf.Clamp01(value);
+            return 1f - inverse * inverse * inverse;
         }
 
         private void ChooseTheme(ThemeType theme)
@@ -1373,9 +1373,11 @@ namespace ChromaBlast
                 // visible-art bounds. Keep one shared RectTransform for all six cards;
                 // Ocean must never receive a larger runtime compensation.
                 SetRect(cardArtwork.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                // preserveAspect keeps the approved height. Apply the requested
-                // width-only increase to the artwork after aspect fitting.
-                cardArtwork.rectTransform.localScale = new Vector3(1.2744f, 1f, 1f);
+                // preserveAspect keeps every card identical. The previous 1.2744 X
+                // compensation left less than one reference pixel between columns
+                // on a real portrait device. Retain the readable approved height,
+                // but cap the width so the two columns have a genuine device gap.
+                cardArtwork.rectTransform.localScale = new Vector3(1.19f, 1f, 1f);
 
                 cardArtwork.type = Image.Type.Simple;
                 cardArtwork.preserveAspect = true;
@@ -1452,19 +1454,14 @@ namespace ChromaBlast
 
             int row = index / 2;
             int column = index % 2;
-            // Use the full safe region between the fixed coin bar and Apply button.
-            // All six slots remain identical, with equal outer margins and uniform
-            // gaps in the two-column / three-row grid.
-            // The approved height remains 21% of the panel. Width is 18% larger
-            // than the previous effective 39.96% (37% slot * 1.08 artwork scale).
-            // Keep the approved artwork scale and height, but bring both columns
-            // symmetrically inside the supplied panel frame. The slot width follows
-            // the visible height-limited square artwork so adjacent hitboxes do not
-            // overlap in the center gap.
+            // These normalized bounds are applied to the resolved panel rect, so
+            // padding and gaps scale with the actual device-safe panel dimensions.
+            // The slight height reduction creates a real vertical gutter while
+            // preserving the approved two-column positions and readable card size.
             float xCenter = column == 0 ? 0.299f : 0.701f;
             float yCenter = row == 0 ? 0.655f : row == 1 ? 0.44f : 0.225f;
-            const float halfWidth = 0.2007f;
-            const float halfHeight = 0.105f;
+            const float halfWidth = 0.188f;
+            const float halfHeight = 0.1025f;
             anchorMin = new Vector2(xCenter - halfWidth, yCenter - halfHeight);
             anchorMax = new Vector2(xCenter + halfWidth, yCenter + halfHeight);
         }
@@ -1626,6 +1623,7 @@ namespace ChromaBlast
             colors.selectedColor = Color.white;
             colors.disabledColor = new Color(1f, 1f, 1f, 0.50f);
             colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.06f;
             themesApplyButton.colors = colors;
             themesApplyButton.transition = Selectable.Transition.ColorTint;
             themesApplyButton.enabled = true;
@@ -5475,6 +5473,7 @@ namespace ChromaBlast
             colors.selectedColor = Color.white;
             colors.disabledColor = Color.white;
             colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.06f;
             button.colors = colors;
             button.interactable = interactable;
 

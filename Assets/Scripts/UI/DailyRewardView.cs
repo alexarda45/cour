@@ -107,7 +107,7 @@ namespace ChromaBlast
                 colors.selectedColor = Color.white;
                 colors.disabledColor = Color.white;
                 colors.colorMultiplier = 1f;
-                colors.fadeDuration = 0.08f;
+                colors.fadeDuration = 0.06f;
                 button.colors = colors;
             }
 
@@ -244,7 +244,14 @@ namespace ChromaBlast
         {
             if (feedbackText == null) return;
             feedbackText.text = message ?? string.Empty;
-            feedbackText.gameObject.SetActive(!string.IsNullOrWhiteSpace(feedbackText.text));
+            bool showFeedback = !string.IsNullOrWhiteSpace(feedbackText.text);
+            feedbackText.gameObject.SetActive(showFeedback);
+            if (resetTimerText != null)
+            {
+                // Status and countdown share one contained footer line. Showing
+                // both was the source of the overlapping/out-of-frame device text.
+                resetTimerText.gameObject.SetActive(!showFeedback);
+            }
         }
 
         public void SetClaimAvailability(bool available)
@@ -342,7 +349,7 @@ namespace ChromaBlast
                 {
                     RectTransform rect = daySeven.Button.transform as RectTransform;
                     rect.SetParent(panel, false);
-                    SetFixedRect(rect, new Vector2(0f, -405f), new Vector2(750f, 288f));
+                    SetFixedRect(rect, new Vector2(0f, -390f), new Vector2(750f, 270f));
                     daySeven.ApplyFinalArtwork(6,
                         Resources.Load<Sprite>(FinalArtRoot + "DailyRewardDay7_Final"), null, panel);
                 }
@@ -351,7 +358,7 @@ namespace ChromaBlast
             if (rewardedAdButton != null)
             {
                 rewardedAdButton.transform.SetParent(panel, false);
-                SetFixedRect(rewardedAdButton.transform as RectTransform, new Vector2(0f, -635f), new Vector2(520f, 142f));
+                SetFixedRect(rewardedAdButton.transform as RectTransform, new Vector2(0f, -610f), new Vector2(520f, 142f));
                 rewardedAdButton.transform.SetAsLastSibling();
             }
             SetInactive(rewardedAdGloss);
@@ -363,13 +370,16 @@ namespace ChromaBlast
             if (feedbackText != null)
             {
                 feedbackText.transform.SetParent(panel, false);
-                SetFixedRect(feedbackText.rectTransform, new Vector2(0f, -720f), new Vector2(700f, 44f));
+                SetFixedRect(feedbackText.rectTransform, new Vector2(0f, -720f), new Vector2(700f, 42f));
                 feedbackText.alignment = TextAlignmentOptions.Center;
                 feedbackText.color = new Color32(102, 55, 13, 255);
             }
 
             resetTimerText = FindOrCreateTimerText();
-            SetFixedRect(resetTimerText.rectTransform, new Vector2(0f, -755f), new Vector2(700f, 42f));
+            SetFixedRect(resetTimerText.rectTransform, new Vector2(0f, -720f), new Vector2(700f, 42f));
+            bool feedbackVisible = feedbackText != null
+                && !string.IsNullOrWhiteSpace(feedbackText.text);
+            resetTimerText.gameObject.SetActive(!feedbackVisible);
             resetTimerText.transform.SetAsLastSibling();
 
             ConfigureFinalRaycasts();

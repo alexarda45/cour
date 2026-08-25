@@ -23,8 +23,6 @@ public static class OceanRescueBuilder
     private const string WatchAdTextPath = ArtRoot + "WatchAdText.png";
     private const string NoThanksTextPath = ArtRoot + "NoThanksText.png";
     private const string TrimmedArtRoot = ArtRoot + "Trimmed/";
-    private const string FeedbackFontPath =
-        "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
     private const byte VisibleAlphaThreshold = 8;
     private const int TrimPaddingPixels = 4;
     private static readonly Vector4 PreviewPanelBorder =
@@ -212,19 +210,12 @@ public static class OceanRescueBuilder
             false);
         continueText.gameObject.SetActive(true);
 
-        TMP_FontAsset feedbackFont =
-            AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FeedbackFontPath);
-        TMP_Text feedback = ConfigureFeedbackText(
-            GetOrMoveRect(popup, "FeedbackText"),
-            feedbackFont);
-
         panel.rectTransform.SetSiblingIndex(0);
         title.rectTransform.SetSiblingIndex(1);
         continueText.rectTransform.SetSiblingIndex(2);
         previewPanelRect.SetSiblingIndex(3);
         watchButtonRect.SetSiblingIndex(4);
         noThanksButtonRect.SetSiblingIndex(5);
-        feedback.rectTransform.SetSiblingIndex(6);
 
         OceanRescueUI ui = GetOrAdd<OceanRescueUI>(overlay.gameObject);
         SerializedObject uiSerialized = new SerializedObject(ui);
@@ -240,7 +231,6 @@ public static class OceanRescueBuilder
         previewRoots.GetArrayElementAtIndex(2).objectReferenceValue = previewRight;
         uiSerialized.FindProperty("watchAdButton").objectReferenceValue = watchButton;
         uiSerialized.FindProperty("noThanksButton").objectReferenceValue = noThanksButton;
-        uiSerialized.FindProperty("feedbackText").objectReferenceValue = feedback;
         uiSerialized.ApplyModifiedPropertiesWithoutUndo();
 
         OceanRescueController controller = GetSingleController(gameManager);
@@ -268,7 +258,6 @@ public static class OceanRescueBuilder
         rewardedIcon.raycastTarget = false;
         watchText.raycastTarget = false;
         noThanksText.raycastTarget = false;
-        feedback.gameObject.SetActive(false);
         overlay.gameObject.SetActive(false);
 
         EditorUtility.SetDirty(ui);
@@ -349,40 +338,6 @@ public static class OceanRescueBuilder
         }
 
         return rect;
-    }
-
-    private static TMP_Text ConfigureFeedbackText(
-        RectTransform rect,
-        TMP_FontAsset font)
-    {
-        Image oldImage = rect.GetComponent<Image>();
-        if (oldImage != null)
-        {
-            UnityEngine.Object.DestroyImmediate(oldImage);
-        }
-
-        ConfigureCentered(rect, new Vector2(0f, -700f), new Vector2(760f, 80f));
-        TextMeshProUGUI text = GetOrAdd<TextMeshProUGUI>(rect.gameObject);
-        text.text = "Ad unavailable. Try again.";
-        text.font = font;
-        if (font != null)
-        {
-            text.fontSharedMaterial = font.material;
-        }
-
-        text.fontSize = 38f;
-        text.fontStyle = FontStyles.Bold;
-        text.color = new Color(0.82f, 0.98f, 1f, 1f);
-        text.alignment = TextAlignmentOptions.Center;
-        text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.overflowMode = TextOverflowModes.Overflow;
-        text.raycastTarget = false;
-
-        Shadow shadow = GetOrAdd<Shadow>(rect.gameObject);
-        shadow.effectColor = new Color(0f, 0.05f, 0.16f, 0.75f);
-        shadow.effectDistance = new Vector2(0f, -3f);
-        shadow.useGraphicAlpha = true;
-        return text;
     }
 
     private static void ConfigureButton(Button button, Graphic target)

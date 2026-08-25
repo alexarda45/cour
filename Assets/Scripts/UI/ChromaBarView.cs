@@ -22,6 +22,7 @@ namespace ChromaBlast
         private static readonly Vector2 PopButtonSize = new Vector2(154f, 54f);
         private const string BlossomPopVisualName = "BlossomPopVisual";
         private const float BlossomPopVisualScale = 1.18f;
+        private const float CandyPopVisualScale = 1.12f;
 
         [SerializeField] private ChromaColor color;
         [SerializeField] private Slider slider;
@@ -327,7 +328,10 @@ namespace ChromaBlast
                     Color transparentWhite = new Color(1f, 1f, 1f, 0f);
                     buttonImage.color = transparentWhite;
                     buttonImage.canvasRenderer.SetColor(transparentWhite);
-                    ConfigureBlossomPopVisual(sprite);
+                    float visualScale = activeTheme.ThemeType == ThemeType.Candy
+                        ? CandyPopVisualScale
+                        : BlossomPopVisualScale;
+                    ConfigureBlossomPopVisual(sprite, visualScale);
                 }
                 else
                 {
@@ -349,7 +353,7 @@ namespace ChromaBlast
             }
         }
 
-        private void ConfigureBlossomPopVisual(Sprite sprite)
+        private void ConfigureBlossomPopVisual(Sprite sprite, float visualScale)
         {
             if (blossomPopVisual == null)
             {
@@ -376,7 +380,7 @@ namespace ChromaBlast
             visualRect.anchorMax = visualRect.anchorMin;
             visualRect.pivot = new Vector2(0.5f, 0.5f);
             visualRect.anchoredPosition = Vector2.zero;
-            visualRect.sizeDelta = PopButtonSize * BlossomPopVisualScale;
+            visualRect.sizeDelta = PopButtonSize * visualScale;
             visualRect.localRotation = Quaternion.identity;
             visualRect.localScale = Vector3.one;
 

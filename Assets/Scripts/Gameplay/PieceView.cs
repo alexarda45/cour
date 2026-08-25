@@ -21,7 +21,8 @@ namespace ChromaBlast
         private const float DragVisualScale = 1.03f;
         private const float PickupRiseDuration = 0.025f;
         private const float PickupSettleDuration = 0.009f;
-        private const float BoardHoverMovementGain = 1.60f;
+        private const float BoardHoverMovementGain = 1f;
+        private const float DragVisualResponseTime = 0.025f;
         private const float InvalidHoverTintStrength = 0.16f;
         private const float PickupShadowAlphaMultiplier = 1.16f;
         private static readonly Color InvalidHoverTint = new Color(1f, 0.34f, 0.38f, 1f);
@@ -51,14 +52,13 @@ namespace ChromaBlast
         private bool pickupShadowEmphasisActive;
         private bool dragGridOriginInitialized;
         private Vector2Int lastDragGridOrigin;
-        private bool dragMappingInitialized;
-        private bool boardHoverMappingActive;
-        private Vector2 dragMappingPointerAnchor;
-        private Vector2 dragMappingPieceAnchor;
+        private bool dragVisualTargetInitialized;
+        private Vector2 dragVisualTargetLocalPosition;
+        private int lastDragVisualFollowerFrame = -1;
         private bool hasCurrentSnappedBoardOrigin;
         private Vector2Int currentSnappedBoardOrigin;
         private bool currentSnappedBoardOriginValid;
-        private Vector2 currentAcceleratedHoverScreenPosition;
+        private Vector2 currentAuthoritativeHoverScreenPosition;
         private static readonly ProfilerMarker PointerDownMarker = new ProfilerMarker("ChromaBlast.Input.PointerDown");
         private static readonly ProfilerMarker DragUpdateMarker = new ProfilerMarker("ChromaBlast.Input.DragUpdate");
         private static readonly ProfilerMarker PointerUpPlacementMarker = new ProfilerMarker("ChromaBlast.Input.PointerUpToTryPlaceComplete");
@@ -96,8 +96,8 @@ namespace ChromaBlast
             StopPickupScale();
             ResetHeldVisualState();
             dragGridOriginInitialized = false;
-            dragMappingInitialized = false;
-            boardHoverMappingActive = false;
+            dragVisualTargetInitialized = false;
+            lastDragVisualFollowerFrame = -1;
             hasCurrentSnappedBoardOrigin = false;
             currentSnappedBoardOriginValid = false;
         }
@@ -197,8 +197,8 @@ namespace ChromaBlast
             lastPreviewLineCount = -1;
             lastPreviewPureLineCount = -1;
             dragGridOriginInitialized = false;
-            dragMappingInitialized = false;
-            boardHoverMappingActive = false;
+            dragVisualTargetInitialized = false;
+            lastDragVisualFollowerFrame = -1;
             hasCurrentSnappedBoardOrigin = false;
             currentSnappedBoardOriginValid = false;
             originalParent = (RectTransform)transform.parent;
@@ -271,7 +271,7 @@ namespace ChromaBlast
             bool hasPreviewOrigin = hasCurrentSnappedBoardOrigin;
             bool previewWasValid = currentSnappedBoardOriginValid;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Vector2 commitAcceleratedPosition = currentAcceleratedHoverScreenPosition;
+            Vector2 commitAuthoritativePosition = currentAuthoritativeHoverScreenPosition;
             Vector2 commitVisualPosition = RectTransformUtility.WorldToScreenPoint(
                 eventData.pressEventCamera,
                 RectTransform.position);
@@ -280,7 +280,7 @@ namespace ChromaBlast
                 : new Vector2Int(int.MinValue, int.MinValue);
             Debug.Log(
                 $"[PieceView Placement] rawPointer={eventData.position} "
-                + $"acceleratedPosition={commitAcceleratedPosition} "
+                + $"authoritativePosition={commitAuthoritativePosition} "
                 + $"visualPosition={commitVisualPosition} liftOffset={dragLiftPixels:F1} "
                 + $"BoardHoverMovementGain={BoardHoverMovementGain:F2} "
                 + $"previewOrigin={previewOrigin} commitOrigin={commitOrigin} "
@@ -291,8 +291,8 @@ namespace ChromaBlast
 
             dragging = false;
             dragGridOriginInitialized = false;
-            dragMappingInitialized = false;
-            boardHoverMappingActive = false;
+            dragVisualTargetInitialized = false;
+            lastDragVisualFollowerFrame = -1;
             hasCurrentSnappedBoardOrigin = false;
             currentSnappedBoardOriginValid = false;
             gameManager.Board.ClearPreview();
@@ -381,6 +381,8 @@ namespace ChromaBlast
             StopPickupScale();
             ResetHeldVisualState();
             dragGridOriginInitialized = false;
+            dragVisualTargetInitialized = false;
+            lastDragVisualFollowerFrame = -1;
             hasCurrentSnappedBoardOrigin = false;
             currentSnappedBoardOriginValid = false;
             transform.DOKill();
@@ -416,26 +418,54 @@ namespace ChromaBlast
             if (dragLayer == null)
             {
                 RectTransform.position = liftedPosition;
-                dragMappingInitialized = false;
-                boardHoverMappingActive = false;
+                dragVisualTargetInitialized = false;
+                lastDragVisualFollowerFrame = -1;
                 return liftedPosition;
             }
 
             RectTransformUtility.ScreenPointToLocalPointInRectangle(dragLayer, liftedPosition, eventData.pressEventCamera, out Vector2 localPoint);
-            if (immediate || !dragMappingInitialized || boardHoverMappingActive != pointerOverBoard)
+            dragVisualTargetLocalPosition = localPoint;
+            dragVisualTargetInitialized = true;
+            UpdateDragVisualFollower(immediate);
+
+            // Board authority is always the raw pointer plus the single approved lift.
+            // The visual follower is presentation-only and must never influence snapping.
+            return liftedPosition;
+        }
+
+        private void LateUpdate()
+        {
+            if (dragging && dragVisualTargetInitialized && lastDragVisualFollowerFrame != Time.frameCount)
             {
-                dragMappingPointerAnchor = localPoint;
-                dragMappingPieceAnchor = immediate ? localPoint : RectTransform.anchoredPosition;
-                dragMappingInitialized = true;
-                boardHoverMappingActive = pointerOverBoard;
+                UpdateDragVisualFollower(false);
+            }
+        }
+
+        private void UpdateDragVisualFollower(bool immediate)
+        {
+            if (RectTransform == null || !dragVisualTargetInitialized)
+            {
+                return;
             }
 
-            float movementGain = boardHoverMappingActive ? BoardHoverMovementGain : 1f;
-            RectTransform.anchoredPosition = dragMappingPieceAnchor
-                + (localPoint - dragMappingPointerAnchor) * movementGain;
-            return RectTransformUtility.WorldToScreenPoint(
-                eventData.pressEventCamera,
-                RectTransform.position);
+            lastDragVisualFollowerFrame = Time.frameCount;
+            if (immediate || DragVisualResponseTime <= 0f)
+            {
+                RectTransform.anchoredPosition = dragVisualTargetLocalPosition;
+                return;
+            }
+
+            // Reaches more than 99% of the target within the declared response time,
+            // without overshoot and independently of the display frame rate.
+            float blend = 1f - Mathf.Exp(-5f * Time.unscaledDeltaTime / DragVisualResponseTime);
+            RectTransform.anchoredPosition = Vector2.LerpUnclamped(
+                RectTransform.anchoredPosition,
+                dragVisualTargetLocalPosition,
+                blend);
+            if ((RectTransform.anchoredPosition - dragVisualTargetLocalPosition).sqrMagnitude <= 0.01f)
+            {
+                RectTransform.anchoredPosition = dragVisualTargetLocalPosition;
+            }
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -465,7 +495,7 @@ namespace ChromaBlast
                     eventData.pressEventCamera)
                 : new Vector2Int(int.MinValue, int.MinValue);
             bool canPlace = pointerOverBoard && Instance != null && gameManager.Board.CanPlace(Instance, origin);
-            currentAcceleratedHoverScreenPosition = hoverScreenPosition;
+            currentAuthoritativeHoverScreenPosition = hoverScreenPosition;
             hasCurrentSnappedBoardOrigin = pointerOverBoard;
             currentSnappedBoardOrigin = origin;
             currentSnappedBoardOriginValid = canPlace;

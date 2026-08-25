@@ -95,6 +95,16 @@ namespace ChromaBlast
             public int filledCells;
         }
 
+        private struct AssistDifficultyProfile
+        {
+            public int easeScore;
+            public int totalPlacementOptions;
+            public int minimumPlacementOptions;
+            public int immediateClears;
+            public int setup;
+            public int cleanliness;
+        }
+
         [SerializeField] private TraySlot[] traySlots;
         [SerializeField] private PieceView piecePrefab;
         [SerializeField] private BlockView pieceBlockPrefab;
@@ -108,7 +118,8 @@ namespace ChromaBlast
         private bool generationEmptyCellsReady;
         private int generationEmptyCells;
         private const int OpenPureSetupDiversityBonus = 2500;
-        private const int RelaxFlowDeepCandidateCount = 4;
+        private const int RelaxFlowCandidateCapacity = 32;
+        private const int RelaxFlowDeepEvaluationCount = 4;
         private const int LateChallengeCandidateCapacity = GameConstants.GuaranteedSetAttempts;
         private static readonly string[] ContinuationShapeIds =
         {
@@ -126,20 +137,26 @@ namespace ChromaBlast
         private PieceInstance[] continuationShapeCandidates;
         private readonly PieceInstance[] constructedContinuationSet = new PieceInstance[GameConstants.TraySize];
         private readonly PieceInstance[][] relaxFlowCandidateSets =
-        {
-            new PieceInstance[GameConstants.TraySize],
-            new PieceInstance[GameConstants.TraySize],
-            new PieceInstance[GameConstants.TraySize],
-            new PieceInstance[GameConstants.TraySize]
-        };
-        private readonly int[] relaxFlowCandidateScores = new int[RelaxFlowDeepCandidateCount];
-        private readonly int[] relaxFlowCandidateFitCounts = new int[RelaxFlowDeepCandidateCount];
+            CreatePieceSetBuffers(RelaxFlowCandidateCapacity);
+        private readonly int[] relaxFlowCandidateScores = new int[RelaxFlowCandidateCapacity];
+        private readonly int[] relaxFlowCandidateFitCounts = new int[RelaxFlowCandidateCapacity];
         private int relaxFlowCandidateCount;
         private PieceInstance[][] lateChallengeCandidateSets;
         private readonly int[] lateChallengeCandidateScores = new int[LateChallengeCandidateCapacity];
         private readonly int[] lateChallengeCandidateEaseScores = new int[LateChallengeCandidateCapacity];
         private readonly int[] lateChallengeCandidateFitCounts = new int[LateChallengeCandidateCapacity];
         private int lateChallengeCandidateCount;
+
+        private static PieceInstance[][] CreatePieceSetBuffers(int count)
+        {
+            PieceInstance[][] buffers = new PieceInstance[count][];
+            for (int i = 0; i < count; i++)
+            {
+                buffers[i] = new PieceInstance[GameConstants.TraySize];
+            }
+
+            return buffers;
+        }
 
         public bool LastGenerationReliefBiased { get; private set; }
 
@@ -401,11 +418,18 @@ namespace ChromaBlast
             PieceInstance[] candidate,
             out int totalPlacementOptions)
         {
-            totalPlacementOptions = 0;
+            AssistDifficultyProfile profile = CalculateAssistDifficultyProfile(board, candidate);
+            totalPlacementOptions = profile.totalPlacementOptions;
+            return profile.easeScore;
+        }
+
+        private AssistDifficultyProfile CalculateAssistDifficultyProfile(
+            BoardManager board,
+            PieceInstance[] candidate)
+        {
+            AssistDifficultyProfile result = default;
             int minimumPlacementOptions = int.MaxValue;
-            int immediateClears = 0;
             int setupValue = 0;
-            int cleanliness = 0;
             for (int i = 0; i < candidate.Length; i++)
             {
                 if (candidate[i] == null)
@@ -415,11 +439,11 @@ namespace ChromaBlast
                 }
 
                 GenerationPlacementProfile profile = GetGenerationPlacementProfile(board, candidate[i]);
-                totalPlacementOptions += profile.placementOptions;
+                result.totalPlacementOptions += profile.placementOptions;
                 minimumPlacementOptions = Mathf.Min(minimumPlacementOptions, profile.placementOptions);
-                immediateClears += profile.clearOpportunities;
+                result.immediateClears += profile.clearOpportunities;
                 setupValue += profile.bestSetupScore;
-                cleanliness += profile.bestCleanlinessScore;
+                result.cleanliness += profile.bestCleanlinessScore;
             }
 
             if (minimumPlacementOptions == int.MaxValue)
@@ -427,11 +451,14 @@ namespace ChromaBlast
                 minimumPlacementOptions = 0;
             }
 
-            return totalPlacementOptions * 120
+            result.minimumPlacementOptions = minimumPlacementOptions;
+            result.setup = setupValue;
+            result.easeScore = result.totalPlacementOptions * 120
                 + minimumPlacementOptions * 520
-                + immediateClears * 820
+                + result.immediateClears * 820
                 + setupValue * 4
-                + cleanliness * 2;
+                + result.cleanliness * 2;
+            return result;
         }
 
         private PieceInstance[] SelectLateChallengeCandidate(
@@ -491,37 +518,40 @@ namespace ChromaBlast
         {
             if (classicTrayNumber <= 11)
             {
-                lowerPercentile = 0.55f;
-                upperPercentile = 0.75f;
+                lowerPercentile = 0.35f;
+                upperPercentile = 0.55f;
             }
             else if (classicTrayNumber <= 15)
             {
-                lowerPercentile = 0.40f;
-                upperPercentile = 0.60f;
+                lowerPercentile = 0.20f;
+                upperPercentile = 0.40f;
             }
             else if (classicTrayNumber <= 20)
             {
-                lowerPercentile = 0.25f;
-                upperPercentile = 0.45f;
+                lowerPercentile = 0.05f;
+                upperPercentile = 0.25f;
             }
             else
             {
-                lowerPercentile = 0.15f;
-                upperPercentile = 0.35f;
+                lowerPercentile = 0f;
+                upperPercentile = 0.15f;
             }
         }
 
-        private void ConsiderRelaxFlowCandidate(PieceInstance[] candidateSet, int score, int fitCount)
+        private void ConsiderRelaxFlowCandidate(
+            PieceInstance[] candidateSet,
+            int score,
+            int fitCount)
         {
             int insertAt = relaxFlowCandidateCount;
-            if (insertAt >= RelaxFlowDeepCandidateCount)
+            if (insertAt >= RelaxFlowCandidateCapacity)
             {
-                insertAt = RelaxFlowDeepCandidateCount - 1;
+                insertAt = RelaxFlowCandidateCapacity - 1;
             }
 
             while (insertAt > 0 && score > relaxFlowCandidateScores[insertAt - 1])
             {
-                if (insertAt < RelaxFlowDeepCandidateCount)
+                if (insertAt < RelaxFlowCandidateCapacity)
                 {
                     relaxFlowCandidateScores[insertAt] = relaxFlowCandidateScores[insertAt - 1];
                     relaxFlowCandidateFitCounts[insertAt] = relaxFlowCandidateFitCounts[insertAt - 1];
@@ -534,8 +564,8 @@ namespace ChromaBlast
                 insertAt--;
             }
 
-            if (insertAt >= RelaxFlowDeepCandidateCount
-                || (relaxFlowCandidateCount >= RelaxFlowDeepCandidateCount
+            if (insertAt >= RelaxFlowCandidateCapacity
+                || (relaxFlowCandidateCount >= RelaxFlowCandidateCapacity
                     && score <= relaxFlowCandidateScores[insertAt]))
             {
                 return;
@@ -544,7 +574,7 @@ namespace ChromaBlast
             relaxFlowCandidateScores[insertAt] = score;
             relaxFlowCandidateFitCounts[insertAt] = fitCount;
             Array.Copy(candidateSet, relaxFlowCandidateSets[insertAt], GameConstants.TraySize);
-            if (relaxFlowCandidateCount < RelaxFlowDeepCandidateCount)
+            if (relaxFlowCandidateCount < RelaxFlowCandidateCapacity)
             {
                 relaxFlowCandidateCount++;
             }
@@ -552,6 +582,7 @@ namespace ChromaBlast
 
         private PieceInstance[] SelectRelaxFlowCandidate(
             BoardManager board,
+            PieceInstance[] baselineSet,
             int classicTrayNumber,
             out int selectedScore,
             out int selectedFitCount)
@@ -564,10 +595,18 @@ namespace ChromaBlast
             GenerationFlowProjection selectedProjection = default;
             int selectedFlowScore = 0;
             bool selectedMatchedFlowTarget = false;
+            AssistDifficultyProfile baselineProfile = CalculateAssistDifficultyProfile(board, baselineSet);
 
-            for (int i = 0; i < relaxFlowCandidateCount; i++)
+            int evaluationCount = Mathf.Min(relaxFlowCandidateCount, RelaxFlowDeepEvaluationCount);
+            for (int i = 0; i < evaluationCount; i++)
             {
                 PieceInstance[] candidate = relaxFlowCandidateSets[i];
+                AssistDifficultyProfile candidateProfile = CalculateAssistDifficultyProfile(board, candidate);
+                if (!IsComparableAssistDifficulty(baselineProfile, candidateProfile))
+                {
+                    continue;
+                }
+
                 GenerationFlowProjection projection = board.EvaluateGenerationFlowProjection(candidate);
                 int flowScore = CalculateFlowContinuityScore(
                     board,
@@ -692,45 +731,48 @@ namespace ChromaBlast
         {
             if (classicTrayNumber <= 4)
             {
-                return 1.35f;
+                return 2.70f;
             }
 
-            if (classicTrayNumber <= 6)
-            {
-                return 0.90f;
-            }
-
-            return classicTrayNumber <= 8 ? 0.45f : 0f;
+            if (classicTrayNumber <= 6) return 2.58f;
+            return classicTrayNumber <= 8 ? 1.28f : 0f;
         }
 
         private static float GetFlowAssistBoost(int classicTrayNumber)
         {
-            if (classicTrayNumber <= 4)
-            {
-                return 1.90f;
-            }
-
             if (classicTrayNumber <= 6)
             {
-                return 1.40f;
+                return 2.30f;
             }
 
-            return classicTrayNumber <= 8 ? 1.10f : 1f;
+            return classicTrayNumber <= 8 ? 1.70f : 1f;
         }
 
         private static float GetRelaxFlowProjectionWeight(int classicTrayNumber)
         {
-            if (classicTrayNumber <= 4)
+            if (classicTrayNumber <= 6)
             {
                 return 1f;
             }
 
-            if (classicTrayNumber <= 6)
-            {
-                return 0.75f;
-            }
+            return classicTrayNumber <= 8 ? 0.95f : 0f;
+        }
 
-            return classicTrayNumber <= 8 ? 0.40f : 0f;
+        private static bool IsComparableAssistDifficulty(
+            AssistDifficultyProfile baseline,
+            AssistDifficultyProfile candidate)
+        {
+            int easeTolerance = Mathf.Max(250, Mathf.RoundToInt(Mathf.Abs(baseline.easeScore) * 0.02f));
+            int placementTolerance = Mathf.Max(1, Mathf.CeilToInt(baseline.totalPlacementOptions * 0.02f));
+            int setupTolerance = Mathf.Max(60, Mathf.RoundToInt(Mathf.Abs(baseline.setup) * 0.02f));
+            int cleanlinessTolerance = Mathf.Max(60, Mathf.RoundToInt(Mathf.Abs(baseline.cleanliness) * 0.02f));
+            return candidate.easeScore >= baseline.easeScore - easeTolerance
+                && candidate.easeScore <= baseline.easeScore + easeTolerance
+                && candidate.totalPlacementOptions <= baseline.totalPlacementOptions + placementTolerance
+                && candidate.minimumPlacementOptions <= baseline.minimumPlacementOptions + 1
+                && candidate.immediateClears <= baseline.immediateClears
+                && candidate.setup <= baseline.setup + setupTolerance
+                && candidate.cleanliness <= baseline.cleanliness + cleanlinessTolerance;
         }
 
         // If none of the ordinary 56 candidates services an early intent, build
@@ -836,7 +878,8 @@ namespace ChromaBlast
                 flexiblePiece.shapeId,
                 flexiblePiece.color);
             fitCount = CountFittingPieces(board, constructedContinuationSet);
-            return fitCount > 0;
+            CalculateTrayEaseScore(board, constructedContinuationSet, out int totalPlacementOptions);
+            return fitCount >= 2 && totalPlacementOptions >= 5;
         }
 
         private void EnsureContinuationShapeCandidates()
@@ -1021,8 +1064,9 @@ namespace ChromaBlast
                     {
                         // Inspect all existing 56 legal candidates. If a strict
                         // target-bound A -> B clear with a flexible third exists,
-                        // only that reusable subset may win this early tray.
-                        CalculateFlowContinuityScore(
+                        // choose the strongest proven relationship in that fair
+                        // subset rather than merely the ordinary top board score.
+                        int continuityScore = CalculateFlowContinuityScore(
                             board,
                             candidateSet,
                             GetFlowContinuityStrength(classicTrayNumber),
@@ -1030,12 +1074,27 @@ namespace ChromaBlast
                             out bool hasStrongContinuation);
                         if (hasStrongContinuation)
                         {
-                            ConsiderRelaxFlowCandidate(candidateSet, score, fitCount);
+                            AssistDifficultyProfile candidateProfile = CalculateAssistDifficultyProfile(
+                                board,
+                                candidateSet);
+                            if (fitCount >= 2 && candidateProfile.totalPlacementOptions >= 5)
+                            {
+                                ConsiderRelaxFlowCandidate(
+                                    candidateSet,
+                                    score + continuityScore,
+                                    fitCount);
+                            }
                         }
                     }
                     else if (useRelaxFlow)
                     {
-                        ConsiderRelaxFlowCandidate(candidateSet, score, fitCount);
+                        AssistDifficultyProfile candidateProfile = CalculateAssistDifficultyProfile(
+                            board,
+                            candidateSet);
+                        if (fitCount >= 2 && candidateProfile.totalPlacementOptions >= 5)
+                        {
+                            ConsiderRelaxFlowCandidate(candidateSet, score, fitCount);
+                        }
                     }
                     if (score > bestScore)
                     {
@@ -1052,20 +1111,42 @@ namespace ChromaBlast
 
                 if (boundedContinuationGate && relaxFlowCandidateCount > 0)
                 {
-                    // Candidate storage is sorted by the ordinary board score,
-                    // so this is the normal best winner inside the strict early
-                    // strong-continuation subset rather than a manufactured tray.
-                    bestSet ??= new PieceInstance[GameConstants.TraySize];
-                    Array.Copy(relaxFlowCandidateSets[0], bestSet, GameConstants.TraySize);
-                    bestScore = relaxFlowCandidateScores[0];
-                    bestFitCount = relaxFlowCandidateFitCounts[0];
-                    selectedByStrongContinuationGate = true;
+                    AssistDifficultyProfile baselineProfile = CalculateAssistDifficultyProfile(board, bestSet);
+                    int selectedContinuationIndex = -1;
+                    int continuationScanCount = classicTrayNumber <= 4
+                        ? relaxFlowCandidateCount
+                        : Mathf.Min(relaxFlowCandidateCount, 24);
+                    for (int i = 0; i < continuationScanCount; i++)
+                    {
+                        AssistDifficultyProfile candidateProfile = CalculateAssistDifficultyProfile(
+                            board,
+                            relaxFlowCandidateSets[i]);
+                        if (IsComparableAssistDifficulty(baselineProfile, candidateProfile))
+                        {
+                            selectedContinuationIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (selectedContinuationIndex >= 0)
+                    {
+                        bestSet ??= new PieceInstance[GameConstants.TraySize];
+                        Array.Copy(
+                            relaxFlowCandidateSets[selectedContinuationIndex],
+                            bestSet,
+                            GameConstants.TraySize);
+                        bestScore = relaxFlowCandidateScores[selectedContinuationIndex];
+                        bestFitCount = relaxFlowCandidateFitCounts[selectedContinuationIndex];
+                        selectedByStrongContinuationGate = true;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    LastGenerationMatchedFlowTarget = true;
+                        LastGenerationMatchedFlowTarget = true;
 #endif
+                    }
                 }
-                else if (boundedContinuationGate && bestSet != null)
+
+                if (boundedContinuationGate && !selectedByStrongContinuationGate && bestSet != null)
                 {
+                    AssistDifficultyProfile baselineProfile = CalculateAssistDifficultyProfile(board, bestSet);
                     ContinuationConstructionMarker.Begin();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     long constructionTimingStart = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1081,22 +1162,28 @@ namespace ChromaBlast
                     ContinuationConstructionMarker.End();
                     if (constructed)
                     {
-                        Array.Copy(constructedContinuationSet, bestSet, GameConstants.TraySize);
-                        bestFitCount = constructedFitCount;
-                        bestScore = ScoreSetForBoard(
+                        AssistDifficultyProfile constructedProfile = CalculateAssistDifficultyProfile(
                             board,
-                            bestSet,
-                            bestFitCount,
-                            difficulty01,
-                            loopAdjustedAssist,
-                            runPressure01,
-                            consecutiveReliefBiasedTrays,
-                            classicTrayNumber);
-                        selectedByStrongContinuationGate = true;
+                            constructedContinuationSet);
+                        if (IsComparableAssistDifficulty(baselineProfile, constructedProfile))
+                        {
+                            Array.Copy(constructedContinuationSet, bestSet, GameConstants.TraySize);
+                            bestFitCount = constructedFitCount;
+                            bestScore = ScoreSetForBoard(
+                                board,
+                                bestSet,
+                                bestFitCount,
+                                difficulty01,
+                                loopAdjustedAssist,
+                                runPressure01,
+                                consecutiveReliefBiasedTrays,
+                                classicTrayNumber);
+                            selectedByStrongContinuationGate = true;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                        LastGenerationMatchedFlowTarget = true;
-                        LastGenerationConstructedContinuation = true;
+                            LastGenerationMatchedFlowTarget = true;
+                            LastGenerationConstructedContinuation = true;
 #endif
+                        }
                     }
                 }
 
@@ -1108,6 +1195,7 @@ namespace ChromaBlast
 #endif
                     PieceInstance[] relaxedSelection = SelectRelaxFlowCandidate(
                         board,
+                        bestSet,
                         classicTrayNumber,
                         out int relaxedScore,
                         out int relaxedFitCount);
@@ -1970,30 +2058,30 @@ namespace ChromaBlast
             int classicTrayNumber,
             BoardOccupancyState occupancyState)
         {
-            if (GameSession.SelectedMode != GameMode.Classic
-                || occupancyState == BoardOccupancyState.Critical)
+            if (GameSession.SelectedMode != GameMode.Classic)
             {
                 return 1f;
             }
 
+            if (classicTrayNumber >= 9) return 0f;
+            if (occupancyState == BoardOccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            if (classicTrayNumber <= 8) return 0.60f;
-            return classicTrayNumber <= 11 ? 0.20f : 0f;
+            return 0.60f;
         }
 
         private static float GetLatePureSetupScale(
             int classicTrayNumber,
             BoardOccupancyState occupancyState)
         {
-            if (GameSession.SelectedMode != GameMode.Classic
-                || occupancyState == BoardOccupancyState.Critical)
+            if (GameSession.SelectedMode != GameMode.Classic)
             {
                 return 1f;
             }
 
+            if (classicTrayNumber >= 9) return 0f;
+            if (occupancyState == BoardOccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            if (classicTrayNumber <= 8) return 0.60f;
-            return classicTrayNumber <= 11 ? 0.20f : 0f;
+            return 0.60f;
         }
 
         private static int GetOpenDiversityBonus(int classicTrayNumber)

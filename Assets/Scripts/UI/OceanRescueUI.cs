@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,7 +9,6 @@ namespace ChromaBlast
     {
         private const float OpenDuration = 0.25f;
         private const float CloseDuration = 0.18f;
-        private const float FeedbackDuration = 2.0f;
         private const float PreviewTileSize = 106f;
         private const float PreviewTilePitch = 112f;
         private static readonly Vector2 GardenArtworkSize = new Vector2(1080f, 1349f);
@@ -29,11 +27,9 @@ namespace ChromaBlast
         [SerializeField] private RectTransform[] previewPieceRoots;
         [SerializeField] private Button watchAdButton;
         [SerializeField] private Button noThanksButton;
-        [SerializeField] private TMP_Text feedbackText;
 
         private OceanRescueController controller;
         private Coroutine transitionRoutine;
-        private Coroutine feedbackRoutine;
         private bool listenersAdded;
         private float dimTargetAlpha = 0.65f;
         private Image themedArtworkImage;
@@ -103,7 +99,6 @@ namespace ChromaBlast
         public void Show(PieceInstance[] rescueSet)
         {
             StopTransition();
-            StopFeedback();
 
             if (root == null)
             {
@@ -115,7 +110,6 @@ namespace ChromaBlast
             ConfigureThemeArtwork();
             RenderPreview(rescueSet);
             SetButtonsInteractable(true);
-            SetFeedbackVisible(false);
 
             SetImageAlpha(dimBackground, 0f);
             if (popupCanvasGroup != null)
@@ -136,7 +130,6 @@ namespace ChromaBlast
         public void CloseAnimated(Action onComplete)
         {
             StopTransition();
-            StopFeedback();
             SetButtonsInteractable(false);
 
             if (root == null || !root.activeSelf)
@@ -151,8 +144,6 @@ namespace ChromaBlast
         public void HideImmediate()
         {
             StopTransition();
-            StopFeedback();
-            SetFeedbackVisible(false);
             SetButtonsInteractable(false);
 
             if (popupCanvasGroup != null)
@@ -190,15 +181,6 @@ namespace ChromaBlast
         public void ShowAdUnavailable()
         {
             SetButtonsInteractable(true);
-            StopFeedback();
-            if (feedbackText == null)
-            {
-                return;
-            }
-
-            feedbackText.text = "Ad unavailable. Try again.";
-            SetFeedbackVisible(true);
-            feedbackRoutine = StartCoroutine(HideFeedbackAfterDelay());
         }
 
         private IEnumerator OpenRoutine()
@@ -268,19 +250,6 @@ namespace ChromaBlast
             transitionRoutine = null;
             HideImmediate();
             onComplete?.Invoke();
-        }
-
-        private IEnumerator HideFeedbackAfterDelay()
-        {
-            float elapsed = 0f;
-            while (elapsed < FeedbackDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                yield return null;
-            }
-
-            SetFeedbackVisible(false);
-            feedbackRoutine = null;
         }
 
         private void RenderPreview(PieceInstance[] rescueSet)
@@ -513,25 +482,6 @@ namespace ChromaBlast
 
             StopCoroutine(transitionRoutine);
             transitionRoutine = null;
-        }
-
-        private void StopFeedback()
-        {
-            if (feedbackRoutine == null)
-            {
-                return;
-            }
-
-            StopCoroutine(feedbackRoutine);
-            feedbackRoutine = null;
-        }
-
-        private void SetFeedbackVisible(bool visible)
-        {
-            if (feedbackText != null)
-            {
-                feedbackText.gameObject.SetActive(visible);
-            }
         }
 
         private static void SetImageAlpha(Image image, float alpha)
