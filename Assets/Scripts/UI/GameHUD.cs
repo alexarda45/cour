@@ -637,11 +637,6 @@ namespace ChromaBlast
             ShowFeedback("DOESN'T FIT", new Color(1f, 0.18f, 0.28f, 1f), 0.7f);
         }
 
-        public void ShowNoFitPiece()
-        {
-            ShowFeedback("NO SPACE", new Color(1f, 0.62f, 0.18f, 1f), 0.55f);
-        }
-
         public void ShowUsePopToContinue(ChromaColor color)
         {
             Color popColor = ChromaPalette.GetColor(color);
@@ -782,11 +777,6 @@ namespace ChromaBlast
             }
 
             ShowFeedback(message, color, 0.36f);
-        }
-
-        public void ShowSmartMoveHint()
-        {
-            ShowFeedback("TRY HERE", new Color(0.65f, 1f, 0.26f, 1f), 0.58f);
         }
 
         public void ShowTrayCompleteBonus(int scoreAdded)
@@ -4873,9 +4863,7 @@ namespace ChromaBlast
         private void ShowFeedback(string message, Color color, float duration)
         {
             bool functionalHint = message == "DOESN'T FIT"
-                || message == "NO SPACE"
-                || message == "POP HAS NO TILES"
-                || message == "TRY HERE";
+                || message == "POP HAS NO TILES";
             if (!functionalHint)
             {
                 return;

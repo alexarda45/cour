@@ -10,6 +10,9 @@ namespace ChromaBlast
 {
     public class GameManager : MonoBehaviour
     {
+        private const int ScoreCoinThresholdSize = 2000;
+        private const int CoinsPerScoreThreshold = 4;
+
         private static readonly ProfilerMarker TryPlaceMarker = new ProfilerMarker("ChromaBlast.Gameplay.TryPlacePiece");
         private static readonly ProfilerMarker ResolveClearsMarker = new ProfilerMarker("ChromaBlast.Gameplay.ResolveClears");
         private static readonly ProfilerMarker ScoreProcessingMarker = new ProfilerMarker("ChromaBlast.Gameplay.ScoreProcessing");
@@ -54,6 +57,7 @@ namespace ChromaBlast
         private bool applicationFocused = true;
         private bool lifecycleSavePerformedWhileInactive;
         private bool revivedThisRound;
+        private bool gameOverRegisteredThisRound;
         private float blitzTimeRemaining;
         private float noMoveCheckTimer;
         private float moveHintTimer;
@@ -77,7 +81,7 @@ namespace ChromaBlast
             ? consecutiveReliefBiasedTrays
             : 0;
 #endif
-        private int nextScoreMilestone;
+        private int rewardedScoreCoinThresholdCount;
         private int roundStartingBestScore;
         private int liveBestScore;
         private bool achievedNewBestThisRun;
@@ -312,6 +316,7 @@ namespace ChromaBlast
             active = true;
             paused = false;
             revivedThisRound = false;
+            gameOverRegisteredThisRound = false;
             undoSnapshot = null;
             undoAvailable = false;
             blitzTimeRemaining = GameConstants.BlitzStartSeconds;
@@ -326,7 +331,7 @@ namespace ChromaBlast
             traysGeneratedThisRun = 0;
             consecutiveReliefBiasedTrays = 0;
             pieceSpawner?.ResetFlowState();
-            nextScoreMilestone = GetInitialScoreMilestone();
+            rewardedScoreCoinThresholdCount = 0;
             hud?.ResetNewBestFeedback();
 
             int seed = mode == GameMode.Daily && SaveManager.Instance != null
@@ -791,7 +796,6 @@ namespace ChromaBlast
         public void ShowNoFitPieceHint()
         {
             ResetMoveHint();
-            hud?.ShowNoFitPiece();
         }
 
         public void ClearMoveHint()
@@ -811,12 +815,8 @@ namespace ChromaBlast
 
         public void ShowSmartMoveHint()
         {
-            if (!CanInteract)
-            {
-                return;
-            }
-
-            hud?.ShowSmartMoveHint();
+            // The board/piece pulse remains the move hint. No automatic helper
+            // copy is displayed over gameplay.
         }
 
         private void UpdateMissionAfterMove(ClearResult clearResult)
@@ -963,10 +963,12 @@ namespace ChromaBlast
             traysGeneratedThisRun = Mathf.Max(0, run.traysGeneratedThisRun);
             consecutiveReliefBiasedTrays = Mathf.Max(0, run.consecutiveReliefBiasedTrays);
             UpdatePopRechargeRequirement();
-            nextScoreMilestone = run.nextScoreMilestone > 0
-                ? run.nextScoreMilestone
-                : GetNextScoreMilestoneAbove(scoreManager.Score);
+            // A restored run was saved only after its score rewards were processed.
+            // Deriving the paid count from that authoritative score avoids both
+            // duplicate grants and a SaveData schema change.
+            rewardedScoreCoinThresholdCount = Mathf.Max(0, scoreManager.Score / ScoreCoinThresholdSize);
             revivedThisRound = run.revivedThisRound;
+            gameOverRegisteredThisRound = revivedThisRound;
             oceanRescueController?.RestoreConsumedState(
                 run.oceanRescueConsumedThisRound);
             active = true;
@@ -1010,7 +1012,7 @@ namespace ChromaBlast
                 movesSinceClear = movesSinceClear,
                 traysGeneratedThisRun = traysGeneratedThisRun,
                 consecutiveReliefBiasedTrays = consecutiveReliefBiasedTrays,
-                nextScoreMilestone = nextScoreMilestone,
+                nextScoreMilestone = GetNextScoreCoinThreshold(),
                 revivedThisRound = revivedThisRound,
                 oceanRescueConsumedThisRound =
                     oceanRescueController != null
@@ -1027,6 +1029,7 @@ namespace ChromaBlast
 
             oceanRescueController?.HideForGameOver();
             int finalScore = scoreManager.Score;
+            int scoreCoinsCaughtUp = TryAwardScoreMilestones(showPresentation: false);
             hud?.CompleteScoreCountUp(finalScore);
             active = false;
             paused = false;
@@ -1046,17 +1049,27 @@ namespace ChromaBlast
             int previousRankPoints = save == null ? 0 : save.Data.rankPoints;
             int previousHighScore = roundStartingBestScore;
             bool newBest = achievedNewBestThisRun && finalScore > roundStartingBestScore && finalScore > 0;
-            int coinsEarned = 0;
+            int coinsEarned = scoreCoinsCaughtUp;
             int dailyMedalCoins = 0;
             string dailyMedalName = string.Empty;
             if (save != null)
             {
-                coinsEarned = save.RegisterGameOver(currentMode, finalScore, newBest);
-                if (currentMode == GameMode.Daily && save.TryClaimDailyMedalReward(finalScore, out DailyMedalInfo medal, out dailyMedalCoins))
+                if (!gameOverRegisteredThisRound)
                 {
-                    dailyMedalName = medal.name;
-                    coinsEarned += dailyMedalCoins;
-                    AnalyticsManager.Instance?.RecordDailyMedalClaimed(medal.name, finalScore, dailyMedalCoins);
+                    coinsEarned += save.RegisterGameOver(currentMode, finalScore, newBest);
+                    gameOverRegisteredThisRound = true;
+                    if (currentMode == GameMode.Daily && save.TryClaimDailyMedalReward(finalScore, out DailyMedalInfo medal, out dailyMedalCoins))
+                    {
+                        dailyMedalName = medal.name;
+                        coinsEarned += dailyMedalCoins;
+                        AnalyticsManager.Instance?.RecordDailyMedalClaimed(medal.name, finalScore, dailyMedalCoins);
+                    }
+                }
+                else if (save.TrySetHighScore(currentMode, finalScore))
+                {
+                    // A rewarded continue belongs to the same run. Preserve its
+                    // improved final score without paying the run a second time.
+                    save.RequestSave();
                 }
             }
 
@@ -1431,77 +1444,38 @@ namespace ChromaBlast
             return Mathf.Max(0, bonus);
         }
 
-        private void TryAwardScoreMilestones()
+        private int TryAwardScoreMilestones(bool showPresentation = true)
         {
             if (scoreManager == null || SaveManager.Instance == null)
             {
-                return;
+                return 0;
             }
 
-            if (nextScoreMilestone <= 0)
+            int expectedThresholdCount = Mathf.Max(0, scoreManager.Score / ScoreCoinThresholdSize);
+            int newlyCrossedThresholds = expectedThresholdCount - rewardedScoreCoinThresholdCount;
+            if (newlyCrossedThresholds <= 0)
             {
-                nextScoreMilestone = GetNextScoreMilestoneAbove(scoreManager.Score);
+                return 0;
             }
 
-            int awardedCoins = 0;
-            int highestMilestone = 0;
-            int guard = 0;
-            while (scoreManager.Score >= nextScoreMilestone && guard < 12)
-            {
-                highestMilestone = nextScoreMilestone;
-                awardedCoins += CalculateScoreMilestoneCoins(nextScoreMilestone);
-                nextScoreMilestone = GetNextScoreMilestone(nextScoreMilestone);
-                guard++;
-            }
-
-            if (awardedCoins <= 0)
-            {
-                return;
-            }
-
+            rewardedScoreCoinThresholdCount = expectedThresholdCount;
+            int awardedCoins = newlyCrossedThresholds * CoinsPerScoreThreshold;
+            int highestMilestone = expectedThresholdCount * ScoreCoinThresholdSize;
             SaveManager.Instance.AddCoins(awardedCoins);
-            hud?.ShowScoreMilestone(highestMilestone, awardedCoins);
-            AudioManager.Instance?.PlayPure();
-            Haptics.Light();
+            if (showPresentation)
+            {
+                hud?.ShowScoreMilestone(highestMilestone, awardedCoins);
+                AudioManager.Instance?.PlayPure();
+                Haptics.Light();
+            }
+
             AnalyticsManager.Instance?.RecordScoreMilestone(currentMode, highestMilestone, awardedCoins);
+            return awardedCoins;
         }
 
-        private int GetInitialScoreMilestone()
+        private int GetNextScoreCoinThreshold()
         {
-            return 1000;
-        }
-
-        private int GetNextScoreMilestoneAbove(int score)
-        {
-            int milestone = GetInitialScoreMilestone();
-            int guard = 0;
-            while (score >= milestone && guard < 24)
-            {
-                milestone = GetNextScoreMilestone(milestone);
-                guard++;
-            }
-
-            return milestone;
-        }
-
-        private int GetNextScoreMilestone(int currentMilestone)
-        {
-            if (currentMilestone < 5000)
-            {
-                return currentMilestone + 1000;
-            }
-
-            if (currentMilestone < 10000)
-            {
-                return currentMilestone + 2500;
-            }
-
-            return currentMilestone + 5000;
-        }
-
-        private int CalculateScoreMilestoneCoins(int milestoneScore)
-        {
-            return Mathf.Clamp(6 + milestoneScore / 500, 8, 60);
+            return (rewardedScoreCoinThresholdCount + 1) * ScoreCoinThresholdSize;
         }
 
         private float GetPieceDifficulty()
@@ -1702,7 +1676,7 @@ namespace ChromaBlast
                 }
             }
 
-            hud.Refresh(currentMode, scoreManager, liveBestScore, blitzTimeRemaining, undoAvailable, nextScoreMilestone, GetPopTargetCounts());
+            hud.Refresh(currentMode, scoreManager, liveBestScore, blitzTimeRemaining, undoAvailable, GetNextScoreCoinThreshold(), GetPopTargetCounts());
             RefreshMissionHud();
             pieceSpawner?.RefreshFitHints(board);
             }

@@ -568,12 +568,9 @@ namespace ChromaBlast
 
         public int RegisterGameOver(GameMode mode, int score, bool newRecordThisRun)
         {
-            bool newRecord = newRecordThisRun && score > 0;
             TrySetHighScore(mode, score);
             Data.gamesPlayed++;
             Data.rankPoints += Mathf.Max(12, score / 8);
-            int coinsEarned = CalculateGameOverCoins(mode, score, newRecord);
-            Data.coins = Mathf.Max(0, Data.coins) + coinsEarned;
             Data.gameOversSinceInterstitial++;
 
             if (mode == GameMode.Daily)
@@ -583,7 +580,7 @@ namespace ChromaBlast
             }
 
             RequestSave();
-            return coinsEarned;
+            return 0;
         }
 
         public void RegisterMoveStats(ClearResult result, int chain, int scoreAdded)
@@ -1305,26 +1302,6 @@ namespace ChromaBlast
         public int GetCoins()
         {
             return Mathf.Max(0, Data.coins);
-        }
-
-        private int CalculateGameOverCoins(GameMode mode, int score, bool newRecord)
-        {
-            int coinsEarned = Mathf.Max(2, score / 260);
-            if (newRecord)
-            {
-                coinsEarned += 12;
-            }
-
-            if (mode == GameMode.Daily)
-            {
-                coinsEarned += Mathf.Min(20, Mathf.Max(0, Data.dailyStreak) * 2);
-            }
-            else if (mode == GameMode.Blitz)
-            {
-                coinsEarned += 3;
-            }
-
-            return Mathf.Clamp(coinsEarned, 2, 140);
         }
 
         public string GetDailyDateKey()
