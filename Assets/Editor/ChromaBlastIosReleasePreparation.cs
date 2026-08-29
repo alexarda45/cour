@@ -1,6 +1,11 @@
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
+#if UNITY_IOS
+using System.IO;
+using UnityEditor.Callbacks;
+using UnityEditor.iOS.Xcode;
+#endif
 
 public static class ChromaBlastIosReleasePreparation
 {
@@ -10,6 +15,10 @@ public static class ChromaBlastIosReleasePreparation
     private const string BuildNumber = "1";
     private const string MinimumIosVersion = "15.0";
     private const string ApprovedAppIconPath = "Assets/Art/AppIcon.png";
+    private const string IosAdMobApplicationId =
+        "ca-app-pub-4005517283749109~1562398609";
+    private const string TrackingUsageDescription =
+        "We use device identifiers to provide and measure ads and help keep Chroma Blast free.";
 
     [MenuItem("Chroma Blast/Prepare iOS Release - Phase 1")]
     public static void ApplyPhaseOne()
@@ -60,4 +69,32 @@ public static class ChromaBlastIosReleasePreparation
 
         PlayerSettings.SetIcons(NamedBuildTarget.iOS, icons, IconKind.Application);
     }
+
+#if UNITY_IOS
+    [PostProcessBuild(1000)]
+    private static void ConfigureIosPrivacy(BuildTarget target, string buildPath)
+    {
+        if (target != BuildTarget.iOS)
+        {
+            return;
+        }
+
+        string plistPath = Path.Combine(buildPath, "Info.plist");
+        PlistDocument plist = new PlistDocument();
+        plist.ReadFromFile(plistPath);
+
+        // PlistDocument stores dictionary keys uniquely; SetString replaces any earlier
+        // value instead of appending a duplicate GADApplicationIdentifier entry.
+        plist.root.SetString("GADApplicationIdentifier", IosAdMobApplicationId);
+        plist.root.SetString("NSUserTrackingUsageDescription", TrackingUsageDescription);
+        File.WriteAllText(plistPath, plist.WriteToString());
+
+        string projectPath = PBXProject.GetPBXProjectPath(buildPath);
+        PBXProject project = new PBXProject();
+        project.ReadFromFile(projectPath);
+        string mainTargetGuid = project.GetUnityMainTargetGuid();
+        project.AddFrameworkToProject(mainTargetGuid, "AppTrackingTransparency.framework", false);
+        project.WriteToFile(projectPath);
+    }
+#endif
 }

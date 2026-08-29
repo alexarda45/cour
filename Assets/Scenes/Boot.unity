@@ -326,6 +326,9 @@ MonoBehaviour:
   levelPlayAndroidAppKey: 2742ca74d
   rewardedAdUnitId: fz596syemm3avhxr
   interstitialAdUnitId: bz4eazetmgma3q4n
+  levelPlayIosAppKey: 27db2c3d5
+  rewardedIosAdUnitId: oyewra0n47ewsop1
+  interstitialIosAdUnitId: iyeyqfjq7pci59dk
 --- !u!81 &1477513779
 AudioListener:
   m_ObjectHideFlags: 0
