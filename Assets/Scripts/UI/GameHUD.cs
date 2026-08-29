@@ -2683,8 +2683,8 @@ namespace ChromaBlast
             BuildToggleRow("MusicRow", "Music", "music", false, true);
             BuildToggleRow("SoundRow", "Sound", "sound", true, false);
             BuildToggleRow("VibrationRow", "Vibration", "vibration", false, false);
-            BuildStatusRow("PrivacyRow", "Privacy Policy", "privacy", string.Empty, HandleSettingsPrivacy);
-            BuildStatusRow("TermsRow", "Terms & Conditions", "terms", string.Empty, HandleSettingsTerms);
+            BuildStatusRow("PrivacyRow", "Privacy Options", "privacy", "OPEN", HandleSettingsPrivacy);
+            BuildStatusRow("TermsRow", "Privacy Policy", "terms", "OPEN", HandleSettingsTerms);
             BuildStatusRow("AboutRow", "About / Version", "about", $"v{Application.version}", HandleSettingsAbout);
             bool ocean = IsOceanSettingsTheme(ThemeCatalog.Current);
             BuildActionRow("RestartRow", candy || garden || ocean || desert || blossom || beach ? "Restart Game" : "Restart", "restart", "RESTART", true);
@@ -5143,12 +5143,14 @@ namespace ChromaBlast
 
         private void HandleSettingsPrivacy()
         {
-            Debug.Log("[Settings] Privacy Policy selected. No production URL is configured yet.");
+            AudioManager.Instance?.PlayClick();
+            PrivacyManager.GetOrCreate().ShowPrivacyOptions();
         }
 
         private void HandleSettingsTerms()
         {
-            Debug.Log("[Settings] Terms & Conditions selected. No production URL is configured yet.");
+            AudioManager.Instance?.PlayClick();
+            PrivacyManager.GetOrCreate().OpenPrivacyPolicy();
         }
 
         private void HandleSettingsAbout()

@@ -40,10 +40,6 @@ namespace ChromaBlast
         [SerializeField] private TutorialOverlay tutorialOverlay;
         [SerializeField] private OceanRescueController oceanRescueController;
 
-        [Header("Ads")]
-        [SerializeField] private float interstitialCooldownSeconds = 180f;
-        [SerializeField] private int interstitialEveryGameOvers = 3;
-
         [Header("Assist")]
         [SerializeField] private float moveHintDelaySeconds = 5.5f;
 
@@ -58,6 +54,8 @@ namespace ChromaBlast
         private bool lifecycleSavePerformedWhileInactive;
         private bool revivedThisRound;
         private bool gameOverRegisteredThisRound;
+        private bool interstitialCompletionPending;
+        private bool interstitialRunRecordedThisRound;
         private float blitzTimeRemaining;
         private float noMoveCheckTimer;
         private float moveHintTimer;
@@ -143,6 +141,8 @@ namespace ChromaBlast
             }
 
             gameOverUI.Initialize(this);
+            gameOverUI.PresentationCompleted -= HandleGameOverPresentationCompleted;
+            gameOverUI.PresentationCompleted += HandleGameOverPresentationCompleted;
             tutorialOverlay?.Initialize(this);
             DisableTutorialForRelease();
             pieceSpawner.Initialize(this);
@@ -158,6 +158,11 @@ namespace ChromaBlast
             if (scoreManager != null)
             {
                 scoreManager.Changed -= RefreshHud;
+            }
+
+            if (gameOverUI != null)
+            {
+                gameOverUI.PresentationCompleted -= HandleGameOverPresentationCompleted;
             }
 
             if (!lifecycleSavePerformedWhileInactive)
@@ -317,6 +322,8 @@ namespace ChromaBlast
             paused = false;
             revivedThisRound = false;
             gameOverRegisteredThisRound = false;
+            interstitialCompletionPending = false;
+            interstitialRunRecordedThisRound = false;
             undoSnapshot = null;
             undoAvailable = false;
             blitzTimeRemaining = GameConstants.BlitzStartSeconds;
@@ -1079,20 +1086,28 @@ namespace ChromaBlast
             int xpGained = Mathf.Max(0, rankPoints - previousRankPoints);
             int totalCoins = save == null ? coinsEarned : save.GetCoins();
             bool canRevive = !revivedThisRound && currentMode != GameMode.Daily;
+            interstitialCompletionPending = !interstitialRunRecordedThisRound
+                && (currentMode == GameMode.Classic || currentMode == GameMode.Blitz);
+            interstitialRunRecordedThisRound = true;
+            if (interstitialCompletionPending)
+            {
+                AdManager.Instance?.RecordEligibleRunCompleted(currentMode);
+            }
             gameOverUI.Show(currentMode, finalScore, highScore, canRevive, xpGained, rankPoints, coinsEarned, totalCoins, roundLinesCleared, roundPureLines, roundPops, roundBestChain, previousRankPoints, dailyMedalCoins, dailyMedalName, newBest);
             RefreshHud();
 
-            if (save != null && save.CanShowInterstitial(interstitialCooldownSeconds, interstitialEveryGameOvers))
+            save?.FlushPendingSaveImmediate();
+        }
+
+        private void HandleGameOverPresentationCompleted()
+        {
+            if (!interstitialCompletionPending)
             {
-                bool interstitialShown = AdManager.Instance != null
-                    && AdManager.Instance.ShowInterstitial();
-                if (interstitialShown)
-                {
-                    save.MarkInterstitialShown();
-                }
+                return;
             }
 
-            save?.FlushPendingSaveImmediate();
+            interstitialCompletionPending = false;
+            AdManager.Instance?.TryShowInterstitialAfterGameOverPresentation();
         }
 
         private void EvaluateGameOver()

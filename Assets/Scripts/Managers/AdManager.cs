@@ -11,14 +11,27 @@ namespace ChromaBlast
         private const float InitializationRetryMaxDelaySeconds = 60f;
         private const float RewardedLoadRetryDelaySeconds = 15f;
         private const float ClosedRewardCallbackGraceSeconds = 5f;
+        private const long InterstitialCooldownSeconds = 180L;
+        private const long RewardedProtectionSeconds = 120L;
+        private const int FirstRunProtectionCount = 2;
+        private const int MinimumInterstitialRunThreshold = 2;
+        private const int MaximumInterstitialRunThreshold = 3;
+        private const string InterstitialPlacementName = "between_runs";
+        private const string EligibleRunsTotalKey = "ChromaBlast.Ads.EligibleRunsTotal.v1";
+        private const string RunsSinceInterstitialKey = "ChromaBlast.Ads.RunsSinceInterstitial.v1";
+        private const string NextInterstitialThresholdKey = "ChromaBlast.Ads.NextInterstitialThreshold.v1";
+        private const string LastInterstitialUnixKey = "ChromaBlast.Ads.LastInterstitialUnix.v1";
+        private const string LastRewardedUnixKey = "ChromaBlast.Ads.LastRewardedUnix.v1";
 
         public static AdManager Instance { get; private set; }
 
         [Header("LevelPlay Rewarded Ads")]
         [SerializeField] private string levelPlayAndroidAppKey;
         [SerializeField] private string rewardedAdUnitId;
+        [SerializeField] private string interstitialAdUnitId;
 
         private LevelPlayRewardedAd rewardedAd;
+        private LevelPlayInterstitialAd interstitialAd;
         private Action pendingReward;
         private Action pendingRewardFailure;
         private Coroutine initializationRetryRoutine;
@@ -35,9 +48,22 @@ namespace ChromaBlast
         private bool rewardDeliveredForCurrentShow;
         private bool initializationFailureLogged;
         private bool loadFailureLogged;
+        private bool privacyAllowsAds;
+        private bool interstitialEventsSubscribed;
+        private bool interstitialLoadPending;
+        private bool interstitialDisplaying;
+        private bool interstitialShowPending;
+        private int eligibleCompletedRunsTotal;
+        private int completedRunsSinceInterstitial;
+        private int nextInterstitialThreshold;
+        private long lastSuccessfulInterstitialUnix;
+        private long lastSuccessfulRewardedUnix;
 
         public bool IsRewardedConfigured => IsValidConfigurationValue(levelPlayAndroidAppKey)
             && IsValidConfigurationValue(rewardedAdUnitId);
+
+        public bool IsInterstitialConfigured => IsValidConfigurationValue(levelPlayAndroidAppKey)
+            && IsValidConfigurationValue(interstitialAdUnitId);
 
         public bool IsRewardedReady
         {
@@ -45,10 +71,13 @@ namespace ChromaBlast
             {
                 if (Application.isEditor
                     || Application.platform != RuntimePlatform.Android
+                    || !privacyAllowsAds
                     || !IsRewardedConfigured
                     || !levelPlayInitialized
                     || rewardedAd == null
                     || rewardedDisplaying
+                    || interstitialDisplaying
+                    || interstitialShowPending
                     || pendingReward != null)
                 {
                     return false;
@@ -68,11 +97,12 @@ namespace ChromaBlast
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            LoadInterstitialCadence();
         }
 
         private void Start()
         {
-            InitializeAds();
+            PrivacyManager.GetOrCreate().ApplyCurrentPrivacyStateToAds(this);
         }
 
         private void OnDestroy()
@@ -85,11 +115,18 @@ namespace ChromaBlast
             CancelInitializationRetry();
             UnsubscribeInitializationEvents();
             UnsubscribeRewardedEvents();
+            UnsubscribeInterstitialEvents();
 
             if (rewardedAd != null)
             {
                 rewardedAd.DestroyAd();
                 rewardedAd = null;
+            }
+
+            if (interstitialAd != null)
+            {
+                interstitialAd.DestroyAd();
+                interstitialAd = null;
             }
 
             pendingReward = null;
@@ -108,7 +145,10 @@ namespace ChromaBlast
             Action onUnavailableOrFailed)
         {
             if (onRewardCompleted == null
+                || !privacyAllowsAds
                 || !IsRewardedReady
+                || interstitialDisplaying
+                || interstitialShowPending
                 || pendingReward != null)
             {
                 return false;
@@ -146,6 +186,11 @@ namespace ChromaBlast
                 return;
             }
 
+            if (!privacyAllowsAds)
+            {
+                return;
+            }
+
             if (!initializationStarted)
             {
                 if (initializationRetryRoutine == null)
@@ -169,15 +214,67 @@ namespace ChromaBlast
             LoadRewardedAd();
         }
 
-        public bool ShowInterstitial()
+        public void RecordEligibleRunCompleted(GameMode mode)
         {
-            if (SaveManager.Instance != null && SaveManager.Instance.Data.removeAds)
+            if (mode != GameMode.Classic && mode != GameMode.Blitz)
             {
-                return false;
+                return;
             }
 
-            // Interstitial ads are intentionally unavailable in this LevelPlay rewarded-only adapter.
-            return false;
+            eligibleCompletedRunsTotal = Mathf.Max(0, eligibleCompletedRunsTotal) + 1;
+
+            if (eligibleCompletedRunsTotal <= FirstRunProtectionCount)
+            {
+                completedRunsSinceInterstitial = 0;
+                if (eligibleCompletedRunsTotal == FirstRunProtectionCount)
+                {
+                    nextInterstitialThreshold = ChooseNextInterstitialThreshold();
+                }
+
+                SaveInterstitialCadence();
+                return;
+            }
+
+            completedRunsSinceInterstitial = Mathf.Max(0, completedRunsSinceInterstitial) + 1;
+            EnsureValidInterstitialThreshold();
+            SaveInterstitialCadence();
+        }
+
+        public bool TryShowInterstitialAfterGameOverPresentation()
+        {
+            return TryShowInterstitialBetweenRuns();
+        }
+
+        public void ApplyPrivacyEligibility(bool allowAds)
+        {
+            privacyAllowsAds = allowAds;
+
+            if (!allowAds)
+            {
+                CancelInitializationRetry();
+                CancelRewardedLoadRetry();
+                interstitialShowPending = false;
+
+                if (!rewardedDisplaying)
+                {
+                    pendingReward = null;
+                    Action failure = pendingRewardFailure;
+                    pendingRewardFailure = null;
+                    failure?.Invoke();
+                }
+
+                return;
+            }
+
+            if (levelPlayInitialized)
+            {
+                LoadRewardedAd();
+                EnsureInterstitialCreatedAndLoaded();
+            }
+            else
+            {
+                InitializeAds();
+            }
         }
 
         private void InitializeAds()
@@ -185,6 +282,7 @@ namespace ChromaBlast
             if (initializationStarted
                 || levelPlayInitialized
                 || initializationRetryRoutine != null
+                || !privacyAllowsAds
                 || !IsRewardedConfigured
                 || Application.isEditor
                 || Application.platform != RuntimePlatform.Android)
@@ -234,6 +332,7 @@ namespace ChromaBlast
             }
 
             LoadRewardedAd();
+            EnsureInterstitialCreatedAndLoaded();
         }
 
         private void OnLevelPlayInitFailed(LevelPlayInitError error)
@@ -320,6 +419,7 @@ namespace ChromaBlast
         private void LoadRewardedAd()
         {
             if (!levelPlayInitialized
+                || !privacyAllowsAds
                 || rewardedAd == null
                 || rewardedLoadPending
                 || rewardedDisplaying
@@ -378,6 +478,9 @@ namespace ChromaBlast
             }
 
             rewardDeliveredForCurrentShow = true;
+            lastSuccessfulRewardedUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            PlayerPrefs.SetString(LastRewardedUnixKey, lastSuccessfulRewardedUnix.ToString());
+            PlayerPrefs.Save();
             CancelClosedRewardGracePeriod();
 
             Action rewardCompleted = pendingReward;
@@ -399,6 +502,219 @@ namespace ChromaBlast
             }
         }
 
+        private void EnsureInterstitialCreatedAndLoaded()
+        {
+            if (!privacyAllowsAds
+                || !levelPlayInitialized
+                || !IsInterstitialConfigured
+                || InterstitialsRemoved())
+            {
+                return;
+            }
+
+            if (interstitialAd == null)
+            {
+                interstitialAd = new LevelPlayInterstitialAd(interstitialAdUnitId.Trim());
+                SubscribeInterstitialEvents();
+            }
+
+            LoadInterstitialAd();
+        }
+
+        private void SubscribeInterstitialEvents()
+        {
+            if (interstitialAd == null || interstitialEventsSubscribed)
+            {
+                return;
+            }
+
+            interstitialAd.OnAdLoaded += OnInterstitialAdLoaded;
+            interstitialAd.OnAdLoadFailed += OnInterstitialAdLoadFailed;
+            interstitialAd.OnAdDisplayed += OnInterstitialAdDisplayed;
+            interstitialAd.OnAdDisplayFailed += OnInterstitialAdDisplayFailed;
+            interstitialAd.OnAdClosed += OnInterstitialAdClosed;
+            interstitialEventsSubscribed = true;
+        }
+
+        private void UnsubscribeInterstitialEvents()
+        {
+            if (interstitialAd == null || !interstitialEventsSubscribed)
+            {
+                return;
+            }
+
+            interstitialAd.OnAdLoaded -= OnInterstitialAdLoaded;
+            interstitialAd.OnAdLoadFailed -= OnInterstitialAdLoadFailed;
+            interstitialAd.OnAdDisplayed -= OnInterstitialAdDisplayed;
+            interstitialAd.OnAdDisplayFailed -= OnInterstitialAdDisplayFailed;
+            interstitialAd.OnAdClosed -= OnInterstitialAdClosed;
+            interstitialEventsSubscribed = false;
+        }
+
+        private void LoadInterstitialAd()
+        {
+            if (!privacyAllowsAds
+                || !levelPlayInitialized
+                || interstitialAd == null
+                || interstitialLoadPending
+                || interstitialDisplaying
+                || interstitialShowPending
+                || interstitialAd.IsAdReady()
+                || InterstitialsRemoved())
+            {
+                return;
+            }
+
+            interstitialLoadPending = true;
+            try
+            {
+                interstitialAd.LoadAd();
+            }
+            catch (Exception)
+            {
+                interstitialLoadPending = false;
+            }
+        }
+
+        private bool TryShowInterstitialBetweenRuns()
+        {
+            if (!CanAttemptInterstitialNow())
+            {
+                EnsureInterstitialCreatedAndLoaded();
+                return false;
+            }
+
+            interstitialShowPending = true;
+            try
+            {
+                interstitialAd.ShowAd(InterstitialPlacementName);
+                return true;
+            }
+            catch (Exception)
+            {
+                interstitialShowPending = false;
+                LoadInterstitialAd();
+                return false;
+            }
+        }
+
+        private bool CanAttemptInterstitialNow()
+        {
+            if (!privacyAllowsAds
+                || !levelPlayInitialized
+                || !IsInterstitialConfigured
+                || interstitialAd == null
+                || interstitialLoadPending
+                || interstitialDisplaying
+                || interstitialShowPending
+                || rewardedDisplaying
+                || pendingReward != null
+                || InterstitialsRemoved()
+                || !interstitialAd.IsAdReady()
+                || eligibleCompletedRunsTotal <= FirstRunProtectionCount
+                || completedRunsSinceInterstitial < nextInterstitialThreshold)
+            {
+                return false;
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (lastSuccessfulInterstitialUnix > 0L
+                && now - lastSuccessfulInterstitialUnix < InterstitialCooldownSeconds)
+            {
+                return false;
+            }
+
+            return lastSuccessfulRewardedUnix <= 0L
+                || now - lastSuccessfulRewardedUnix >= RewardedProtectionSeconds;
+        }
+
+        private void OnInterstitialAdLoaded(LevelPlayAdInfo adInfo)
+        {
+            interstitialLoadPending = false;
+        }
+
+        private void OnInterstitialAdLoadFailed(LevelPlayAdError error)
+        {
+            // Do not loop. The next eligible between-run attempt may request one new load.
+            interstitialLoadPending = false;
+        }
+
+        private void OnInterstitialAdDisplayed(LevelPlayAdInfo adInfo)
+        {
+            interstitialShowPending = false;
+            interstitialDisplaying = true;
+            completedRunsSinceInterstitial = 0;
+            nextInterstitialThreshold = ChooseNextInterstitialThreshold();
+            lastSuccessfulInterstitialUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            SaveInterstitialCadence();
+        }
+
+        private void OnInterstitialAdDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
+        {
+            interstitialShowPending = false;
+            interstitialDisplaying = false;
+            LoadInterstitialAd();
+        }
+
+        private void OnInterstitialAdClosed(LevelPlayAdInfo adInfo)
+        {
+            interstitialShowPending = false;
+            interstitialDisplaying = false;
+            LoadInterstitialAd();
+        }
+
+        private void LoadInterstitialCadence()
+        {
+            eligibleCompletedRunsTotal = Mathf.Max(0, PlayerPrefs.GetInt(EligibleRunsTotalKey, 0));
+            completedRunsSinceInterstitial = Mathf.Max(0, PlayerPrefs.GetInt(RunsSinceInterstitialKey, 0));
+            nextInterstitialThreshold = PlayerPrefs.GetInt(NextInterstitialThresholdKey, 0);
+            lastSuccessfulInterstitialUnix = ReadUnixTimestamp(LastInterstitialUnixKey);
+            lastSuccessfulRewardedUnix = ReadUnixTimestamp(LastRewardedUnixKey);
+
+            if (eligibleCompletedRunsTotal >= FirstRunProtectionCount)
+            {
+                EnsureValidInterstitialThreshold();
+                SaveInterstitialCadence();
+            }
+        }
+
+        private void SaveInterstitialCadence()
+        {
+            PlayerPrefs.SetInt(EligibleRunsTotalKey, eligibleCompletedRunsTotal);
+            PlayerPrefs.SetInt(RunsSinceInterstitialKey, completedRunsSinceInterstitial);
+            PlayerPrefs.SetInt(NextInterstitialThresholdKey, nextInterstitialThreshold);
+            PlayerPrefs.SetString(LastInterstitialUnixKey, lastSuccessfulInterstitialUnix.ToString());
+            PlayerPrefs.Save();
+        }
+
+        private void EnsureValidInterstitialThreshold()
+        {
+            if (nextInterstitialThreshold < MinimumInterstitialRunThreshold
+                || nextInterstitialThreshold > MaximumInterstitialRunThreshold)
+            {
+                nextInterstitialThreshold = ChooseNextInterstitialThreshold();
+            }
+        }
+
+        private static int ChooseNextInterstitialThreshold()
+        {
+            return UnityEngine.Random.Range(
+                MinimumInterstitialRunThreshold,
+                MaximumInterstitialRunThreshold + 1);
+        }
+
+        private static long ReadUnixTimestamp(string key)
+        {
+            return long.TryParse(PlayerPrefs.GetString(key, "0"), out long value)
+                ? Math.Max(0L, value)
+                : 0L;
+        }
+
+        private static bool InterstitialsRemoved()
+        {
+            return SaveManager.Instance != null && SaveManager.Instance.Data.removeAds;
+        }
+
         private IEnumerator ClearUnconfirmedRewardAfterGracePeriod()
         {
             yield return new WaitForSecondsRealtime(ClosedRewardCallbackGraceSeconds);
@@ -413,6 +729,7 @@ namespace ChromaBlast
         private void ScheduleRewardedLoadRetry()
         {
             if (!levelPlayInitialized
+                || !privacyAllowsAds
                 || rewardedAd == null
                 || rewardedLoadRetryRoutine != null)
             {
@@ -442,7 +759,7 @@ namespace ChromaBlast
 
         private void ScheduleInitializationRetry()
         {
-            if (levelPlayInitialized || initializationRetryRoutine != null)
+            if (!privacyAllowsAds || levelPlayInitialized || initializationRetryRoutine != null)
             {
                 return;
             }
@@ -485,6 +802,7 @@ namespace ChromaBlast
             applicationPaused = paused;
 
             if (!paused
+                && privacyAllowsAds
                 && !levelPlayInitialized
                 && !initializationStarted
                 && initializationRetryRoutine == null

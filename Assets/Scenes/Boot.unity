@@ -325,6 +325,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChromaBlast.AdManager
   levelPlayAndroidAppKey: 2742ca74d
   rewardedAdUnitId: fz596syemm3avhxr
+  interstitialAdUnitId: bz4eazetmgma3q4n
 --- !u!81 &1477513779
 AudioListener:
   m_ObjectHideFlags: 0
@@ -347,6 +348,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChromaBlast.AudioManager
   musicSource: {fileID: 1113381222}
   sfxSource: {fileID: 1479719911}
+  clearSfxSource: {fileID: 0}
+  comboVoiceSource: {fileID: 0}
   audioListener: {fileID: 1477513779}
   musicClip: {fileID: 0}
   clickClip: {fileID: 8300000, guid: 1b7a3197694c418f8f233e81a7e96318, type: 3}

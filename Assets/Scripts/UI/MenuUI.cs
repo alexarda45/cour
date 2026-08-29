@@ -10,7 +10,6 @@ namespace ChromaBlast
     public class MenuUI : MonoBehaviour
     {
         private const string OceanBackgroundPath = "Ocean/MainMenu/BG_MainMenu_New";
-        private const string OceanLogoPath = "Ocean/MainMenu/Logo_ChromaBlast_Menu";
         private const string ClassicButtonPath = "Ocean/MainMenu/Buttons/Button_Classic";
         private const string BlitzButtonPath = "Ocean/MainMenu/Buttons/Button_Blitz";
         private const string DailyButtonPath = "Ocean/MainMenu/Buttons/daily_transparent_same_size";
@@ -147,6 +146,7 @@ namespace ChromaBlast
         [SerializeField] private Button quitButton;
         [SerializeField] private TMP_Text highScoresText;
         [SerializeField] private RankProgressView rankProgressView;
+        [SerializeField] private Sprite brandLogoSprite;
         private Camera menuCamera;
         private Canvas menuLayerCanvas;
         private Image oceanBackgroundImage;
@@ -1863,12 +1863,12 @@ namespace ChromaBlast
             SetSettingsToggleText(settingsSoundButtonText, soundEnabled, romanian);
             SetSettingsToggleText(settingsHapticsButtonText, vibrationEnabled, romanian);
             SetButtonLabel(settingsLanguageButton, romanian ? "LIMBA\nRomână" : "LANGUAGE\nEnglish");
-            SetButtonLabel(settingsPrivacyButton, romanian ? "POLITICA DE CONFIDENTIALITATE\nÎn curând" : "PRIVACY POLICY\nComing Soon");
-            SetButtonLabel(settingsTermsButton, romanian ? "TERMENI SI CONDITII\nÎn curând" : "TERMS OF SERVICE\nComing Soon");
+            SetButtonLabel(settingsPrivacyButton, "OPEN");
+            SetButtonLabel(settingsTermsButton, "OPEN");
             SetButtonLabel(settingsCloseButton, romanian ? "INCHIDE" : "CLOSE");
             SetButtonLabel(settingsLanguageButton, romanian ? "Rom\u00E2n\u0103" : "English");
-            SetButtonLabel(settingsPrivacyButton, romanian ? "\u00CEn cur\u00E2nd" : "Coming Soon");
-            SetButtonLabel(settingsTermsButton, romanian ? "\u00CEn cur\u00E2nd" : "Coming Soon");
+            SetButtonLabel(settingsPrivacyButton, "OPEN");
+            SetButtonLabel(settingsTermsButton, "OPEN");
             SetButtonLabel(settingsAboutButton, romanian ? "DESCHIDE" : "OPEN");
             SetButtonLabel(settingsCloseButton, "X");
 
@@ -1876,8 +1876,8 @@ namespace ChromaBlast
             SetSettingsRowLabel("SoundRow", romanian ? "Sunet" : "Sound");
             SetSettingsRowLabel("VibrationRow", romanian ? "Vibra\u021Bii" : "Vibration");
             SetSettingsRowLabel("LanguageRow", romanian ? "Limb\u0103" : "Language");
-            SetSettingsRowLabel("PrivacyRow", romanian ? "Politica de confiden\u021Bialitate" : "Privacy Policy");
-            SetSettingsRowLabel("TermsRow", romanian ? "Termeni \u0219i condi\u021Bii" : "Terms and Conditions");
+            SetSettingsRowLabel("PrivacyRow", "Privacy Options");
+            SetSettingsRowLabel("TermsRow", "Privacy Policy");
             SetSettingsRowLabel("AboutRow", romanian ? "Despre" : "About");
 
             if (settingsTitleText != null)
@@ -2735,10 +2735,10 @@ namespace ChromaBlast
                 return;
             }
 
-            Sprite logoSprite = Resources.Load<Sprite>(OceanLogoPath);
+            Sprite logoSprite = brandLogoSprite;
             if (logoSprite == null)
             {
-                Debug.LogError($"Missing Ocean sprite at Resources path: {OceanLogoPath}");
+                Debug.LogError("Missing in-game brand logo sprite: Assets/Art/UI/Branding/ChromaBlastLogo_New.png");
                 return;
             }
 
@@ -5227,8 +5227,8 @@ namespace ChromaBlast
             settingsTitleText.color = new Color(0.91f, 1f, 1f, 1f);
             settingsTitleText.alignment = TextAlignmentOptions.Center;
 
-            settingsPrivacyButton = EnsureSettingsOptionButton(panel, "SettingsPrivacyButton", "PRIVACY POLICY\nComing Soon");
-            settingsTermsButton = EnsureSettingsOptionButton(panel, "SettingsTermsButton", "TERMS OF SERVICE\nComing Soon");
+            settingsPrivacyButton = EnsureSettingsOptionButton(panel, "SettingsPrivacyButton", "OPEN");
+            settingsTermsButton = EnsureSettingsOptionButton(panel, "SettingsTermsButton", "OPEN");
             settingsAboutButton = EnsureSettingsOptionButton(panel, "SettingsAboutButton", "OPEN");
 
             DisableLegacyTutorialSettings(panel);
@@ -5238,8 +5238,8 @@ namespace ChromaBlast
             BuildSettingsRow(panel, "MusicRow", "Music", "M", settingsPerformanceButton, true, 0);
             BuildSettingsRow(panel, "SoundRow", "Sound", "S", settingsSoundButton, true, 1);
             BuildSettingsRow(panel, "VibrationRow", "Vibration", "V", settingsHapticsButton, true, 2);
-            BuildSettingsRow(panel, "PrivacyRow", "Privacy Policy", "P", settingsPrivacyButton, false, 3);
-            BuildSettingsRow(panel, "TermsRow", "Terms and Conditions", "T", settingsTermsButton, false, 4);
+            BuildSettingsRow(panel, "PrivacyRow", "Privacy Options", "P", settingsPrivacyButton, true, 3);
+            BuildSettingsRow(panel, "TermsRow", "Privacy Policy", "T", settingsTermsButton, true, 4);
             BuildSettingsRow(panel, "AboutRow", "About", "i", settingsAboutButton, true, 5);
 
             Transform versionTransform = panel.Find("SettingsVersion");
@@ -5765,23 +5765,30 @@ namespace ChromaBlast
             WireButton(settingsSoundButton, ToggleMenuSound);
             WireButton(settingsHapticsButton, ToggleMenuHaptics);
             WireButton(settingsAboutButton, OpenSettingsAbout);
+            WireButton(settingsPrivacyButton, OpenPrivacyOptions);
+            WireButton(settingsTermsButton, OpenPrivacyPolicy);
 
             RectTransform settingsPanel = settingsRoot == null
                 ? null
                 : settingsRoot.transform.Find("SettingsPanel") as RectTransform;
             DisableSettingsLanguageUi(settingsPanel);
 
-            if (settingsPrivacyButton != null)
-            {
-                settingsPrivacyButton.onClick.RemoveAllListeners();
-                settingsPrivacyButton.interactable = false;
-            }
-
             if (settingsTermsButton != null)
             {
-                settingsTermsButton.onClick.RemoveAllListeners();
-                settingsTermsButton.interactable = false;
+                settingsTermsButton.interactable = true;
             }
+        }
+
+        private void OpenPrivacyOptions()
+        {
+            AudioManager.Instance?.PlayClick();
+            PrivacyManager.GetOrCreate().ShowPrivacyOptions();
+        }
+
+        private void OpenPrivacyPolicy()
+        {
+            AudioManager.Instance?.PlayClick();
+            PrivacyManager.GetOrCreate().OpenPrivacyPolicy();
         }
 
         private static void WireButton(Button button, UnityEngine.Events.UnityAction action)

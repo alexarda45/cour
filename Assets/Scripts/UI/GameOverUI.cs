@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Globalization;
 using TMPro;
@@ -8,6 +9,8 @@ namespace ChromaBlast
 {
     public class GameOverUI : MonoBehaviour
     {
+        public event Action PresentationCompleted;
+
         // Keep the loss feedback decisive: the player can restart within 0.46 seconds
         // of confirmation (impact + panel entrance + button reveal).
         private const float InitialImpactDuration = 0.12f;
@@ -248,6 +251,7 @@ namespace ChromaBlast
             SetScore(finalScore);
             RestoreFinalVisualState();
             entranceRoutine = null;
+            PresentationCompleted?.Invoke();
         }
 
         private void PrepareEntranceState()

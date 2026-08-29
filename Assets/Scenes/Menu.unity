@@ -6763,6 +6763,7 @@ MonoBehaviour:
   quitButton: {fileID: 1751955236}
   highScoresText: {fileID: 896585792}
   rankProgressView: {fileID: 1061899338}
+  brandLogoSprite: {fileID: 21300000, guid: 1c4a870dc7e34ca69512afa17dd61eb5, type: 3}
   mainMenuButtonColumn: {fileID: 0}
 --- !u!114 &1452509843
 MonoBehaviour:
