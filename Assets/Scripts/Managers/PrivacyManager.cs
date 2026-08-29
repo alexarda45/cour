@@ -31,6 +31,17 @@ namespace ChromaBlast
             public string errorMessage = string.Empty;
         }
 
+        [Serializable]
+        private sealed class IosPrivacyStatePayload
+        {
+            public bool flowCompleted = false;
+            public bool canRequestAds = false;
+            public bool privacyOptionsRequired = false;
+            public int attAuthorizationStatus = -1;
+            public int errorCode = 0;
+            public string errorMessage = string.Empty;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
@@ -107,6 +118,9 @@ namespace ChromaBlast
             {
                 Debug.LogWarning($"[Privacy] Google UMP privacy options could not open: {exception.Message}");
             }
+#elif UNITY_IOS && !UNITY_EDITOR
+            Debug.LogWarning(
+                "[Privacy] iOS privacy options are not available until the native CMP/ATT bridge is configured.");
 #else
             Debug.Log("[Privacy] Google UMP privacy options are available only on an Android device build.");
 #endif
@@ -145,6 +159,43 @@ namespace ChromaBlast
             }
         }
 
+#if UNITY_IOS && !UNITY_EDITOR
+        // Future native iOS CMP/ATT bridge entry point. Phase 1 deliberately leaves
+        // ads gated unless the bridge supplies an explicit completed, eligible state.
+        public void OnIosPrivacyStateUpdated(string json)
+        {
+            IosPrivacyStatePayload state = null;
+            try
+            {
+                state = JsonUtility.FromJson<IosPrivacyStatePayload>(json);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[Privacy] iOS privacy bridge returned an unreadable state: {exception.Message}");
+            }
+
+            if (state == null || !state.flowCompleted)
+            {
+                adsCanInitialize = false;
+                AdManager.Instance?.ApplyPrivacyEligibility(false);
+                Debug.LogWarning("[Privacy] iOS privacy flow is incomplete; ads remain unavailable.");
+                return;
+            }
+
+            consentFlowCompleted = true;
+            adsCanInitialize = state.canRequestAds;
+            privacyOptionsRequired = state.privacyOptionsRequired;
+            AdManager.Instance?.ApplyPrivacyEligibility(adsCanInitialize);
+
+            if (state.errorCode != 0)
+            {
+                Debug.LogWarning(
+                    $"[Privacy] iOS privacy flow completed with error {state.errorCode}: {state.errorMessage}. "
+                    + $"ATT status: {state.attAuthorizationStatus}. Ads permitted: {adsCanInitialize}.");
+            }
+        }
+#endif
+
         private void BeginConsentFlow()
         {
             if (consentFlowStarted)
@@ -168,6 +219,11 @@ namespace ChromaBlast
                 consentFlowCompleted = true;
                 Debug.LogWarning($"[Privacy] Google UMP could not start; ads remain unavailable: {exception.Message}");
             }
+#elif UNITY_IOS && !UNITY_EDITOR
+            // The native iOS CMP/ATT bridge is intentionally deferred. Keep the flow
+            // incomplete and LevelPlay gated rather than inventing a consent result.
+            Debug.LogWarning(
+                "[Privacy] iOS CMP/ATT bridge is not configured; ads remain unavailable.");
 #else
             consentFlowCompleted = true;
 #endif

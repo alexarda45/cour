@@ -25,10 +25,15 @@ namespace ChromaBlast
 
         public static AdManager Instance { get; private set; }
 
-        [Header("LevelPlay Rewarded Ads")]
+        [Header("LevelPlay Android Ads")]
         [SerializeField] private string levelPlayAndroidAppKey;
         [SerializeField] private string rewardedAdUnitId;
         [SerializeField] private string interstitialAdUnitId;
+
+        [Header("LevelPlay iOS Ads")]
+        [SerializeField] private string levelPlayIosAppKey;
+        [SerializeField] private string rewardedIosAdUnitId;
+        [SerializeField] private string interstitialIosAdUnitId;
 
         private LevelPlayRewardedAd rewardedAd;
         private LevelPlayInterstitialAd interstitialAd;
@@ -59,18 +64,18 @@ namespace ChromaBlast
         private long lastSuccessfulInterstitialUnix;
         private long lastSuccessfulRewardedUnix;
 
-        public bool IsRewardedConfigured => IsValidConfigurationValue(levelPlayAndroidAppKey)
-            && IsValidConfigurationValue(rewardedAdUnitId);
+        public bool IsRewardedConfigured => IsValidConfigurationValue(PlatformAppKey)
+            && IsValidConfigurationValue(PlatformRewardedAdUnitId);
 
-        public bool IsInterstitialConfigured => IsValidConfigurationValue(levelPlayAndroidAppKey)
-            && IsValidConfigurationValue(interstitialAdUnitId);
+        public bool IsInterstitialConfigured => IsValidConfigurationValue(PlatformAppKey)
+            && IsValidConfigurationValue(PlatformInterstitialAdUnitId);
 
         public bool IsRewardedReady
         {
             get
             {
                 if (Application.isEditor
-                    || Application.platform != RuntimePlatform.Android
+                    || !IsProductionAdsPlatform
                     || !privacyAllowsAds
                     || !IsRewardedConfigured
                     || !levelPlayInitialized
@@ -181,7 +186,7 @@ namespace ChromaBlast
 
         public void PrepareRewarded()
         {
-            if (Application.isEditor || Application.platform != RuntimePlatform.Android)
+            if (Application.isEditor || !IsProductionAdsPlatform)
             {
                 return;
             }
@@ -283,9 +288,9 @@ namespace ChromaBlast
                 || levelPlayInitialized
                 || initializationRetryRoutine != null
                 || !privacyAllowsAds
-                || !IsRewardedConfigured
+                || !IsPlatformInitializationConfigured
                 || Application.isEditor
-                || Application.platform != RuntimePlatform.Android)
+                || !IsProductionAdsPlatform)
             {
                 return;
             }
@@ -295,7 +300,7 @@ namespace ChromaBlast
 
             try
             {
-                LevelPlay.Init(levelPlayAndroidAppKey.Trim());
+                LevelPlay.Init(PlatformAppKey.Trim());
             }
             catch (Exception exception)
             {
@@ -327,7 +332,7 @@ namespace ChromaBlast
 
             if (rewardedAd == null)
             {
-                rewardedAd = new LevelPlayRewardedAd(rewardedAdUnitId.Trim());
+                rewardedAd = new LevelPlayRewardedAd(PlatformRewardedAdUnitId.Trim());
                 SubscribeRewardedEvents();
             }
 
@@ -514,7 +519,7 @@ namespace ChromaBlast
 
             if (interstitialAd == null)
             {
-                interstitialAd = new LevelPlayInterstitialAd(interstitialAdUnitId.Trim());
+                interstitialAd = new LevelPlayInterstitialAd(PlatformInterstitialAdUnitId.Trim());
                 SubscribeInterstitialEvents();
             }
 
@@ -821,6 +826,76 @@ namespace ChromaBlast
 
             StopCoroutine(closedRewardGraceRoutine);
             closedRewardGraceRoutine = null;
+        }
+
+        private static bool IsProductionAdsPlatform
+        {
+            get
+            {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
+
+        private string PlatformAppKey
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return levelPlayAndroidAppKey;
+#elif UNITY_IOS && !UNITY_EDITOR
+                return levelPlayIosAppKey;
+#else
+                return null;
+#endif
+            }
+        }
+
+        private string PlatformRewardedAdUnitId
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return rewardedAdUnitId;
+#elif UNITY_IOS && !UNITY_EDITOR
+                return rewardedIosAdUnitId;
+#else
+                return null;
+#endif
+            }
+        }
+
+        private string PlatformInterstitialAdUnitId
+        {
+            get
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return interstitialAdUnitId;
+#elif UNITY_IOS && !UNITY_EDITOR
+                return interstitialIosAdUnitId;
+#else
+                return null;
+#endif
+            }
+        }
+
+        private bool IsPlatformInitializationConfigured
+        {
+            get
+            {
+#if UNITY_IOS && !UNITY_EDITOR
+                return IsRewardedConfigured && IsInterstitialConfigured;
+#elif UNITY_ANDROID && !UNITY_EDITOR
+                // Preserve the established Android initialization gate exactly:
+                // Android can initialize when the app key and rewarded unit are valid.
+                return IsRewardedConfigured;
+#else
+                return false;
+#endif
+            }
         }
 
         private static bool IsValidConfigurationValue(string value)
