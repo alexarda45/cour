@@ -64,6 +64,14 @@ namespace ChromaBlast
         private long lastSuccessfulInterstitialUnix;
         private long lastSuccessfulRewardedUnix;
 
+#if UNITY_IOS && !UNITY_EDITOR
+        // TEMPORARY TESTFLIGHT REWARDED-AD DIAGNOSTIC. Remove with the iOS Rescue
+        // overlay once the iOS LevelPlay configuration has been verified.
+        private bool iosRewardedLoadRequested;
+        private bool iosRewardedShowRequested;
+        private string iosLastRewardedError = "None";
+#endif
+
         public bool IsRewardedConfigured => IsValidConfigurationValue(PlatformAppKey)
             && IsValidConfigurationValue(PlatformRewardedAdUnitId);
 
@@ -91,6 +99,23 @@ namespace ChromaBlast
                 return rewardedAd.IsAdReady();
             }
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        /// <summary>
+        /// Returns only safe, non-identifier rewarded-ad state for the temporary
+        /// TestFlight Rescue diagnostic. This has no effect on ad eligibility,
+        /// loading, display, or reward delivery.
+        /// </summary>
+        public string GetIosRewardedDiagnosticText()
+        {
+            return "Privacy CanRequestAds: " + privacyAllowsAds
+                + "\nLevelPlay initialized: " + levelPlayInitialized
+                + "\nRewarded load requested: " + iosRewardedLoadRequested
+                + "\nRewarded available: " + IsRewardedReady
+                + "\nShow requested: " + iosRewardedShowRequested
+                + "\nLast rewarded error: " + iosLastRewardedError;
+        }
+#endif
 
         private void Awake()
         {
@@ -149,6 +174,28 @@ namespace ChromaBlast
             Action onRewardCompleted,
             Action onUnavailableOrFailed)
         {
+#if UNITY_IOS && !UNITY_EDITOR
+            iosRewardedShowRequested = false;
+            iosLastRewardedError = "None";
+            bool rewardedAvailable = IsRewardedReady;
+            LogIosAdsDiagnostic($"Privacy CanRequestAds = {privacyAllowsAds}");
+            LogIosAdsDiagnostic($"Rewarded available = {rewardedAvailable}");
+            if (onRewardCompleted == null
+                || !privacyAllowsAds
+                || !rewardedAvailable
+                || interstitialDisplaying
+                || interstitialShowPending
+                || pendingReward != null)
+            {
+#if UNITY_IOS && !UNITY_EDITOR
+                LogIosAdsDiagnostic(
+                    $"Rewarded show unavailable: "
+                    + $"privacy={privacyAllowsAds}, configured={IsRewardedConfigured}, "
+                    + $"initialized={levelPlayInitialized}, loaded={rewardedAd != null && rewardedAd.IsAdReady()}.");
+#endif
+                return false;
+            }
+#else
             if (onRewardCompleted == null
                 || !privacyAllowsAds
                 || !IsRewardedReady
@@ -156,14 +203,9 @@ namespace ChromaBlast
                 || interstitialShowPending
                 || pendingReward != null)
             {
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-                LogIosAdsDiagnostic(
-                    $"[Ads] iOS rewarded show unavailable for '{placementReason}': "
-                    + $"privacy={privacyAllowsAds}, configured={IsRewardedConfigured}, "
-                    + $"initialized={levelPlayInitialized}, loaded={rewardedAd != null && rewardedAd.IsAdReady()}.");
-#endif
                 return false;
             }
+#endif
 
             CancelClosedRewardGracePeriod();
             pendingReward = onRewardCompleted;
@@ -174,8 +216,9 @@ namespace ChromaBlast
 
             try
             {
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-                LogIosAdsDiagnostic($"[Ads] iOS rewarded show requested for '{placementReason}'.");
+#if UNITY_IOS && !UNITY_EDITOR
+                iosRewardedShowRequested = true;
+                LogIosAdsDiagnostic("Rewarded show requested");
 #endif
                 rewardedAd.ShowAd(placementReason);
                 return true;
@@ -186,7 +229,13 @@ namespace ChromaBlast
                 pendingReward = null;
                 Action failure = pendingRewardFailure;
                 pendingRewardFailure = null;
+#if UNITY_IOS && !UNITY_EDITOR
+                SetIosRewardedDiagnosticError("Show exception", exception.Message);
+                LogIosAdsDiagnostic($"Rewarded show failed: {iosLastRewardedError}");
+                Debug.LogWarning($"LevelPlay rewarded ad could not be shown: {iosLastRewardedError}");
+#else
                 Debug.LogWarning($"LevelPlay rewarded ad could not be shown: {exception.Message}");
+#endif
                 ScheduleRewardedLoadRetry();
                 failure?.Invoke();
                 return true;
@@ -262,8 +311,8 @@ namespace ChromaBlast
         public void ApplyPrivacyEligibility(bool allowAds)
         {
             privacyAllowsAds = allowAds;
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic($"[Ads] iOS privacy eligibility resolved: allowAds={allowAds}.");
+#if UNITY_IOS && !UNITY_EDITOR
+            LogIosAdsDiagnostic($"Privacy CanRequestAds = {allowAds}");
 #endif
 
             if (!allowAds)
@@ -312,11 +361,8 @@ namespace ChromaBlast
 
             try
             {
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-                LogIosAdsDiagnostic(
-                    $"[Ads] iOS LevelPlay initialization starting; "
-                    + $"rewardedConfigured={IsRewardedConfigured}, "
-                    + $"interstitialConfigured={IsInterstitialConfigured}.");
+#if UNITY_IOS && !UNITY_EDITOR
+                LogIosAdsDiagnostic("LevelPlay init requested");
 #endif
                 LevelPlay.Init(PlatformAppKey.Trim());
             }
@@ -325,10 +371,18 @@ namespace ChromaBlast
                 initializationStarted = false;
                 ScheduleInitializationRetry();
 
+#if UNITY_IOS && !UNITY_EDITOR
+                SetIosRewardedDiagnosticError("Init exception", exception.Message);
+#endif
+
                 if (!initializationFailureLogged)
                 {
                     initializationFailureLogged = true;
+#if UNITY_IOS && !UNITY_EDITOR
+                    Debug.LogWarning($"LevelPlay initialization could not start; retrying after a delay. {iosLastRewardedError}");
+#else
                     Debug.LogWarning($"LevelPlay initialization could not start; retrying after a delay. {exception.Message}");
+#endif
                 }
             }
         }
@@ -347,14 +401,17 @@ namespace ChromaBlast
             initializationStarted = true;
             levelPlayInitialized = true;
             UnsubscribeInitializationEvents();
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic("[Ads] iOS LevelPlay initialization succeeded.");
+#if UNITY_IOS && !UNITY_EDITOR
+            LogIosAdsDiagnostic("LevelPlay init success");
 #endif
 
             if (rewardedAd == null)
             {
                 rewardedAd = new LevelPlayRewardedAd(PlatformRewardedAdUnitId.Trim());
                 SubscribeRewardedEvents();
+#if UNITY_IOS && !UNITY_EDITOR
+                LogIosAdsDiagnostic("iOS rewarded configured");
+#endif
             }
 
             LoadRewardedAd();
@@ -375,14 +432,19 @@ namespace ChromaBlast
             pendingReward = null;
             Action failure = pendingRewardFailure;
             pendingRewardFailure = null;
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic($"[Ads] iOS LevelPlay initialization failed: {error}.");
+#if UNITY_IOS && !UNITY_EDITOR
+            SetIosRewardedDiagnosticError("Init", error.ErrorCode, error.ErrorMessage);
+            LogIosAdsDiagnostic($"LevelPlay init failure: {iosLastRewardedError}");
 #endif
 
             if (!initializationFailureLogged)
             {
                 initializationFailureLogged = true;
+#if UNITY_IOS && !UNITY_EDITOR
+                Debug.LogWarning($"LevelPlay initialization failed; retrying after a controlled delay. {iosLastRewardedError}");
+#else
                 Debug.LogWarning($"LevelPlay initialization failed; retrying after a controlled delay. {error}");
+#endif
             }
 
             ScheduleInitializationRetry();
@@ -458,6 +520,10 @@ namespace ChromaBlast
             }
 
             rewardedLoadPending = true;
+#if UNITY_IOS && !UNITY_EDITOR
+            iosRewardedLoadRequested = true;
+            LogIosAdsDiagnostic("Rewarded load requested");
+#endif
             rewardedAd.LoadAd();
         }
 
@@ -466,22 +532,28 @@ namespace ChromaBlast
             rewardedLoadPending = false;
             loadFailureLogged = false;
             CancelRewardedLoadRetry();
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic("[Ads] iOS rewarded ad loaded and is available.");
+#if UNITY_IOS && !UNITY_EDITOR
+            iosLastRewardedError = "None";
+            LogIosAdsDiagnostic("Rewarded loaded");
 #endif
         }
 
         private void OnRewardedAdLoadFailed(LevelPlayAdError error)
         {
             rewardedLoadPending = false;
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic($"[Ads] iOS rewarded ad load failed: {error}.");
+#if UNITY_IOS && !UNITY_EDITOR
+            SetIosRewardedDiagnosticError("Load", error.ErrorCode, error.ErrorMessage);
+            LogIosAdsDiagnostic($"Rewarded load failed: {iosLastRewardedError}");
 #endif
 
             if (!loadFailureLogged)
             {
                 loadFailureLogged = true;
+#if UNITY_IOS && !UNITY_EDITOR
+                Debug.LogWarning($"LevelPlay rewarded ad load failed; retrying after a delay. {iosLastRewardedError}");
+#else
                 Debug.LogWarning($"LevelPlay rewarded ad load failed; retrying after a delay. {error}");
+#endif
             }
 
             ScheduleRewardedLoadRetry();
@@ -490,9 +562,6 @@ namespace ChromaBlast
         private void OnRewardedAdDisplayed(LevelPlayAdInfo adInfo)
         {
             rewardedDisplaying = true;
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic("[Ads] iOS rewarded ad displayed.");
-#endif
         }
 
         private void OnRewardedAdDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
@@ -503,10 +572,15 @@ namespace ChromaBlast
             pendingRewardFailure = null;
             rewardDeliveredForCurrentShow = false;
             CancelClosedRewardGracePeriod();
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            LogIosAdsDiagnostic($"[Ads] iOS rewarded ad display failed: {error}.");
+#if UNITY_IOS && !UNITY_EDITOR
+            SetIosRewardedDiagnosticError("Show", error.ErrorCode, error.ErrorMessage);
+            LogIosAdsDiagnostic($"Rewarded show failed: {iosLastRewardedError}");
 #endif
+#if UNITY_IOS && !UNITY_EDITOR
+            Debug.LogWarning($"LevelPlay rewarded ad display failed; no reward was granted. {iosLastRewardedError}");
+#else
             Debug.LogWarning($"LevelPlay rewarded ad display failed; no reward was granted. {error}");
+#endif
             ScheduleRewardedLoadRetry();
             failure?.Invoke();
         }
@@ -527,6 +601,9 @@ namespace ChromaBlast
             Action rewardCompleted = pendingReward;
             pendingReward = null;
             pendingRewardFailure = null;
+#if UNITY_IOS && !UNITY_EDITOR
+            LogIosAdsDiagnostic("Reward granted");
+#endif
             rewardCompleted.Invoke();
         }
 
@@ -840,10 +917,47 @@ namespace ChromaBlast
 
         private static void LogIosAdsDiagnostic(string message)
         {
-#if UNITY_IOS && !UNITY_EDITOR && DEVELOPMENT_BUILD
-            Debug.Log(message);
+#if UNITY_IOS && !UNITY_EDITOR
+            Debug.Log($"[CB-ADS] {message}");
 #endif
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void SetIosRewardedDiagnosticError(string stage, int errorCode, string message)
+        {
+            iosLastRewardedError = stage + " " + errorCode + ": "
+                + SanitizeIosDiagnosticMessage(message);
+        }
+
+        private void SetIosRewardedDiagnosticError(string stage, string message)
+        {
+            iosLastRewardedError = stage + ": " + SanitizeIosDiagnosticMessage(message);
+        }
+
+        private string SanitizeIosDiagnosticMessage(string message)
+        {
+            string sanitized = string.IsNullOrWhiteSpace(message)
+                ? "Unknown error"
+                : message.Replace('\r', ' ').Replace('\n', ' ').Trim();
+
+            RedactIosDiagnosticConfiguration(ref sanitized, PlatformAppKey);
+            RedactIosDiagnosticConfiguration(ref sanitized, PlatformRewardedAdUnitId);
+            RedactIosDiagnosticConfiguration(ref sanitized, PlatformInterstitialAdUnitId);
+
+            const int maximumLength = 120;
+            return sanitized.Length <= maximumLength
+                ? sanitized
+                : sanitized.Substring(0, maximumLength - 3) + "...";
+        }
+
+        private static void RedactIosDiagnosticConfiguration(ref string message, string configuredValue)
+        {
+            if (!string.IsNullOrEmpty(configuredValue))
+            {
+                message = message.Replace(configuredValue.Trim(), "[redacted]");
+            }
+        }
+#endif
 
         private void OnApplicationPause(bool paused)
         {

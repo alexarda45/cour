@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -35,6 +36,16 @@ namespace ChromaBlast
         private Image themedArtworkImage;
         private Image[] oceanArtworkImages;
 
+#if UNITY_IOS && !UNITY_EDITOR
+        // TEMPORARY TESTFLIGHT REWARDED-AD DIAGNOSTIC. This object is created only
+        // after Watch Ad is tapped and is safe to remove with this marked block.
+        private const float IosAdDiagnosticDurationSeconds = 12f;
+        private const float IosAdDiagnosticRefreshSeconds = 0.25f;
+        private const string IosAdDiagnosticFontPath = "Fonts/Fredoka-SemiBold SDF";
+        private TextMeshProUGUI iosAdDiagnosticText;
+        private Coroutine iosAdDiagnosticRoutine;
+#endif
+
         private readonly struct RescueArtworkFit
         {
             public readonly Vector2 Size;
@@ -64,6 +75,10 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+#if UNITY_IOS && !UNITY_EDITOR
+            DestroyIosRewardedDiagnostic();
+#endif
+
             if (!listenersAdded)
             {
                 return;
@@ -99,6 +114,10 @@ namespace ChromaBlast
         public void Show(PieceInstance[] rescueSet)
         {
             StopTransition();
+
+#if UNITY_IOS && !UNITY_EDITOR
+            DestroyIosRewardedDiagnostic();
+#endif
 
             if (root == null)
             {
@@ -145,6 +164,10 @@ namespace ChromaBlast
         {
             StopTransition();
             SetButtonsInteractable(false);
+
+#if UNITY_IOS && !UNITY_EDITOR
+            DestroyIosRewardedDiagnostic();
+#endif
 
             if (popupCanvasGroup != null)
             {
@@ -465,8 +488,94 @@ namespace ChromaBlast
 
         private void HandleWatchAdClicked()
         {
+#if UNITY_IOS && !UNITY_EDITOR
+            Debug.Log("[CB-ADS] WatchAd tapped");
+            ShowIosRewardedDiagnostic();
+#endif
             controller?.RequestRewardedRescue();
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void ShowIosRewardedDiagnostic()
+        {
+            DestroyIosRewardedDiagnostic();
+
+            if (popupRoot == null)
+            {
+                return;
+            }
+
+            GameObject diagnosticObject = new GameObject(
+                "TemporaryIosRewardedAdDiagnostic",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            RectTransform diagnosticRect = diagnosticObject.GetComponent<RectTransform>();
+            diagnosticRect.SetParent(popupRoot, false);
+            diagnosticRect.anchorMin = new Vector2(0.5f, 0.5f);
+            diagnosticRect.anchorMax = new Vector2(0.5f, 0.5f);
+            diagnosticRect.pivot = new Vector2(0.5f, 0.5f);
+            diagnosticRect.anchoredPosition = new Vector2(0f, -165f);
+            diagnosticRect.sizeDelta = new Vector2(700f, 160f);
+            diagnosticRect.localScale = Vector3.one;
+
+            iosAdDiagnosticText = diagnosticObject.GetComponent<TextMeshProUGUI>();
+            iosAdDiagnosticText.font = Resources.Load<TMP_FontAsset>(IosAdDiagnosticFontPath)
+                ?? TMP_Settings.defaultFontAsset;
+            iosAdDiagnosticText.fontSize = 19f;
+            iosAdDiagnosticText.alignment = TextAlignmentOptions.Center;
+            iosAdDiagnosticText.textWrappingMode = TextWrappingModes.NoWrap;
+            iosAdDiagnosticText.color = Color.white;
+            iosAdDiagnosticText.outlineColor = new Color(0f, 0f, 0f, 0.9f);
+            iosAdDiagnosticText.outlineWidth = 0.22f;
+            iosAdDiagnosticText.raycastTarget = false;
+
+            RefreshIosRewardedDiagnostic();
+            iosAdDiagnosticRoutine = StartCoroutine(IosRewardedDiagnosticRoutine());
+        }
+
+        private IEnumerator IosRewardedDiagnosticRoutine()
+        {
+            float remaining = IosAdDiagnosticDurationSeconds;
+            while (remaining > 0f && iosAdDiagnosticText != null)
+            {
+                RefreshIosRewardedDiagnostic();
+                yield return new WaitForSecondsRealtime(IosAdDiagnosticRefreshSeconds);
+                remaining -= IosAdDiagnosticRefreshSeconds;
+            }
+
+            DestroyIosRewardedDiagnostic();
+        }
+
+        private void RefreshIosRewardedDiagnostic()
+        {
+            if (iosAdDiagnosticText == null)
+            {
+                return;
+            }
+
+            AdManager ads = AdManager.Instance;
+            iosAdDiagnosticText.text = "ADS DIAG:\nTap received: True\n"
+                + (ads == null
+                    ? "AdManager available: False"
+                    : ads.GetIosRewardedDiagnosticText());
+        }
+
+        private void DestroyIosRewardedDiagnostic()
+        {
+            if (iosAdDiagnosticRoutine != null)
+            {
+                StopCoroutine(iosAdDiagnosticRoutine);
+                iosAdDiagnosticRoutine = null;
+            }
+
+            if (iosAdDiagnosticText != null)
+            {
+                Destroy(iosAdDiagnosticText.gameObject);
+                iosAdDiagnosticText = null;
+            }
+        }
+#endif
 
         private void HandleNoThanksClicked()
         {

@@ -1066,6 +1066,7 @@ namespace ChromaBlast
                     if (UseFullscreenIosGameplayBackground)
                     {
                         DisableSafeAreaBackdropForIos();
+                        DisableLegacySafeAreaGameplayBackground(hudRect, oceanBackgroundImage);
                         StretchToFullCanvas(oceanBackgroundImage.rectTransform);
                     }
                     else
@@ -1843,6 +1844,27 @@ namespace ChromaBlast
             {
                 safeAreaBackground.enabled = false;
                 safeAreaBackground.raycastTarget = false;
+            }
+        }
+
+        private static void DisableLegacySafeAreaGameplayBackground(
+            RectTransform safeAreaRoot,
+            Image fullscreenBackground)
+        {
+            if (!UseFullscreenIosGameplayBackground || safeAreaRoot == null)
+            {
+                return;
+            }
+
+            // Earlier iOS compensation could leave an OceanBackground under the
+            // SafeArea root. The Canvas-level image is now authoritative; keep a
+            // legacy duplicate from compositing a second crop inside the safe area.
+            Transform legacyBackground = safeAreaRoot.Find("OceanBackground");
+            if (legacyBackground != null
+                && (fullscreenBackground == null
+                    || legacyBackground != fullscreenBackground.transform))
+            {
+                legacyBackground.gameObject.SetActive(false);
             }
         }
 

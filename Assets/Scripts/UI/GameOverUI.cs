@@ -93,6 +93,7 @@ namespace ChromaBlast
         private void OnDisable()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            SetIosFullscreenBackgroundVisible(false);
         }
 
         private void OnDestroy()
@@ -131,11 +132,22 @@ namespace ChromaBlast
                 root = gameObject;
             }
 
+            if (UseFullscreenIosGameOverBackground)
+            {
+                root.SetActive(true);
+            }
+
             DisableLegacyVisuals();
             ApplyCurrentThemeVisuals();
             CachePresentationTargets();
-            root.SetActive(true);
+
+            if (!UseFullscreenIosGameOverBackground)
+            {
+                root.SetActive(true);
+            }
+
             root.transform.SetAsLastSibling();
+            SetIosFullscreenBackgroundVisible(true);
             WireRestartButtonOnce();
 
             if (entranceRoutine != null)
@@ -187,6 +199,7 @@ namespace ChromaBlast
 
             CacheRestartFinalPosition();
             RestoreFinalVisualState();
+            SetIosFullscreenBackgroundVisible(false);
             if (root != null)
             {
                 root.SetActive(false);
@@ -537,6 +550,64 @@ namespace ChromaBlast
 
             fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
             fitter.aspectRatio = theme.GameOverBackground.rect.width / theme.GameOverBackground.rect.height;
+
+            ConfigureIosFullscreenBackground();
+        }
+
+        private static bool UseFullscreenIosGameOverBackground
+        {
+            get
+            {
+#if UNITY_IOS && !UNITY_EDITOR
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
+
+        private void ConfigureIosFullscreenBackground()
+        {
+            if (!UseFullscreenIosGameOverBackground || backgroundImage == null || root == null)
+            {
+                return;
+            }
+
+            Canvas canvas = root.GetComponentInParent<Canvas>();
+            RectTransform canvasRect = canvas == null ? null : canvas.transform as RectTransform;
+            RectTransform safeAreaRoot = root.transform.parent as RectTransform;
+            if (canvasRect == null || safeAreaRoot == null)
+            {
+                return;
+            }
+
+            RectTransform backgroundRect = backgroundImage.rectTransform;
+            if (backgroundRect.parent != canvasRect)
+            {
+                backgroundRect.gameObject.SetActive(false);
+                backgroundRect.SetParent(canvasRect, false);
+            }
+
+            backgroundRect.anchorMin = Vector2.zero;
+            backgroundRect.anchorMax = Vector2.one;
+            backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+            backgroundRect.offsetMin = Vector2.zero;
+            backgroundRect.offsetMax = Vector2.zero;
+            backgroundRect.localScale = Vector3.one;
+
+            // The Game Over art is the single full-screen layer above gameplay
+            // artwork and behind all SafeArea-constrained Game Over controls.
+            backgroundRect.SetSiblingIndex(safeAreaRoot.GetSiblingIndex());
+        }
+
+        private void SetIosFullscreenBackgroundVisible(bool visible)
+        {
+            if (!UseFullscreenIosGameOverBackground || backgroundImage == null)
+            {
+                return;
+            }
+
+            backgroundImage.gameObject.SetActive(visible);
         }
 
         private void CachePresentationTargets()
