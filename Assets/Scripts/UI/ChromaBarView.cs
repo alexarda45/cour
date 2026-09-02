@@ -36,6 +36,9 @@ namespace ChromaBlast
         private bool wasReady;
         private Coroutine readyPulseRoutine;
         private Image blossomPopVisual;
+        private Vector3 authoritativeRootScale = Vector3.one;
+        private Vector3 authoritativeButtonScale = Vector3.one;
+        private bool authoritativeScalesCaptured;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public ChromaColor DebugColor => color;
@@ -43,8 +46,15 @@ namespace ChromaBlast
         public bool DebugPopInteractable => popButton != null && popButton.interactable;
 #endif
 
+        private void Awake()
+        {
+            CaptureAuthoritativeScales();
+        }
+
         private void OnEnable()
         {
+            CaptureAuthoritativeScales();
+            RestoreAuthoritativeScales();
             ThemeCatalog.ThemeChanged += HandleThemeChanged;
             ConfigurePopButtonVisual();
         }
@@ -52,6 +62,9 @@ namespace ChromaBlast
         private void OnDisable()
         {
             ThemeCatalog.ThemeChanged -= HandleThemeChanged;
+            StopReadyPulse();
+            transform.DOKill();
+            transform.localScale = authoritativeRootScale;
         }
 
         public void Initialize(ChromaColor chromaColor, Action<ChromaColor> popCallback)
@@ -116,8 +129,7 @@ namespace ChromaBlast
 
             if (usablePop && !wasReady)
             {
-                transform.DOKill();
-                transform.DOPunchScale(Vector3.one * 0.12f, 0.24f, 8, 0.7f);
+                PlayFeedbackPunch(0.12f, 0.24f, 8, 0.7f);
             }
 
             if (usablePop)
@@ -162,7 +174,7 @@ namespace ChromaBlast
 
             if (popButton != null)
             {
-                popButton.transform.localScale = Vector3.one;
+                popButton.transform.localScale = authoritativeButtonScale;
             }
         }
 
@@ -178,7 +190,7 @@ namespace ChromaBlast
                     elapsed += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(elapsed / duration);
                     float wave = Mathf.Sin(t * Mathf.PI);
-                    pulseTarget.localScale = Vector3.one * Mathf.Lerp(1f, 1.045f, wave);
+                    pulseTarget.localScale = authoritativeButtonScale * Mathf.Lerp(1f, 1.045f, wave);
                     yield return null;
                 }
             }
@@ -289,7 +301,7 @@ namespace ChromaBlast
                 buttonRect.pivot = new Vector2(0.5f, 0.5f);
                 buttonRect.anchoredPosition = Vector2.zero;
                 buttonRect.sizeDelta = PopButtonSize;
-                buttonRect.localScale = Vector3.one;
+                buttonRect.localScale = authoritativeButtonScale;
             }
 
             popButton.transition = Selectable.Transition.None;
@@ -413,7 +425,53 @@ namespace ChromaBlast
 
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {
+            RestoreAuthoritativeScales();
             ConfigurePopButtonVisual();
+        }
+
+        public void PlayFeedbackPunch(float amplitude = 0.10f, float duration = 0.20f, int vibrato = 8, float elasticity = 0.75f)
+        {
+            CaptureAuthoritativeScales();
+            transform.DOKill();
+            transform.localScale = authoritativeRootScale;
+            Vector3 punch = authoritativeRootScale * Mathf.Max(0f, amplitude);
+            transform.DOPunchScale(punch, duration, vibrato, elasticity)
+                .OnComplete(RestoreRootScaleAfterPunch);
+        }
+
+        private void RestoreRootScaleAfterPunch()
+        {
+            if (this != null)
+            {
+                transform.localScale = authoritativeRootScale;
+            }
+        }
+
+        private void CaptureAuthoritativeScales()
+        {
+            if (authoritativeScalesCaptured)
+            {
+                return;
+            }
+
+            authoritativeRootScale = transform.localScale;
+            if (popButton != null)
+            {
+                authoritativeButtonScale = popButton.transform.localScale;
+            }
+
+            authoritativeScalesCaptured = true;
+        }
+
+        private void RestoreAuthoritativeScales()
+        {
+            CaptureAuthoritativeScales();
+            transform.DOKill();
+            transform.localScale = authoritativeRootScale;
+            if (popButton != null)
+            {
+                popButton.transform.localScale = authoritativeButtonScale;
+            }
         }
 
         private void SetPopAvailability(bool usablePop)

@@ -529,8 +529,7 @@ namespace ChromaBlast
             int index = (int)color;
             if (chromaBars != null && index >= 0 && index < chromaBars.Length && chromaBars[index] != null)
             {
-                chromaBars[index].transform.DOKill();
-                chromaBars[index].transform.DOPunchScale(Vector3.one * 0.1f, 0.2f, 8, 0.75f);
+                chromaBars[index].PlayFeedbackPunch();
             }
         }
 
@@ -1050,15 +1049,30 @@ namespace ChromaBlast
 
             if (backgroundSprite != null)
             {
-                oceanBackgroundImage = EnsureImageLayer(oceanBackgroundImage, "OceanBackground", hudRect);
+                RectTransform backgroundParent = GetGameplayBackgroundParent(hudRect);
+                oceanBackgroundImage = EnsureImageLayer(oceanBackgroundImage, "OceanBackground", backgroundParent);
                 if (oceanBackgroundImage != null)
                 {
+                    if (oceanBackgroundImage.transform.parent != backgroundParent)
+                    {
+                        oceanBackgroundImage.transform.SetParent(backgroundParent, false);
+                    }
+
                     oceanBackgroundImage.sprite = backgroundSprite;
                     oceanBackgroundImage.color = Color.white;
                     oceanBackgroundImage.type = Image.Type.Simple;
                     oceanBackgroundImage.preserveAspect = true;
                     oceanBackgroundImage.raycastTarget = false;
-                    StretchToFullPortrait(oceanBackgroundImage.rectTransform);
+                    if (UseFullscreenIosGameplayBackground)
+                    {
+                        DisableSafeAreaBackdropForIos();
+                        StretchToFullCanvas(oceanBackgroundImage.rectTransform);
+                    }
+                    else
+                    {
+                        StretchToFullPortrait(oceanBackgroundImage.rectTransform);
+                    }
+
                     ConfigureAspectCover(oceanBackgroundImage, backgroundSprite);
                     oceanBackgroundImage.transform.SetAsFirstSibling();
                 }
@@ -1785,6 +1799,66 @@ namespace ChromaBlast
             Rect safeArea = Screen.safeArea;
             rect.offsetMin = new Vector2(-safeArea.xMin / scaleFactor, -safeArea.yMin / scaleFactor);
             rect.offsetMax = new Vector2((Screen.width - safeArea.xMax) / scaleFactor, (Screen.height - safeArea.yMax) / scaleFactor);
+        }
+
+        private static bool UseFullscreenIosGameplayBackground
+        {
+            get
+            {
+#if UNITY_IOS && !UNITY_EDITOR
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
+
+        private RectTransform GetGameplayBackgroundParent(RectTransform safeAreaRoot)
+        {
+            if (!UseFullscreenIosGameplayBackground)
+            {
+                return safeAreaRoot;
+            }
+
+            Canvas rootCanvas = GetComponentInParent<Canvas>();
+            RectTransform canvasRect = rootCanvas == null ? null : rootCanvas.transform as RectTransform;
+            return canvasRect == null ? safeAreaRoot : canvasRect;
+        }
+
+        private void DisableSafeAreaBackdropForIos()
+        {
+            if (!UseFullscreenIosGameplayBackground)
+            {
+                return;
+            }
+
+            NeonBackdrop safeAreaBackdrop = GetComponent<NeonBackdrop>();
+            if (safeAreaBackdrop != null)
+            {
+                safeAreaBackdrop.enabled = false;
+            }
+
+            Image safeAreaBackground = GetComponent<Image>();
+            if (safeAreaBackground != null)
+            {
+                safeAreaBackground.enabled = false;
+                safeAreaBackground.raycastTarget = false;
+            }
+        }
+
+        private static void StretchToFullCanvas(RectTransform rect)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
         }
 
         private void RefreshPauseLabels()
