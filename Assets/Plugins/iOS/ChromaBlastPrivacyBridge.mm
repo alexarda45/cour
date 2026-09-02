@@ -25,7 +25,11 @@ namespace
         return 4; // ATT unavailable on this OS version.
     }
 
-    void SendPrivacyState(BOOL flowCompleted, BOOL canRequestAds, NSError *error)
+    void SendPrivacyState(
+        BOOL flowCompleted,
+        BOOL canRequestAds,
+        NSError *error,
+        NSInteger privacyOptionsAction)
     {
         UMPConsentInformation *consentInformation = UMPConsentInformation.sharedInstance;
         NSDictionary *payload = @{
@@ -34,6 +38,10 @@ namespace
             @"privacyOptionsRequired": @(
                 consentInformation.privacyOptionsRequirementStatus
                     == UMPPrivacyOptionsRequirementStatusRequired),
+            @"consentStatus": @((NSInteger)consentInformation.consentStatus),
+            @"privacyOptionsRequirementStatus": @(
+                (NSInteger)consentInformation.privacyOptionsRequirementStatus),
+            @"privacyOptionsAction": @(privacyOptionsAction),
             @"attAuthorizationStatus": @(CurrentAttStatus()),
             @"errorCode": @(error != nil ? error.code : 0),
             @"errorMessage": error != nil ? SafeErrorMessage(error) : @""
@@ -57,12 +65,12 @@ namespace
         sFlowInProgress = NO;
     }
 
-    void ResolveAttThenPublish()
+    void ResolveAttThenPublish(NSInteger privacyOptionsAction)
     {
         BOOL canRequestAds = UMPConsentInformation.sharedInstance.canRequestAds;
         if (!canRequestAds)
         {
-            SendPrivacyState(YES, NO, nil);
+            SendPrivacyState(YES, NO, nil, privacyOptionsAction);
             return;
         }
 
@@ -75,14 +83,14 @@ namespace
                     requestTrackingAuthorizationWithCompletionHandler:
                         ^(ATTrackingManagerAuthorizationStatus status) {
                             dispatch_async(dispatch_get_main_queue(), ^{
-                                SendPrivacyState(YES, canRequestAds, nil);
+                                SendPrivacyState(YES, canRequestAds, nil, privacyOptionsAction);
                             });
                         }];
                 return;
             }
         }
 
-        SendPrivacyState(YES, canRequestAds, nil);
+        SendPrivacyState(YES, canRequestAds, nil, privacyOptionsAction);
     }
 
     void StartConsentUpdate()
@@ -95,7 +103,16 @@ namespace
                                          if (requestError != nil)
                                          {
                                              sConsentInformationUpdated = NO;
-                                             SendPrivacyState(NO, NO, requestError);
+                                             // UMP may retain a valid consent result from an earlier
+                                             // session even when the network update fails. Respect that
+                                             // authoritative cached state instead of deadlocking ads.
+                                             BOOL cachedCanRequestAds =
+                                                 UMPConsentInformation.sharedInstance.canRequestAds;
+                                             SendPrivacyState(
+                                                 cachedCanRequestAds,
+                                                 cachedCanRequestAds,
+                                                 requestError,
+                                                 0);
                                              return;
                                          }
 
@@ -109,14 +126,19 @@ namespace
                                                                                   dispatch_get_main_queue(), ^{
                                                                                       if (formError != nil)
                                                                                       {
+                                                                                          BOOL cachedCanRequestAds =
+                                                                                              UMPConsentInformation
+                                                                                                  .sharedInstance
+                                                                                                  .canRequestAds;
                                                                                           SendPrivacyState(
-                                                                                              NO,
-                                                                                              NO,
-                                                                                              formError);
+                                                                                              cachedCanRequestAds,
+                                                                                              cachedCanRequestAds,
+                                                                                              formError,
+                                                                                              0);
                                                                                           return;
                                                                                       }
 
-                                                                                      ResolveAttThenPublish();
+                                                                                      ResolveAttThenPublish(0);
                                                                                   });
                                                                           }];
                                      });
@@ -174,7 +196,8 @@ extern "C" void ChromaBlastIosPrivacyShowPrivacyOptions(const char *unityGameObj
             SendPrivacyState(
                 YES,
                 UMPConsentInformation.sharedInstance.canRequestAds,
-                nil);
+                nil,
+                1); // Privacy options are not required/available for this user.
             return;
         }
 
@@ -185,11 +208,17 @@ extern "C" void ChromaBlastIosPrivacyShowPrivacyOptions(const char *unityGameObj
                                           dispatch_async(dispatch_get_main_queue(), ^{
                                               if (formError != nil)
                                               {
-                                                  SendPrivacyState(NO, NO, formError);
+                                                  BOOL cachedCanRequestAds =
+                                                      UMPConsentInformation.sharedInstance.canRequestAds;
+                                                  SendPrivacyState(
+                                                      cachedCanRequestAds,
+                                                      cachedCanRequestAds,
+                                                      formError,
+                                                      3);
                                                   return;
                                               }
 
-                                              ResolveAttThenPublish();
+                                              ResolveAttThenPublish(2);
                                           });
                                       }];
     });

@@ -48,6 +48,9 @@ namespace ChromaBlast
             public bool flowCompleted = false;
             public bool canRequestAds = false;
             public bool privacyOptionsRequired = false;
+            public int consentStatus = 0;
+            public int privacyOptionsRequirementStatus = 0;
+            public int privacyOptionsAction = 0;
             public int attAuthorizationStatus = -1;
             public int errorCode = 0;
             public string errorMessage = string.Empty;
@@ -132,6 +135,7 @@ namespace ChromaBlast
 #elif UNITY_IOS && !UNITY_EDITOR
             try
             {
+                LogIosPrivacyDiagnostic("[Privacy] iOS Privacy Options requested from Settings.");
                 ShowIosPrivacyOptions(gameObject.name);
             }
             catch (Exception exception)
@@ -192,10 +196,21 @@ namespace ChromaBlast
                     $"[Privacy] iOS privacy bridge returned an unreadable state: {exception.Message}");
             }
 
+            if (state != null)
+            {
+                LogIosPrivacyDiagnostic(
+                    $"[Privacy] iOS UMP status={state.consentStatus}, "
+                    + $"CanRequestAds={state.canRequestAds}, "
+                    + $"PrivacyOptionsStatus={state.privacyOptionsRequirementStatus}, "
+                    + $"PrivacyOptionsRequired={state.privacyOptionsRequired}, "
+                    + $"ATT={state.attAuthorizationStatus}.");
+            }
+
             if (state == null || !state.flowCompleted)
             {
                 consentFlowCompleted = false;
                 adsCanInitialize = false;
+                privacyOptionsRequired = state != null && state.privacyOptionsRequired;
                 AdManager.Instance?.ApplyPrivacyEligibility(false);
                 LogIosPrivacyWarning(
                     state == null
@@ -208,6 +223,17 @@ namespace ChromaBlast
             consentFlowCompleted = true;
             adsCanInitialize = state.canRequestAds;
             privacyOptionsRequired = state.privacyOptionsRequired;
+
+            if (state.privacyOptionsAction == 1)
+            {
+                LogIosPrivacyDiagnostic(
+                    "[Privacy] Google UMP reports that Privacy Options are not required/available "
+                    + "for this user; no form was presented.");
+            }
+            else if (state.privacyOptionsAction == 2)
+            {
+                LogIosPrivacyDiagnostic("[Privacy] Google UMP Privacy Options form completed.");
+            }
 
             // Google UMP writes the full TCF and Additional Consent state that LevelPlay 7.7+
             // consumes directly. Do not collapse canRequestAds into SetGDPRConsent(bool):
@@ -226,6 +252,13 @@ namespace ChromaBlast
         {
 #if DEVELOPMENT_BUILD
             Debug.LogWarning(message);
+#endif
+        }
+
+        private static void LogIosPrivacyDiagnostic(string message)
+        {
+#if DEVELOPMENT_BUILD
+            Debug.Log(message);
 #endif
         }
 #endif

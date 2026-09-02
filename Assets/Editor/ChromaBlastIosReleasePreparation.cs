@@ -12,9 +12,9 @@ public static class ChromaBlastIosReleasePreparation
     private const string BundleIdentifier = "com.ardagames.chromablast";
     private const string ProductName = "Chroma Blast";
     private const string VersionName = "0.1.0";
-    private const string BuildNumber = "1";
+    private const string BuildNumber = "2";
     private const string MinimumIosVersion = "15.0";
-    private const string ApprovedAppIconPath = "Assets/Art/AppIcon.png";
+    private const string ApprovedAppIconPath = "Assets/Art/AppIcon_iOS_1024.png";
     private const string IosAdMobApplicationId =
         "ca-app-pub-4005517283749109~1562398609";
     private const string TrackingUsageDescription =
