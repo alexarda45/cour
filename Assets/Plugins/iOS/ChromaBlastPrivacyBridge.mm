@@ -9,6 +9,9 @@ namespace
     NSString *sUnityGameObjectName = nil;
     BOOL sFlowInProgress = NO;
     BOOL sConsentInformationUpdated = NO;
+    BOOL sPrivacyOptionsRequested = NO;
+
+    void PresentPrivacyOptions();
 
     NSString *SafeErrorMessage(NSError *error)
     {
@@ -63,6 +66,21 @@ namespace
             "OnIosPrivacyStateUpdated",
             json.UTF8String);
         sFlowInProgress = NO;
+
+        // A Settings tap can arrive while the launch consent form or ATT sheet is
+        // active. Do not discard it: present the requested options after the
+        // current native presentation has completed.
+        if (sPrivacyOptionsRequested)
+        {
+            sPrivacyOptionsRequested = NO;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (!sFlowInProgress)
+                {
+                    sFlowInProgress = YES;
+                    PresentPrivacyOptions();
+                }
+            });
+        }
     }
 
     void ResolveAttThenPublish(NSInteger privacyOptionsAction)
@@ -100,25 +118,37 @@ namespace
             requestConsentInfoUpdateWithParameters:parameters
                                  completionHandler:^(NSError *requestError) {
                                      dispatch_async(dispatch_get_main_queue(), ^{
-                                         if (requestError != nil)
-                                         {
-                                             sConsentInformationUpdated = NO;
+                                          if (requestError != nil)
+                                          {
+                                              sConsentInformationUpdated = NO;
                                              // UMP may retain a valid consent result from an earlier
                                              // session even when the network update fails. Respect that
                                              // authoritative cached state instead of deadlocking ads.
-                                             BOOL cachedCanRequestAds =
-                                                 UMPConsentInformation.sharedInstance.canRequestAds;
-                                             SendPrivacyState(
-                                                 cachedCanRequestAds,
-                                                 cachedCanRequestAds,
-                                                 requestError,
-                                                 0);
-                                             return;
-                                         }
+                                              BOOL cachedCanRequestAds =
+                                                  UMPConsentInformation.sharedInstance.canRequestAds;
+                                              NSInteger action = sPrivacyOptionsRequested ? 3 : 0;
+                                              sPrivacyOptionsRequested = NO;
+                                              SendPrivacyState(
+                                                  cachedCanRequestAds,
+                                                  cachedCanRequestAds,
+                                                  requestError,
+                                                  action);
+                                              return;
+                                          }
 
-                                         sConsentInformationUpdated = YES;
+                                          sConsentInformationUpdated = YES;
 
-                                         [UMPConsentForm
+                                          // This update was initiated by Privacy Options, so use
+                                          // the dedicated UMP options API instead of silently
+                                          // routing the tap through the launch-only form path.
+                                          if (sPrivacyOptionsRequested)
+                                          {
+                                              sPrivacyOptionsRequested = NO;
+                                              PresentPrivacyOptions();
+                                              return;
+                                          }
+
+                                          [UMPConsentForm
                                              loadAndPresentIfRequiredFromViewController:nil
                                                                       completionHandler:
                                                                           ^(NSError *formError) {
@@ -143,6 +173,40 @@ namespace
                                                                           }];
                                      });
                                  }];
+    }
+
+    void PresentPrivacyOptions()
+    {
+        if (UMPConsentInformation.sharedInstance.privacyOptionsRequirementStatus
+            != UMPPrivacyOptionsRequirementStatusRequired)
+        {
+            SendPrivacyState(
+                YES,
+                UMPConsentInformation.sharedInstance.canRequestAds,
+                nil,
+                1); // Privacy options are not required/available for this user.
+            return;
+        }
+
+        [UMPConsentForm
+            presentPrivacyOptionsFormFromViewController:nil
+                                      completionHandler:^(NSError *formError) {
+                                          dispatch_async(dispatch_get_main_queue(), ^{
+                                              if (formError != nil)
+                                              {
+                                                  BOOL cachedCanRequestAds =
+                                                      UMPConsentInformation.sharedInstance.canRequestAds;
+                                                  SendPrivacyState(
+                                                      cachedCanRequestAds,
+                                                      cachedCanRequestAds,
+                                                      formError,
+                                                      3);
+                                                  return;
+                                              }
+
+                                              ResolveAttThenPublish(2);
+                                          });
+                                      }];
     }
 }
 
@@ -170,11 +234,6 @@ extern "C" void ChromaBlastIosPrivacyRequestConsentUpdate(const char *unityGameO
 extern "C" void ChromaBlastIosPrivacyShowPrivacyOptions(const char *unityGameObjectName)
 {
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (sFlowInProgress)
-        {
-            return;
-        }
-
         sUnityGameObjectName = unityGameObjectName != nullptr
             ? [[NSString alloc] initWithUTF8String:unityGameObjectName]
             : nil;
@@ -183,43 +242,21 @@ extern "C" void ChromaBlastIosPrivacyShowPrivacyOptions(const char *unityGameObj
             return;
         }
 
+        if (sFlowInProgress)
+        {
+            sPrivacyOptionsRequested = YES;
+            return;
+        }
+
         if (!sConsentInformationUpdated)
         {
+            sPrivacyOptionsRequested = YES;
             sFlowInProgress = YES;
             StartConsentUpdate();
             return;
         }
 
-        if (UMPConsentInformation.sharedInstance.privacyOptionsRequirementStatus
-            != UMPPrivacyOptionsRequirementStatusRequired)
-        {
-            SendPrivacyState(
-                YES,
-                UMPConsentInformation.sharedInstance.canRequestAds,
-                nil,
-                1); // Privacy options are not required/available for this user.
-            return;
-        }
-
         sFlowInProgress = YES;
-        [UMPConsentForm
-            presentPrivacyOptionsFormFromViewController:nil
-                                      completionHandler:^(NSError *formError) {
-                                          dispatch_async(dispatch_get_main_queue(), ^{
-                                              if (formError != nil)
-                                              {
-                                                  BOOL cachedCanRequestAds =
-                                                      UMPConsentInformation.sharedInstance.canRequestAds;
-                                                  SendPrivacyState(
-                                                      cachedCanRequestAds,
-                                                      cachedCanRequestAds,
-                                                      formError,
-                                                      3);
-                                                  return;
-                                              }
-
-                                              ResolveAttThenPublish(2);
-                                          });
-                                      }];
+        PresentPrivacyOptions();
     });
 }

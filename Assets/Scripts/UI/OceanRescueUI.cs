@@ -515,8 +515,8 @@ namespace ChromaBlast
             diagnosticRect.anchorMin = new Vector2(0.5f, 0.5f);
             diagnosticRect.anchorMax = new Vector2(0.5f, 0.5f);
             diagnosticRect.pivot = new Vector2(0.5f, 0.5f);
-            diagnosticRect.anchoredPosition = new Vector2(0f, -165f);
-            diagnosticRect.sizeDelta = new Vector2(700f, 160f);
+            diagnosticRect.anchoredPosition = new Vector2(0f, -145f);
+            diagnosticRect.sizeDelta = new Vector2(700f, 210f);
             diagnosticRect.localScale = Vector3.one;
 
             iosAdDiagnosticText = diagnosticObject.GetComponent<TextMeshProUGUI>();

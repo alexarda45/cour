@@ -108,12 +108,16 @@ namespace ChromaBlast
         /// </summary>
         public string GetIosRewardedDiagnosticText()
         {
+            PrivacyManager privacy = PrivacyManager.Instance;
             return "Privacy CanRequestAds: " + privacyAllowsAds
                 + "\nLevelPlay initialized: " + levelPlayInitialized
                 + "\nRewarded load requested: " + iosRewardedLoadRequested
                 + "\nRewarded available: " + IsRewardedReady
                 + "\nShow requested: " + iosRewardedShowRequested
-                + "\nLast rewarded error: " + iosLastRewardedError;
+                + "\nLast rewarded error: " + iosLastRewardedError
+                + "\n" + (privacy == null
+                    ? "PrivacyManager available: False"
+                    : privacy.GetIosPrivacyDiagnosticText());
         }
 #endif
 

@@ -70,6 +70,7 @@ namespace ChromaBlast
         private Vector3 boardReactionBaseScale = Vector3.one;
         private bool boardReactionBaseScaleCached;
         private CameraShake cameraShake;
+        private readonly Vector3[] fullscreenCanvasCorners = new Vector3[4];
 
         private void Awake()
         {
@@ -132,20 +133,10 @@ namespace ChromaBlast
                 root = gameObject;
             }
 
-            if (UseFullscreenIosGameOverBackground)
-            {
-                root.SetActive(true);
-            }
-
             DisableLegacyVisuals();
             ApplyCurrentThemeVisuals();
             CachePresentationTargets();
-
-            if (!UseFullscreenIosGameOverBackground)
-            {
-                root.SetActive(true);
-            }
-
+            root.SetActive(true);
             root.transform.SetAsLastSibling();
             SetIosFullscreenBackgroundVisible(true);
             WireRestartButtonOnce();
@@ -575,29 +566,54 @@ namespace ChromaBlast
 
             Canvas canvas = root.GetComponentInParent<Canvas>();
             RectTransform canvasRect = canvas == null ? null : canvas.transform as RectTransform;
-            RectTransform safeAreaRoot = root.transform.parent as RectTransform;
-            if (canvasRect == null || safeAreaRoot == null)
+            RectTransform rootRect = root.transform as RectTransform;
+            if (canvasRect == null || rootRect == null)
             {
                 return;
             }
 
             RectTransform backgroundRect = backgroundImage.rectTransform;
-            if (backgroundRect.parent != canvasRect)
+            if (backgroundRect.parent != rootRect)
             {
                 backgroundRect.gameObject.SetActive(false);
-                backgroundRect.SetParent(canvasRect, false);
+                backgroundRect.SetParent(rootRect, false);
             }
 
-            backgroundRect.anchorMin = Vector2.zero;
-            backgroundRect.anchorMax = Vector2.one;
+            AspectRatioFitter fitter = backgroundImage.GetComponent<AspectRatioFitter>();
+            if (fitter != null)
+            {
+                fitter.enabled = false;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            canvasRect.GetWorldCorners(fullscreenCanvasCorners);
+            Vector2 localMin = rootRect.InverseTransformPoint(fullscreenCanvasCorners[0]);
+            Vector2 localMax = rootRect.InverseTransformPoint(fullscreenCanvasCorners[2]);
+            Vector2 canvasSize = localMax - localMin;
+            float spriteAspect = backgroundImage.sprite == null
+                ? canvasSize.x / Mathf.Max(1f, canvasSize.y)
+                : backgroundImage.sprite.rect.width / backgroundImage.sprite.rect.height;
+            float targetAspect = canvasSize.x / Mathf.Max(1f, canvasSize.y);
+            Vector2 coverSize = canvasSize;
+            if (targetAspect > spriteAspect)
+            {
+                coverSize.y = canvasSize.x / spriteAspect;
+            }
+            else
+            {
+                coverSize.x = canvasSize.y * spriteAspect;
+            }
+
+            backgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
             backgroundRect.pivot = new Vector2(0.5f, 0.5f);
-            backgroundRect.offsetMin = Vector2.zero;
-            backgroundRect.offsetMax = Vector2.zero;
+            backgroundRect.anchoredPosition = (localMin + localMax) * 0.5f;
+            backgroundRect.sizeDelta = coverSize;
             backgroundRect.localScale = Vector3.one;
 
-            // The Game Over art is the single full-screen layer above gameplay
-            // artwork and behind all SafeArea-constrained Game Over controls.
-            backgroundRect.SetSiblingIndex(safeAreaRoot.GetSiblingIndex());
+            // Keep the entire Game Over root above gameplay. Only this decorative
+            // first child extends beyond SafeArea to cover the physical display.
+            backgroundRect.SetAsFirstSibling();
         }
 
         private void SetIosFullscreenBackgroundVisible(bool visible)

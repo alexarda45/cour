@@ -151,6 +151,9 @@ namespace ChromaBlast
         private Canvas menuLayerCanvas;
         private Image oceanBackgroundImage;
         private Image oceanLogoImage;
+#if UNITY_IOS && !UNITY_EDITOR
+        private Vector2 lastIosMenuCanvasSize;
+#endif
         [SerializeField] private RectTransform mainMenuButtonColumn;
         private bool rewardsLogoStateCaptured;
         private bool rewardsLogoWasActive;
@@ -280,6 +283,10 @@ namespace ChromaBlast
 
         private void Update()
         {
+#if UNITY_IOS && !UNITY_EDITOR
+            RefreshIosMenuBackgroundCoverageIfNeeded();
+#endif
+
             if (BackButton.WasPressedThisFrame())
             {
                 if (achievementsRoot != null && achievementsRoot.activeSelf)
@@ -2376,11 +2383,76 @@ namespace ChromaBlast
                 backgroundAspect = oceanBackgroundImage.gameObject.AddComponent<AspectRatioFitter>();
             }
 
+#if UNITY_IOS && !UNITY_EDITOR
+            backgroundAspect.enabled = false;
+            ConfigureIosMenuBackgroundCover(backgroundRect, backgroundParent, backgroundSprite);
+#else
+            backgroundAspect.enabled = true;
             backgroundAspect.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
             backgroundAspect.aspectRatio = backgroundSprite.rect.width / backgroundSprite.rect.height;
+#endif
+
             oceanBackgroundImage.transform.SetAsFirstSibling();
             DisableLegacyBackground(menuRect);
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void RefreshIosMenuBackgroundCoverageIfNeeded()
+        {
+            if (oceanBackgroundImage == null)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = oceanBackgroundImage.rectTransform.parent as RectTransform;
+            Sprite sprite = oceanBackgroundImage.sprite;
+            if (canvasRect == null || sprite == null)
+            {
+                return;
+            }
+
+            Vector2 canvasSize = canvasRect.rect.size;
+            if ((canvasSize - lastIosMenuCanvasSize).sqrMagnitude < 0.01f)
+            {
+                return;
+            }
+
+            ConfigureIosMenuBackgroundCover(oceanBackgroundImage.rectTransform, canvasRect, sprite);
+        }
+
+        private void ConfigureIosMenuBackgroundCover(
+            RectTransform backgroundRect,
+            RectTransform canvasRect,
+            Sprite sprite)
+        {
+            if (backgroundRect == null || canvasRect == null || sprite == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            Vector2 canvasSize = canvasRect.rect.size;
+            float spriteAspect = sprite.rect.width / sprite.rect.height;
+            float targetAspect = canvasSize.x / Mathf.Max(1f, canvasSize.y);
+            Vector2 coverSize = canvasSize;
+            if (targetAspect > spriteAspect)
+            {
+                coverSize.y = canvasSize.x / spriteAspect;
+            }
+            else
+            {
+                coverSize.x = canvasSize.y * spriteAspect;
+            }
+
+            backgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
+            backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+            backgroundRect.anchoredPosition = Vector2.zero;
+            backgroundRect.sizeDelta = coverSize;
+            backgroundRect.localScale = Vector3.one;
+            lastIosMenuCanvasSize = canvasSize;
+        }
+#endif
 
         private void HandleThemeChanged(ThemeType requestedTheme, ThemeAssetSet resolvedTheme)
         {

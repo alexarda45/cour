@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 #if UNITY_IOS && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
@@ -20,6 +21,17 @@ namespace ChromaBlast
         private bool privacyOptionsRequired;
 
 #if UNITY_IOS && !UNITY_EDITOR
+        private const int IosConsentRetryLimit = 2;
+        private const float IosConsentRetryDelaySeconds = 4f;
+
+        private Coroutine iosConsentRetryRoutine;
+        private int iosConsentRetryCount;
+        private int iosLastConsentStatus;
+        private int iosLastPrivacyOptionsStatus;
+        private int iosLastAttStatus = -1;
+        private int iosLastPrivacyErrorCode;
+        private string iosLastPrivacyErrorMessage = "None";
+
         [DllImport("__Internal", EntryPoint = "ChromaBlastIosPrivacyRequestConsentUpdate")]
         private static extern void RequestIosConsentUpdate(string unityGameObjectName);
 
@@ -107,6 +119,9 @@ namespace ChromaBlast
 
         private void OnDestroy()
         {
+#if UNITY_IOS && !UNITY_EDITOR
+            StopIosConsentRetry();
+#endif
             if (instance == this)
             {
                 instance = null;
@@ -135,13 +150,13 @@ namespace ChromaBlast
 #elif UNITY_IOS && !UNITY_EDITOR
             try
             {
-                LogIosPrivacyDiagnostic("[Privacy] iOS Privacy Options requested from Settings.");
+                LogIosPrivacyDiagnostic("Privacy Options requested from Settings.");
                 ShowIosPrivacyOptions(gameObject.name);
             }
             catch (Exception exception)
             {
                 LogIosPrivacyWarning(
-                    $"[Privacy] iOS UMP privacy options could not open: {exception.Message}");
+                    $"iOS UMP privacy options could not open: {exception.Message}");
             }
 #else
             Debug.Log("[Privacy] Privacy options are available only on a supported device build.");
@@ -198,8 +213,15 @@ namespace ChromaBlast
 
             if (state != null)
             {
+                iosLastConsentStatus = state.consentStatus;
+                iosLastPrivacyOptionsStatus = state.privacyOptionsRequirementStatus;
+                iosLastAttStatus = state.attAuthorizationStatus;
+                iosLastPrivacyErrorCode = state.errorCode;
+                iosLastPrivacyErrorMessage = state.errorCode == 0
+                    ? "None"
+                    : SanitizeIosPrivacyMessage(state.errorMessage);
                 LogIosPrivacyDiagnostic(
-                    $"[Privacy] iOS UMP status={state.consentStatus}, "
+                    $"iOS UMP status={state.consentStatus}, "
                     + $"CanRequestAds={state.canRequestAds}, "
                     + $"PrivacyOptionsStatus={state.privacyOptionsRequirementStatus}, "
                     + $"PrivacyOptionsRequired={state.privacyOptionsRequired}, "
@@ -209,17 +231,21 @@ namespace ChromaBlast
             if (state == null || !state.flowCompleted)
             {
                 consentFlowCompleted = false;
+                consentFlowStarted = false;
                 adsCanInitialize = false;
                 privacyOptionsRequired = state != null && state.privacyOptionsRequired;
                 AdManager.Instance?.ApplyPrivacyEligibility(false);
                 LogIosPrivacyWarning(
                     state == null
-                        ? "[Privacy] iOS privacy flow returned no readable state; ads remain unavailable."
-                        : $"[Privacy] iOS privacy flow is incomplete ({state.errorCode}: "
+                        ? "iOS privacy flow returned no readable state; ads remain unavailable."
+                        : $"iOS privacy flow is incomplete ({state.errorCode}: "
                             + $"{state.errorMessage}); ads remain unavailable.");
+                ScheduleIosConsentRetry();
                 return;
             }
 
+            StopIosConsentRetry();
+            iosConsentRetryCount = 0;
             consentFlowCompleted = true;
             adsCanInitialize = state.canRequestAds;
             privacyOptionsRequired = state.privacyOptionsRequired;
@@ -227,12 +253,12 @@ namespace ChromaBlast
             if (state.privacyOptionsAction == 1)
             {
                 LogIosPrivacyDiagnostic(
-                    "[Privacy] Google UMP reports that Privacy Options are not required/available "
+                    "Google UMP reports that Privacy Options are not required/available "
                     + "for this user; no form was presented.");
             }
             else if (state.privacyOptionsAction == 2)
             {
-                LogIosPrivacyDiagnostic("[Privacy] Google UMP Privacy Options form completed.");
+                LogIosPrivacyDiagnostic("Google UMP Privacy Options form completed.");
             }
 
             // Google UMP writes the full TCF and Additional Consent state that LevelPlay 7.7+
@@ -243,23 +269,72 @@ namespace ChromaBlast
             if (state.errorCode != 0)
             {
                 LogIosPrivacyWarning(
-                    $"[Privacy] iOS privacy flow completed with error {state.errorCode}: {state.errorMessage}. "
+                    $"iOS privacy flow completed with error {state.errorCode}: {state.errorMessage}. "
                     + $"ATT status: {state.attAuthorizationStatus}. Ads permitted: {adsCanInitialize}.");
             }
         }
 
+        public string GetIosPrivacyDiagnosticText()
+        {
+            return "Privacy flow completed: " + consentFlowCompleted
+                + "\nUMP/Options/ATT: " + iosLastConsentStatus
+                + "/" + iosLastPrivacyOptionsStatus
+                + "/" + iosLastAttStatus
+                + " Error: " + iosLastPrivacyErrorCode
+                + " " + iosLastPrivacyErrorMessage;
+        }
+
+        private void ScheduleIosConsentRetry()
+        {
+            if (iosConsentRetryRoutine != null || iosConsentRetryCount >= IosConsentRetryLimit)
+            {
+                if (iosConsentRetryCount >= IosConsentRetryLimit)
+                {
+                    LogIosPrivacyWarning("iOS UMP retry limit reached; ads remain unavailable safely.");
+                }
+
+                return;
+            }
+
+            iosConsentRetryCount++;
+            LogIosPrivacyDiagnostic(
+                $"Scheduling iOS UMP retry {iosConsentRetryCount}/{IosConsentRetryLimit}.");
+            iosConsentRetryRoutine = StartCoroutine(RetryIosConsentFlow());
+        }
+
+        private IEnumerator RetryIosConsentFlow()
+        {
+            yield return new WaitForSecondsRealtime(IosConsentRetryDelaySeconds);
+            iosConsentRetryRoutine = null;
+            BeginConsentFlow();
+        }
+
+        private void StopIosConsentRetry()
+        {
+            if (iosConsentRetryRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(iosConsentRetryRoutine);
+            iosConsentRetryRoutine = null;
+        }
+
+        private static string SanitizeIosPrivacyMessage(string message)
+        {
+            return string.IsNullOrWhiteSpace(message)
+                ? "Unknown"
+                : message.Replace('\n', ' ').Replace('\r', ' ');
+        }
+
         private static void LogIosPrivacyWarning(string message)
         {
-#if DEVELOPMENT_BUILD
-            Debug.LogWarning(message);
-#endif
+            Debug.LogWarning("[CB-PRIVACY] " + message);
         }
 
         private static void LogIosPrivacyDiagnostic(string message)
         {
-#if DEVELOPMENT_BUILD
-            Debug.Log(message);
-#endif
+            Debug.Log("[CB-PRIVACY] " + message);
         }
 #endif
 
@@ -294,10 +369,12 @@ namespace ChromaBlast
             catch (Exception exception)
             {
                 consentFlowCompleted = false;
+                consentFlowStarted = false;
                 adsCanInitialize = false;
                 AdManager.Instance?.ApplyPrivacyEligibility(false);
                 LogIosPrivacyWarning(
-                    $"[Privacy] iOS UMP/ATT flow could not start; ads remain unavailable: {exception.Message}");
+                    $"iOS UMP/ATT flow could not start; ads remain unavailable: {exception.Message}");
+                ScheduleIosConsentRetry();
             }
 #else
             consentFlowCompleted = true;
