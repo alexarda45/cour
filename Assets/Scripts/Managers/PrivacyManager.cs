@@ -23,14 +23,17 @@ namespace ChromaBlast
 #if UNITY_IOS && !UNITY_EDITOR
         private const int IosConsentRetryLimit = 2;
         private const float IosConsentRetryDelaySeconds = 4f;
+        private const float IosNativeStartTimeoutSeconds = 3f;
 
         private Coroutine iosConsentRetryRoutine;
+        private Coroutine iosNativeStartWatchdogRoutine;
         private int iosConsentRetryCount;
         private int iosLastConsentStatus;
         private int iosLastPrivacyOptionsStatus;
         private int iosLastAttStatus = -1;
         private int iosLastPrivacyErrorCode;
         private string iosLastPrivacyErrorMessage = "None";
+        private string iosLastPrivacyStage = "Managed request pending";
 
         [DllImport("__Internal", EntryPoint = "ChromaBlastIosPrivacyRequestConsentUpdate")]
         private static extern void RequestIosConsentUpdate(string unityGameObjectName);
@@ -121,6 +124,7 @@ namespace ChromaBlast
         {
 #if UNITY_IOS && !UNITY_EDITOR
             StopIosConsentRetry();
+            StopIosNativeStartWatchdog();
 #endif
             if (instance == this)
             {
@@ -198,8 +202,10 @@ namespace ChromaBlast
 
 #if UNITY_IOS && !UNITY_EDITOR
         // Called by the native iOS UMP/ATT bridge through UnitySendMessage.
+        [UnityEngine.Scripting.Preserve]
         public void OnIosPrivacyStateUpdated(string json)
         {
+            StopIosNativeStartWatchdog();
             IosPrivacyStatePayload state = null;
             try
             {
@@ -274,14 +280,56 @@ namespace ChromaBlast
             }
         }
 
+        // Called by the native bridge at each lifecycle boundary. Besides making
+        // TestFlight diagnostics actionable, the first acknowledgement proves
+        // that the exported bridge function was entered successfully.
+        [UnityEngine.Scripting.Preserve]
+        public void OnIosPrivacyStageUpdated(string stage)
+        {
+            StopIosNativeStartWatchdog();
+            iosLastPrivacyStage = SanitizeIosPrivacyMessage(stage);
+            LogIosPrivacyDiagnostic("iOS privacy stage: " + iosLastPrivacyStage + ".");
+        }
+
         public string GetIosPrivacyDiagnosticText()
         {
             return "Privacy flow completed: " + consentFlowCompleted
+                + "\nPrivacy stage: " + iosLastPrivacyStage
                 + "\nUMP/Options/ATT: " + iosLastConsentStatus
                 + "/" + iosLastPrivacyOptionsStatus
                 + "/" + iosLastAttStatus
                 + " Error: " + iosLastPrivacyErrorCode
                 + " " + iosLastPrivacyErrorMessage;
+        }
+
+        private void StartIosNativeStartWatchdog()
+        {
+            StopIosNativeStartWatchdog();
+            iosNativeStartWatchdogRoutine = StartCoroutine(WatchForIosNativeStart());
+        }
+
+        private IEnumerator WatchForIosNativeStart()
+        {
+            yield return new WaitForSecondsRealtime(IosNativeStartTimeoutSeconds);
+            iosNativeStartWatchdogRoutine = null;
+            consentFlowStarted = false;
+            adsCanInitialize = false;
+            AdManager.Instance?.ApplyPrivacyEligibility(false);
+            iosLastPrivacyStage = "Native bridge did not acknowledge start";
+            LogIosPrivacyWarning(
+                "iOS privacy bridge did not acknowledge startup; ads remain unavailable safely.");
+            ScheduleIosConsentRetry();
+        }
+
+        private void StopIosNativeStartWatchdog()
+        {
+            if (iosNativeStartWatchdogRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(iosNativeStartWatchdogRoutine);
+            iosNativeStartWatchdogRoutine = null;
         }
 
         private void ScheduleIosConsentRetry()
@@ -364,10 +412,13 @@ namespace ChromaBlast
 #elif UNITY_IOS && !UNITY_EDITOR
             try
             {
+                iosLastPrivacyStage = "Managed native request sent";
+                StartIosNativeStartWatchdog();
                 RequestIosConsentUpdate(gameObject.name);
             }
             catch (Exception exception)
             {
+                StopIosNativeStartWatchdog();
                 consentFlowCompleted = false;
                 consentFlowStarted = false;
                 adsCanInitialize = false;

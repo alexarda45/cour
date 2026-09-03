@@ -2317,6 +2317,15 @@ namespace ChromaBlast
         {
             RectTransform menuRect = transform as RectTransform;
             Canvas canvas = GetComponentInParent<Canvas>();
+#if UNITY_IOS && !UNITY_EDITOR
+            // MenuUI owns a nested sorting Canvas on the SafeArea object. A
+            // physical-screen background must use the actual root Canvas,
+            // otherwise it remains clipped to the iPhone safe area.
+            if (canvas != null && canvas.rootCanvas != null)
+            {
+                canvas = canvas.rootCanvas;
+            }
+#endif
             if (menuRect == null)
             {
                 return;

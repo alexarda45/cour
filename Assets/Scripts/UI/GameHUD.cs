@@ -137,6 +137,9 @@ namespace ChromaBlast
         private int lastDisplayedBlitzSecond = -1;
         private Coroutine blitzUrgencyRoutine;
         private Image oceanBackgroundImage;
+#if UNITY_IOS && !UNITY_EDITOR
+        private Vector2 lastIosGameplayCanvasSize;
+#endif
         private Image blitzTimerCapsuleImage;
         private RectTransform blitzTimerCapsuleRect;
         private TMP_Text scoreShadowText;
@@ -1074,7 +1077,21 @@ namespace ChromaBlast
                         StretchToFullPortrait(oceanBackgroundImage.rectTransform);
                     }
 
+#if UNITY_IOS && !UNITY_EDITOR
+                    AspectRatioFitter iosBackgroundFitter =
+                        oceanBackgroundImage.GetComponent<AspectRatioFitter>();
+                    if (iosBackgroundFitter != null)
+                    {
+                        iosBackgroundFitter.enabled = false;
+                    }
+
+                    ConfigureIosGameplayBackgroundCover(
+                        oceanBackgroundImage.rectTransform,
+                        backgroundParent,
+                        backgroundSprite);
+#else
                     ConfigureAspectCover(oceanBackgroundImage, backgroundSprite);
+#endif
                     oceanBackgroundImage.transform.SetAsFirstSibling();
                 }
             }
@@ -1821,10 +1838,80 @@ namespace ChromaBlast
                 return safeAreaRoot;
             }
 
-            Canvas rootCanvas = GetComponentInParent<Canvas>();
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Canvas rootCanvas = canvas == null ? null : canvas.rootCanvas;
             RectTransform canvasRect = rootCanvas == null ? null : rootCanvas.transform as RectTransform;
             return canvasRect == null ? safeAreaRoot : canvasRect;
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void LateUpdate()
+        {
+            RefreshIosGameplayBackgroundCoverageIfNeeded();
+        }
+
+        private void RefreshIosGameplayBackgroundCoverageIfNeeded()
+        {
+            if (oceanBackgroundImage == null || oceanBackgroundImage.sprite == null)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = oceanBackgroundImage.rectTransform.parent as RectTransform;
+            if (canvasRect == null)
+            {
+                return;
+            }
+
+            Vector2 canvasSize = canvasRect.rect.size;
+            if ((canvasSize - lastIosGameplayCanvasSize).sqrMagnitude < 0.01f)
+            {
+                return;
+            }
+
+            DisableSafeAreaBackdropForIos();
+            DisableLegacySafeAreaGameplayBackground(
+                transform as RectTransform,
+                oceanBackgroundImage);
+            ConfigureIosGameplayBackgroundCover(
+                oceanBackgroundImage.rectTransform,
+                canvasRect,
+                oceanBackgroundImage.sprite);
+        }
+
+        private void ConfigureIosGameplayBackgroundCover(
+            RectTransform backgroundRect,
+            RectTransform canvasRect,
+            Sprite sprite)
+        {
+            if (backgroundRect == null || canvasRect == null || sprite == null)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            Vector2 canvasSize = canvasRect.rect.size;
+            float spriteAspect = sprite.rect.width / sprite.rect.height;
+            float targetAspect = canvasSize.x / Mathf.Max(1f, canvasSize.y);
+            Vector2 coverSize = canvasSize;
+            if (targetAspect > spriteAspect)
+            {
+                coverSize.y = canvasSize.x / spriteAspect;
+            }
+            else
+            {
+                coverSize.x = canvasSize.y * spriteAspect;
+            }
+
+            backgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
+            backgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
+            backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+            backgroundRect.anchoredPosition = Vector2.zero;
+            backgroundRect.sizeDelta = coverSize;
+            backgroundRect.localScale = Vector3.one;
+            lastIosGameplayCanvasSize = canvasSize;
+        }
+#endif
 
         private void DisableSafeAreaBackdropForIos()
         {

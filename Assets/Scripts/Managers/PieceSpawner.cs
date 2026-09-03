@@ -119,8 +119,15 @@ namespace ChromaBlast
         private int generationEmptyCells;
         private const int OpenPureSetupDiversityBonus = 2500;
         private const int RelaxFlowCandidateCapacity = 32;
-        private const int RelaxFlowDeepEvaluationCount = 4;
+        private const int RelaxFlowDeepEvaluationCount = 6;
         private const int LateChallengeCandidateCapacity = GameConstants.GuaranteedSetAttempts;
+        private const float ClassicEarlyFlowStrength = 2.90f;
+        private const float ClassicMidFlowStrength = 2.75f;
+        private const float ClassicTransitionFlowStrength = 1.40f;
+        private const float ClassicEarlyMidFlowBoost = 2.45f;
+        private const float ClassicTransitionFlowBoost = 1.80f;
+        private const float ClassicTransitionProjectionWeight = 1.05f;
+        private const int ClassicEarlyBuildFlexBonus = 2800;
         private static readonly string[] ContinuationShapeIds =
         {
             "single",
@@ -731,21 +738,21 @@ namespace ChromaBlast
         {
             if (classicTrayNumber <= 4)
             {
-                return 2.70f;
+                return ClassicEarlyFlowStrength;
             }
 
-            if (classicTrayNumber <= 6) return 2.58f;
-            return classicTrayNumber <= 8 ? 1.28f : 0f;
+            if (classicTrayNumber <= 6) return ClassicMidFlowStrength;
+            return classicTrayNumber <= 8 ? ClassicTransitionFlowStrength : 0f;
         }
 
         private static float GetFlowAssistBoost(int classicTrayNumber)
         {
             if (classicTrayNumber <= 6)
             {
-                return 2.30f;
+                return ClassicEarlyMidFlowBoost;
             }
 
-            return classicTrayNumber <= 8 ? 1.70f : 1f;
+            return classicTrayNumber <= 8 ? ClassicTransitionFlowBoost : 1f;
         }
 
         private static float GetRelaxFlowProjectionWeight(int classicTrayNumber)
@@ -755,7 +762,7 @@ namespace ChromaBlast
                 return 1f;
             }
 
-            return classicTrayNumber <= 8 ? 0.95f : 0f;
+            return classicTrayNumber <= 8 ? ClassicTransitionProjectionWeight : 0f;
         }
 
         private static bool IsComparableAssistDifficulty(
@@ -2283,7 +2290,7 @@ namespace ChromaBlast
                             && set[flexIndex] != null
                             && GetPlacementOptions(board, set[flexIndex]) >= 4)
                         {
-                            return 2200;
+                            return ClassicEarlyBuildFlexBonus;
                         }
                     }
                 }

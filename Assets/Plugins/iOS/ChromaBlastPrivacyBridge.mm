@@ -13,6 +13,19 @@ namespace
 
     void PresentPrivacyOptions();
 
+    void SendPrivacyStage(NSString *stage)
+    {
+        if (sUnityGameObjectName.length == 0 || stage.length == 0)
+        {
+            return;
+        }
+
+        UnitySendMessage(
+            sUnityGameObjectName.UTF8String,
+            "OnIosPrivacyStageUpdated",
+            stage.UTF8String);
+    }
+
     NSString *SafeErrorMessage(NSError *error)
     {
         return error.localizedDescription ?: @"Unknown iOS privacy error.";
@@ -61,6 +74,7 @@ namespace
         }
 
         NSString *json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        SendPrivacyStage(@"Final privacy state sent");
         UnitySendMessage(
             sUnityGameObjectName.UTF8String,
             "OnIosPrivacyStateUpdated",
@@ -88,6 +102,7 @@ namespace
         BOOL canRequestAds = UMPConsentInformation.sharedInstance.canRequestAds;
         if (!canRequestAds)
         {
+            SendPrivacyStage(@"UMP resolved; ads unavailable");
             SendPrivacyState(YES, NO, nil, privacyOptionsAction);
             return;
         }
@@ -97,10 +112,12 @@ namespace
             if (ATTrackingManager.trackingAuthorizationStatus
                 == ATTrackingManagerAuthorizationStatusNotDetermined)
             {
+                SendPrivacyStage(@"ATT requested");
                 [ATTrackingManager
                     requestTrackingAuthorizationWithCompletionHandler:
                         ^(ATTrackingManagerAuthorizationStatus status) {
                             dispatch_async(dispatch_get_main_queue(), ^{
+                                SendPrivacyStage(@"ATT completed");
                                 SendPrivacyState(YES, canRequestAds, nil, privacyOptionsAction);
                             });
                         }];
@@ -108,11 +125,13 @@ namespace
             }
         }
 
+        SendPrivacyStage(@"ATT already resolved");
         SendPrivacyState(YES, canRequestAds, nil, privacyOptionsAction);
     }
 
     void StartConsentUpdate()
     {
+        SendPrivacyStage(@"UMP update started");
         UMPRequestParameters *parameters = [[UMPRequestParameters alloc] init];
         [UMPConsentInformation.sharedInstance
             requestConsentInfoUpdateWithParameters:parameters
@@ -120,6 +139,7 @@ namespace
                                      dispatch_async(dispatch_get_main_queue(), ^{
                                           if (requestError != nil)
                                           {
+                                              SendPrivacyStage(@"UMP update failed");
                                               sConsentInformationUpdated = NO;
                                              // UMP may retain a valid consent result from an earlier
                                              // session even when the network update fails. Respect that
@@ -137,6 +157,7 @@ namespace
                                           }
 
                                           sConsentInformationUpdated = YES;
+                                          SendPrivacyStage(@"UMP update completed");
 
                                           // This update was initiated by Privacy Options, so use
                                           // the dedicated UMP options API instead of silently
@@ -148,12 +169,17 @@ namespace
                                               return;
                                           }
 
+                                          SendPrivacyStage(@"UMP form requested");
                                           [UMPConsentForm
                                              loadAndPresentIfRequiredFromViewController:nil
                                                                       completionHandler:
                                                                           ^(NSError *formError) {
                                                                               dispatch_async(
                                                                                   dispatch_get_main_queue(), ^{
+                                                                                      SendPrivacyStage(
+                                                                                          formError == nil
+                                                                                              ? @"UMP form completed"
+                                                                                              : @"UMP form failed");
                                                                                       if (formError != nil)
                                                                                       {
                                                                                           BOOL cachedCanRequestAds =
@@ -188,10 +214,15 @@ namespace
             return;
         }
 
+        SendPrivacyStage(@"Privacy Options form requested");
         [UMPConsentForm
             presentPrivacyOptionsFormFromViewController:nil
                                       completionHandler:^(NSError *formError) {
                                           dispatch_async(dispatch_get_main_queue(), ^{
+                                              SendPrivacyStage(
+                                                  formError == nil
+                                                      ? @"Privacy Options completed"
+                                                      : @"Privacy Options failed");
                                               if (formError != nil)
                                               {
                                                   BOOL cachedCanRequestAds =
@@ -212,36 +243,42 @@ namespace
 
 extern "C" void ChromaBlastIosPrivacyRequestConsentUpdate(const char *unityGameObjectName)
 {
+    // Marshal-owned UTF-8 input is only guaranteed for the duration of this
+    // native call. Copy it before dispatching work to the main queue.
+    NSString *requestedUnityGameObjectName = unityGameObjectName != nullptr
+        ? [NSString stringWithUTF8String:unityGameObjectName]
+        : nil;
     dispatch_async(dispatch_get_main_queue(), ^{
         if (sFlowInProgress)
         {
             return;
         }
 
-        sUnityGameObjectName = unityGameObjectName != nullptr
-            ? [[NSString alloc] initWithUTF8String:unityGameObjectName]
-            : nil;
+        sUnityGameObjectName = requestedUnityGameObjectName;
         if (sUnityGameObjectName.length == 0)
         {
             return;
         }
 
         sFlowInProgress = YES;
+        SendPrivacyStage(@"Native bridge started");
         StartConsentUpdate();
     });
 }
 
 extern "C" void ChromaBlastIosPrivacyShowPrivacyOptions(const char *unityGameObjectName)
 {
+    NSString *requestedUnityGameObjectName = unityGameObjectName != nullptr
+        ? [NSString stringWithUTF8String:unityGameObjectName]
+        : nil;
     dispatch_async(dispatch_get_main_queue(), ^{
-        sUnityGameObjectName = unityGameObjectName != nullptr
-            ? [[NSString alloc] initWithUTF8String:unityGameObjectName]
-            : nil;
+        sUnityGameObjectName = requestedUnityGameObjectName;
         if (sUnityGameObjectName.length == 0)
         {
             return;
         }
 
+        SendPrivacyStage(@"Privacy Options bridge started");
         if (sFlowInProgress)
         {
             sPrivacyOptionsRequested = YES;
