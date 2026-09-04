@@ -28,11 +28,6 @@ namespace ChromaBlast
         private Coroutine iosConsentRetryRoutine;
         private Coroutine iosNativeStartWatchdogRoutine;
         private int iosConsentRetryCount;
-        private int iosLastConsentStatus;
-        private int iosLastPrivacyOptionsStatus;
-        private int iosLastAttStatus = -1;
-        private int iosLastPrivacyErrorCode;
-        private string iosLastPrivacyErrorMessage = "None";
         private string iosLastPrivacyStage = "Managed request pending";
 
         [DllImport("__Internal", EntryPoint = "ChromaBlastIosPrivacyRequestConsentUpdate")]
@@ -219,13 +214,6 @@ namespace ChromaBlast
 
             if (state != null)
             {
-                iosLastConsentStatus = state.consentStatus;
-                iosLastPrivacyOptionsStatus = state.privacyOptionsRequirementStatus;
-                iosLastAttStatus = state.attAuthorizationStatus;
-                iosLastPrivacyErrorCode = state.errorCode;
-                iosLastPrivacyErrorMessage = state.errorCode == 0
-                    ? "None"
-                    : SanitizeIosPrivacyMessage(state.errorMessage);
                 LogIosPrivacyDiagnostic(
                     $"iOS UMP status={state.consentStatus}, "
                     + $"CanRequestAds={state.canRequestAds}, "
@@ -280,26 +268,14 @@ namespace ChromaBlast
             }
         }
 
-        // Called by the native bridge at each lifecycle boundary. Besides making
-        // TestFlight diagnostics actionable, the first acknowledgement proves
-        // that the exported bridge function was entered successfully.
+        // Called by the native bridge at each lifecycle boundary. The first
+        // acknowledgement proves that the exported bridge function was entered.
         [UnityEngine.Scripting.Preserve]
         public void OnIosPrivacyStageUpdated(string stage)
         {
             StopIosNativeStartWatchdog();
             iosLastPrivacyStage = SanitizeIosPrivacyMessage(stage);
             LogIosPrivacyDiagnostic("iOS privacy stage: " + iosLastPrivacyStage + ".");
-        }
-
-        public string GetIosPrivacyDiagnosticText()
-        {
-            return "Privacy flow completed: " + consentFlowCompleted
-                + "\nPrivacy stage: " + iosLastPrivacyStage
-                + "\nUMP/Options/ATT: " + iosLastConsentStatus
-                + "/" + iosLastPrivacyOptionsStatus
-                + "/" + iosLastAttStatus
-                + " Error: " + iosLastPrivacyErrorCode
-                + " " + iosLastPrivacyErrorMessage;
         }
 
         private void StartIosNativeStartWatchdog()

@@ -240,6 +240,17 @@ namespace ChromaBlast
             }
 #endif
 
+#if UNITY_IOS && !UNITY_EDITOR
+            if (active
+                && !paused
+                && !applicationPaused
+                && applicationFocused
+                && (oceanRescueController == null || !oceanRescueController.IsBlockingInput))
+            {
+                AdManager.Instance?.RecordActiveGameplayTime(Time.unscaledDeltaTime);
+            }
+#endif
+
             if (BackButton.WasPressedThisFrame())
             {
                 if (oceanRescueController != null && oceanRescueController.IsBlockingInput)
