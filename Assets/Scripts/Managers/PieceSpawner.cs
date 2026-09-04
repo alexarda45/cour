@@ -121,13 +121,20 @@ namespace ChromaBlast
         private const int RelaxFlowCandidateCapacity = 32;
         private const int RelaxFlowDeepEvaluationCount = 6;
         private const int LateChallengeCandidateCapacity = GameConstants.GuaranteedSetAttempts;
-        private const float ClassicEarlyFlowStrength = 2.90f;
-        private const float ClassicMidFlowStrength = 2.75f;
-        private const float ClassicTransitionFlowStrength = 1.40f;
-        private const float ClassicEarlyMidFlowBoost = 2.45f;
-        private const float ClassicTransitionFlowBoost = 1.80f;
-        private const float ClassicTransitionProjectionWeight = 1.05f;
-        private const int ClassicEarlyBuildFlexBonus = 2800;
+        private const float ClassicEarlyFlowStrength = 3.15f;
+        private const float ClassicMidFlowStrength = 3.00f;
+        private const float ClassicTransitionFlowStrength = 1.65f;
+        private const float ClassicRecoveryFlowStrength = 0.75f;
+        private const float ClassicEarlyMidFlowBoost = 2.60f;
+        private const float ClassicTransitionFlowBoost = 2.00f;
+        private const float ClassicRecoveryFlowBoost = 1.25f;
+        private const float ClassicEarlyMidProjectionWeight = 1.18f;
+        private const float ClassicTransitionProjectionWeight = 1.20f;
+        private const float ClassicRecoveryProjectionWeight = 0.65f;
+        private const float ClassicReliefLoopAssistScale = 0.68f;
+        private const int ClassicFlowRecoveryTrayWindow = 3;
+        private const int ClassicEarlyBuildFlexBonus = 3300;
+        private const int ClassicEarlyMidOpenClearSaturationPenalty = 180;
         private static readonly string[] ContinuationShapeIds =
         {
             "single",
@@ -141,6 +148,7 @@ namespace ChromaBlast
         };
         private readonly FlowTarget[] flowTargets = new FlowTarget[2];
         private int flowTargetCount;
+        private int classicFlowRecoveryTraysRemaining;
         private PieceInstance[] continuationShapeCandidates;
         private readonly PieceInstance[] constructedContinuationSet = new PieceInstance[GameConstants.TraySize];
         private readonly PieceInstance[][] relaxFlowCandidateSets =
@@ -214,6 +222,12 @@ namespace ChromaBlast
 
         public void ResetFlowState()
         {
+            ClearFlowTargets();
+            classicFlowRecoveryTraysRemaining = 0;
+        }
+
+        private void ClearFlowTargets()
+        {
             flowTargetCount = 0;
             for (int i = 0; i < flowTargets.Length; i++)
             {
@@ -226,7 +240,7 @@ namespace ChromaBlast
         // any of this transient assistance.
         public void CaptureFlowState(BoardManager board)
         {
-            ResetFlowState();
+            ClearFlowTargets();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             LastFlowTargetProducedClear = false;
 #endif
@@ -254,6 +268,13 @@ namespace ChromaBlast
 
                     InsertFlowTarget(row, line, filled, score);
                 }
+            }
+
+            if (GameSession.SelectedMode == GameMode.Classic)
+            {
+                classicFlowRecoveryTraysRemaining = flowTargetCount > 0
+                    ? ClassicFlowRecoveryTrayWindow
+                    : Mathf.Max(0, classicFlowRecoveryTraysRemaining - 1);
             }
         }
 
@@ -742,7 +763,8 @@ namespace ChromaBlast
             }
 
             if (classicTrayNumber <= 6) return ClassicMidFlowStrength;
-            return classicTrayNumber <= 8 ? ClassicTransitionFlowStrength : 0f;
+            if (classicTrayNumber <= 8) return ClassicTransitionFlowStrength;
+            return classicTrayNumber <= 10 ? ClassicRecoveryFlowStrength : 0f;
         }
 
         private static float GetFlowAssistBoost(int classicTrayNumber)
@@ -752,17 +774,19 @@ namespace ChromaBlast
                 return ClassicEarlyMidFlowBoost;
             }
 
-            return classicTrayNumber <= 8 ? ClassicTransitionFlowBoost : 1f;
+            if (classicTrayNumber <= 8) return ClassicTransitionFlowBoost;
+            return classicTrayNumber <= 10 ? ClassicRecoveryFlowBoost : 1f;
         }
 
         private static float GetRelaxFlowProjectionWeight(int classicTrayNumber)
         {
             if (classicTrayNumber <= 6)
             {
-                return 1f;
+                return ClassicEarlyMidProjectionWeight;
             }
 
-            return classicTrayNumber <= 8 ? ClassicTransitionProjectionWeight : 0f;
+            if (classicTrayNumber <= 8) return ClassicTransitionProjectionWeight;
+            return classicTrayNumber <= 10 ? ClassicRecoveryProjectionWeight : 0f;
         }
 
         private static bool IsComparableAssistDifficulty(
@@ -973,7 +997,7 @@ namespace ChromaBlast
             // Two strong relief trays in a row are enough. The next selection stays
             // fair, but stops forcing another near-perfect bailout set.
             float loopAdjustedAssist = consecutiveReliefBiasedTrays >= 2
-                ? assist01 * 0.52f
+                ? assist01 * ClassicReliefLoopAssistScale
                 : assist01;
             BeginGenerationMetricCache(board);
             GenerateTrayMarker.Begin();
@@ -1024,21 +1048,22 @@ namespace ChromaBlast
                 BoardOccupancyState generationOccupancyState = GetOccupancyState(
                     GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board));
                 bool useLateChallengeBand = GameSession.SelectedMode == GameMode.Classic
-                    && classicTrayNumber >= 9
+                    && classicTrayNumber >= 11
                     && generationOccupancyState != BoardOccupancyState.Critical;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 LastGenerationCriticalChallengeBypass = GameSession.SelectedMode == GameMode.Classic
-                    && classicTrayNumber >= 9
+                    && classicTrayNumber >= 11
                     && generationOccupancyState == BoardOccupancyState.Critical;
 #endif
                 bool allowLateClassicStair5 = CanConsiderStair5InRandomSet(runPressure01);
                 bool boundedContinuationGate = GameSession.SelectedMode == GameMode.Classic
                     && classicTrayNumber >= 1
-                    && classicTrayNumber <= 6
+                    && classicTrayNumber <= 10
                     && flowTargetCount > 0;
                 bool useRelaxFlow = GameSession.SelectedMode == GameMode.Classic
-                    && classicTrayNumber >= 7
-                    && classicTrayNumber <= 8;
+                    && classicTrayNumber <= 10
+                    && !boundedContinuationGate
+                    && (classicTrayNumber >= 7 || classicFlowRecoveryTraysRemaining > 0);
                 BeginRelaxFlowCandidateSelection();
                 BeginLateChallengeSelection();
 
@@ -1252,7 +1277,7 @@ namespace ChromaBlast
                     BoardOccupancyState selectionState = GetOccupancyState(
                         GameConstants.BoardSize * GameConstants.BoardSize - GetEmptyCells(board));
                     bool lateNonEssentialCuration = GameSession.SelectedMode == GameMode.Classic
-                        && classicTrayNumber >= 9
+                        && classicTrayNumber >= 11
                         && selectionState != BoardOccupancyState.Critical;
                     float postSelectionAssist = loopAdjustedAssist
                         * GetLateNonEssentialAssistScale(classicTrayNumber, selectionState);
@@ -1994,7 +2019,10 @@ namespace ChromaBlast
 
             // Open boards should not receive a continuous stream of instant clears.
             int openClearSaturationPenalty = occupancyState == BoardOccupancyState.Open
-                ? Mathf.Max(0, clearOpportunities - 1) * 320
+                ? Mathf.Max(0, clearOpportunities - 1)
+                    * (GameSession.SelectedMode == GameMode.Classic && classicTrayNumber <= 10
+                        ? ClassicEarlyMidOpenClearSaturationPenalty
+                        : 320)
                 : 0;
             // Pressure changes the decisions required, not whether a legal move exists.
             int pressureTinyPenalty = Mathf.RoundToInt(runPressure01 * smallPieceCount * 760f);
@@ -2070,10 +2098,11 @@ namespace ChromaBlast
                 return 1f;
             }
 
-            if (classicTrayNumber >= 9) return 0f;
+            if (classicTrayNumber >= 11) return 0f;
             if (occupancyState == BoardOccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            return 0.60f;
+            if (classicTrayNumber <= 8) return 0.70f;
+            return 0.30f;
         }
 
         private static float GetLatePureSetupScale(
@@ -2085,10 +2114,11 @@ namespace ChromaBlast
                 return 1f;
             }
 
-            if (classicTrayNumber >= 9) return 0f;
+            if (classicTrayNumber >= 11) return 0f;
             if (occupancyState == BoardOccupancyState.Critical) return 1f;
             if (classicTrayNumber <= 6) return 1f;
-            return 0.60f;
+            if (classicTrayNumber <= 8) return 0.70f;
+            return 0.30f;
         }
 
         private static int GetOpenDiversityBonus(int classicTrayNumber)
@@ -2099,7 +2129,8 @@ namespace ChromaBlast
             }
 
             if (classicTrayNumber <= 6) return 2000;
-            return classicTrayNumber <= 8 ? 750 : 0;
+            if (classicTrayNumber <= 8) return 1000;
+            return classicTrayNumber <= 10 ? 300 : 0;
         }
 
         private static float GetExtraCleanBoardAssistScale(int classicTrayNumber)
@@ -2110,7 +2141,8 @@ namespace ChromaBlast
             }
 
             if (classicTrayNumber <= 6) return 0.75f;
-            return classicTrayNumber <= 8 ? 0.30f : 0f;
+            if (classicTrayNumber <= 8) return 0.45f;
+            return classicTrayNumber <= 10 ? 0.15f : 0f;
         }
 
         private BoardOccupancyState GetOccupancyState(int occupiedCells)
@@ -2247,7 +2279,7 @@ namespace ChromaBlast
         {
             if (GameSession.SelectedMode != GameMode.Classic
                 || classicTrayNumber < 1
-                || classicTrayNumber > 8
+                || classicTrayNumber > 10
                 || flowTargetCount > 0
                 || board == null
                 || set == null)

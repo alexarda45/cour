@@ -72,6 +72,8 @@ namespace ChromaBlast
 
 #if UNITY_IOS && !UNITY_EDITOR
         private float iosActivePlaytimeSeconds;
+        private int iosGameOverRestartPressCount;
+        private Action iosRestartAfterInterstitial;
 #endif
 
         public bool IsRewardedConfigured => IsValidConfigurationValue(PlatformAppKey)
@@ -304,6 +306,44 @@ namespace ChromaBlast
         public bool TryShowInterstitialAfterGameOverPresentation()
         {
             return TryShowInterstitialBetweenRuns();
+        }
+
+        public bool TryHandleIosGameOverRestart(Action restartAfterInterstitial)
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            iosGameOverRestartPressCount++;
+
+            // If the existing post-Game-Over path already started an ad, attach
+            // this restart to that presentation instead of starting a second one.
+            if (interstitialShowPending || interstitialDisplaying)
+            {
+                iosRestartAfterInterstitial ??= restartAfterInterstitial;
+                return true;
+            }
+
+            if ((iosGameOverRestartPressCount & 1) != 0 || !CanAttemptInterstitialNow())
+            {
+                EnsureInterstitialCreatedAndLoaded();
+                return false;
+            }
+
+            iosRestartAfterInterstitial = restartAfterInterstitial;
+            interstitialShowPending = true;
+            try
+            {
+                interstitialAd.ShowAd(InterstitialPlacementName);
+                return true;
+            }
+            catch (Exception)
+            {
+                interstitialShowPending = false;
+                iosRestartAfterInterstitial = null;
+                LoadInterstitialAd();
+                return false;
+            }
+#else
+            return false;
+#endif
         }
 
         public void ApplyPrivacyEligibility(bool allowAds)
@@ -787,6 +827,9 @@ namespace ChromaBlast
         {
             interstitialShowPending = false;
             interstitialDisplaying = false;
+#if UNITY_IOS && !UNITY_EDITOR
+            CompleteIosRestartAfterInterstitial();
+#endif
             LoadInterstitialAd();
         }
 
@@ -794,8 +837,20 @@ namespace ChromaBlast
         {
             interstitialShowPending = false;
             interstitialDisplaying = false;
+#if UNITY_IOS && !UNITY_EDITOR
+            CompleteIosRestartAfterInterstitial();
+#endif
             LoadInterstitialAd();
         }
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void CompleteIosRestartAfterInterstitial()
+        {
+            Action continuation = iosRestartAfterInterstitial;
+            iosRestartAfterInterstitial = null;
+            continuation?.Invoke();
+        }
+#endif
 
         private void LoadInterstitialCadence()
         {

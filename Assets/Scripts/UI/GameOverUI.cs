@@ -834,7 +834,7 @@ namespace ChromaBlast
             }
 
             restartButton.interactable = false;
-            gameManager.RestartCurrentMode();
+            gameManager.RestartFromGameOver();
         }
     }
 }

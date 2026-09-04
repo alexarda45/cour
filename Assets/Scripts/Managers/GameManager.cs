@@ -753,6 +753,28 @@ namespace ChromaBlast
         public void RestartCurrentMode()
         {
             AudioManager.Instance?.PlayClick();
+            RestartCurrentModeWithoutClick();
+        }
+
+        public void RestartFromGameOver()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            AudioManager.Instance?.PlayClick();
+            interstitialCompletionPending = false;
+            AdManager ads = AdManager.Instance;
+            if (ads != null && ads.TryHandleIosGameOverRestart(RestartCurrentModeWithoutClick))
+            {
+                return;
+            }
+
+            RestartCurrentModeWithoutClick();
+#else
+            RestartCurrentMode();
+#endif
+        }
+
+        private void RestartCurrentModeWithoutClick()
+        {
             paused = false;
             hud.ShowPause(false);
             if (currentMode == GameMode.Classic)
